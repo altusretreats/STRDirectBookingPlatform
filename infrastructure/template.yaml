@@ -1,0 +1,439 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Altus Retreats — Multi-property STR platform
+  Products: direct booking sites, digital guidebook, admin system
+  altusretreats.net
+
+# ─────────────────────────────────────────────
+# Parameters
+# ─────────────────────────────────────────────
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+  DomainName:
+    Type: String
+    Default: altusretreats.net
+    Description: Root domain (Route 53 hosted zone must exist)
+
+# ─────────────────────────────────────────────
+# Globals
+# ─────────────────────────────────────────────
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Timeout: 30
+    MemorySize: 256
+    Architectures: [arm64]
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref MainTable
+        ENVIRONMENT: !Ref Environment
+    Layers:
+      - !Ref SharedLayer
+
+# ─────────────────────────────────────────────
+# Resources
+# ─────────────────────────────────────────────
+Resources:
+
+  # ── DynamoDB ──────────────────────────────
+  MainTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    Properties:
+      TableName: !Sub altus-retreats-${Environment}
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+        - AttributeName: GSI1PK
+          AttributeType: S
+        - AttributeName: GSI1SK
+          AttributeType: S
+        - AttributeName: GSI2PK
+          AttributeType: S
+        - AttributeName: GSI2SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        # GSI1: look up bookings by property + check-in date
+        - IndexName: GSI1
+          KeySchema:
+            - AttributeName: GSI1PK
+              KeyType: HASH
+            - AttributeName: GSI1SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        # GSI2: look up bookings by Stripe payment intent (for webhook resolution)
+        - IndexName: GSI2
+          KeySchema:
+            - AttributeName: GSI2PK
+              KeyType: HASH
+            - AttributeName: GSI2SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      Tags:
+        - Key: Project
+          Value: altus-retreats
+        - Key: Environment
+          Value: !Ref Environment
+
+  # ── Cognito (Admin Auth) ──────────────────
+  AdminUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub altus-retreats-admin-${Environment}
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: true   # invite-only; no self-signup
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 12
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+      MfaConfiguration: OPTIONAL
+      AutoVerifiedAttributes:
+        - email
+      UsernameAttributes:
+        - email
+      Schema:
+        - Name: email
+          Required: true
+          Mutable: true
+        - Name: property_access
+          AttributeDataType: String
+          Mutable: true
+          # comma-separated property IDs; "ALL" = super admin
+
+  AdminUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: altus-retreats-admin-client
+      UserPoolId: !Ref AdminUserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      TokenValidityUnits:
+        AccessToken: hours
+        IdToken: hours
+        RefreshToken: days
+      AccessTokenValidity: 1
+      IdTokenValidity: 1
+      RefreshTokenValidity: 30
+
+  # ── Secrets Manager ───────────────────────
+  HospitableSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub altus-retreats/${Environment}/hospitable
+      Description: Hospitable API PAT per property
+      # Structure: { "default": "<PAT>", "kentucky": "<PAT>", "florida": "<PAT>" }
+      SecretString: '{"default": "REPLACE_ME"}'
+
+  StripeSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: !Sub altus-retreats/${Environment}/stripe
+      Description: Stripe API keys
+      # Structure: { "secretKey": "sk_...", "webhookSecret": "whsec_..." }
+      SecretString: '{"secretKey": "REPLACE_ME", "webhookSecret": "REPLACE_ME"}'
+
+  # ── Shared Lambda Layer ───────────────────
+  SharedLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub altus-retreats-shared-${Environment}
+      ContentUri: ../backend/layers/shared
+      CompatibleRuntimes:
+        - nodejs20.x
+      CompatibleArchitectures:
+        - arm64
+    Metadata:
+      BuildMethod: nodejs20.x
+
+  # ── API Gateway ───────────────────────────
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub altus-retreats-api-${Environment}
+      StageName: !Ref Environment
+      Cors:
+        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: "'*'"   # tighten to property domains in prod
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        AddDefaultAuthorizerToCorsPreflight: false
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !GetAtt AdminUserPool.Arn
+      GatewayResponses:
+        UNAUTHORIZED:
+          StatusCode: 401
+          ResponseTemplates:
+            application/json: '{"error": "Unauthorized"}'
+      Tags:
+        Project: altus-retreats
+        Environment: !Ref Environment
+
+  # ── Lambda: getProperty ───────────────────
+  GetPropertyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub altus-retreats-getProperty-${Environment}
+      CodeUri: ../backend/functions/getProperty
+      Handler: index.handler
+      Description: Returns property metadata, photos, and amenities from DynamoDB (cached from Hospitable)
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref MainTable
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref HospitableSecret
+      Events:
+        GetProperty:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /properties/{propertyId}
+            Method: GET
+            Auth:
+              Authorizer: NONE   # public endpoint
+
+  # ── Lambda: getAvailability ───────────────
+  GetAvailabilityFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub altus-retreats-getAvailability-${Environment}
+      CodeUri: ../backend/functions/getAvailability
+      Handler: index.handler
+      Description: Proxies Hospitable calendar API; returns blocked dates and pricing for a property
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref MainTable
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref HospitableSecret
+      Events:
+        GetAvailability:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /properties/{propertyId}/availability
+            Method: GET
+            Auth:
+              Authorizer: NONE   # public endpoint
+
+  # ── Lambda: createBooking ─────────────────
+  CreateBookingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub altus-retreats-createBooking-${Environment}
+      CodeUri: ../backend/functions/createBooking
+      Handler: index.handler
+      Description: Creates a Stripe PaymentIntent; writes pending booking to DynamoDB
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MainTable
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref StripeSecret
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref HospitableSecret
+      Events:
+        CreateBooking:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /properties/{propertyId}/bookings
+            Method: POST
+            Auth:
+              Authorizer: NONE   # public endpoint; auth is Stripe payment
+
+  # ── Lambda: stripeWebhook ─────────────────
+  StripeWebhookFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub altus-retreats-stripeWebhook-${Environment}
+      CodeUri: ../backend/functions/stripeWebhook
+      Handler: index.handler
+      Description: >
+        Receives Stripe webhook events. On payment_intent.succeeded:
+        confirms booking in DynamoDB, writes reservation block to Hospitable
+        to keep calendar synced across Airbnb/Vrbo.
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MainTable
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref StripeSecret
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref HospitableSecret
+      Events:
+        StripeWebhook:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /webhooks/stripe
+            Method: POST
+            Auth:
+              Authorizer: NONE   # validated by stripe-signature header in handler
+
+  # ── Lambda: getGuidebook ──────────────────
+  GetGuidebookFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub altus-retreats-getGuidebook-${Environment}
+      CodeUri: ../backend/functions/getGuidebook
+      Handler: index.handler
+      Description: Returns guidebook sections and items for a property (guest-facing, public)
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref MainTable
+      Events:
+        GetGuidebook:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /properties/{propertyId}/guidebook
+            Method: GET
+            Auth:
+              Authorizer: NONE   # public endpoint
+
+  # ── Lambda: adminProperties ───────────────
+  AdminPropertiesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub altus-retreats-adminProperties-${Environment}
+      CodeUri: ../backend/functions/adminProperties
+      Handler: index.handler
+      Description: CRUD for property records — admin only (Cognito protected)
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MainTable
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref HospitableSecret
+      Events:
+        ListProperties:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/properties
+            Method: GET
+        CreateProperty:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/properties
+            Method: POST
+        UpdateProperty:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/properties/{propertyId}
+            Method: PUT
+
+  # ── Lambda: adminGuidebook ────────────────
+  AdminGuidebookFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub altus-retreats-adminGuidebook-${Environment}
+      CodeUri: ../backend/functions/adminGuidebook
+      Handler: index.handler
+      Description: CRUD for guidebook sections and items — admin only (Cognito protected)
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MainTable
+      Events:
+        ListSections:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/properties/{propertyId}/guidebook
+            Method: GET
+        UpsertSection:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/properties/{propertyId}/guidebook/{sectionId}
+            Method: PUT
+        DeleteSection:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/properties/{propertyId}/guidebook/{sectionId}
+            Method: DELETE
+
+  # ── S3 Buckets ────────────────────────────
+  MediaBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub altus-retreats-media-${Environment}-${AWS::AccountId}
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ['*']
+            AllowedMethods: [GET]
+            AllowedOrigins: ['*']
+            MaxAge: 3600
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub altus-retreats-frontend-${Environment}-${AWS::AccountId}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+# ─────────────────────────────────────────────
+# Outputs
+# ─────────────────────────────────────────────
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint
+    Value: !Sub https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
+    Export:
+      Name: !Sub altus-retreats-ApiUrl-${Environment}
+
+  TableName:
+    Description: DynamoDB table name
+    Value: !Ref MainTable
+    Export:
+      Name: !Sub altus-retreats-TableName-${Environment}
+
+  UserPoolId:
+    Description: Cognito User Pool ID for admin auth
+    Value: !Ref AdminUserPool
+    Export:
+      Name: !Sub altus-retreats-UserPoolId-${Environment}
+
+  UserPoolClientId:
+    Description: Cognito User Pool Client ID
+    Value: !Ref AdminUserPoolClient
+    Export:
+      Name: !Sub altus-retreats-UserPoolClientId-${Environment}
+
+  MediaBucketName:
+    Description: S3 bucket for property photos and guidebook media
+    Value: !Ref MediaBucket
+    Export:
+      Name: !Sub altus-retreats-MediaBucket-${Environment}
