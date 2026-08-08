@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect, createContext, useContext, createElement } from 'react';
 import { getSession, logout } from '../lib/cognito';
 
 const AuthContext = createContext(null);
@@ -14,9 +14,7 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false));
   }, []);
 
-  return <AuthContext.Provider value={{ user, setUser, loading, logout }}>
-    {children}
-  </AuthContext.Provider>;
+  return createElement(AuthContext.Provider, { value: { user, setUser, loading, logout } }, children);
 }
 
 export const useAuth = () => useContext(AuthContext);

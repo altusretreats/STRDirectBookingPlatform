@@ -23,7 +23,7 @@ Parameters:
 # ─────────────────────────────────────────────
 Globals:
   Function:
-    Runtime: nodejs20.x
+    Runtime: nodejs22.x
     Timeout: 30
     MemorySize: 256
     Architectures: [arm64]
@@ -107,7 +107,7 @@ Resources:
           RequireLowercase: true
           RequireNumbers: true
           RequireSymbols: true
-      MfaConfiguration: OPTIONAL
+      MfaConfiguration: "OFF"
       AutoVerifiedAttributes:
         - email
       UsernameAttributes:
@@ -147,14 +147,6 @@ Resources:
       # Structure: { "default": "<PAT>", "kentucky": "<PAT>", "florida": "<PAT>" }
       SecretString: '{"default": "REPLACE_ME"}'
 
-  StripeSecret:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Name: !Sub altus-retreats/${Environment}/stripe
-      Description: Stripe API keys
-      # Structure: { "secretKey": "sk_...", "webhookSecret": "whsec_..." }
-      SecretString: '{"secretKey": "REPLACE_ME", "webhookSecret": "REPLACE_ME"}'
-
   # ── Shared Lambda Layer ───────────────────
   SharedLayer:
     Type: AWS::Serverless::LayerVersion
@@ -162,11 +154,9 @@ Resources:
       LayerName: !Sub altus-retreats-shared-${Environment}
       ContentUri: ../backend/layers/shared
       CompatibleRuntimes:
-        - nodejs20.x
+        - nodejs22.x
       CompatibleArchitectures:
         - arm64
-    Metadata:
-      BuildMethod: nodejs20.x
 
   # ── API Gateway ───────────────────────────
   ApiGateway:
@@ -175,7 +165,7 @@ Resources:
       Name: !Sub altus-retreats-api-${Environment}
       StageName: !Ref Environment
       Cors:
-        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
         AllowHeaders: "'Content-Type,Authorization'"
         AllowOrigin: "'*'"   # tighten to property domains in prod
       Auth:
@@ -187,8 +177,25 @@ Resources:
       GatewayResponses:
         UNAUTHORIZED:
           StatusCode: 401
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'*'"
+              Access-Control-Allow-Headers: "'Content-Type,Authorization'"
           ResponseTemplates:
             application/json: '{"error": "Unauthorized"}'
+        ACCESS_DENIED:
+          StatusCode: 403
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'*'"
+              Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+          ResponseTemplates:
+            application/json: '{"error": "Forbidden"}'
+        DEFAULT_4XX:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Origin: "'*'"
+              Access-Control-Allow-Headers: "'Content-Type,Authorization'"
       Tags:
         Project: altus-retreats
         Environment: !Ref Environment
@@ -239,59 +246,6 @@ Resources:
             Auth:
               Authorizer: NONE   # public endpoint
 
-  # ── Lambda: createBooking ─────────────────
-  CreateBookingFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub altus-retreats-createBooking-${Environment}
-      CodeUri: ../backend/functions/createBooking
-      Handler: index.handler
-      Description: Creates a Stripe PaymentIntent; writes pending booking to DynamoDB
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref MainTable
-        - AWSSecretsManagerGetSecretValuePolicy:
-            SecretArn: !Ref StripeSecret
-        - AWSSecretsManagerGetSecretValuePolicy:
-            SecretArn: !Ref HospitableSecret
-      Events:
-        CreateBooking:
-          Type: Api
-          Properties:
-            RestApiId: !Ref ApiGateway
-            Path: /properties/{propertyId}/bookings
-            Method: POST
-            Auth:
-              Authorizer: NONE   # public endpoint; auth is Stripe payment
-
-  # ── Lambda: stripeWebhook ─────────────────
-  StripeWebhookFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub altus-retreats-stripeWebhook-${Environment}
-      CodeUri: ../backend/functions/stripeWebhook
-      Handler: index.handler
-      Description: >
-        Receives Stripe webhook events. On payment_intent.succeeded:
-        confirms booking in DynamoDB, writes reservation block to Hospitable
-        to keep calendar synced across Airbnb/Vrbo.
-      Policies:
-        - DynamoDBCrudPolicy:
-            TableName: !Ref MainTable
-        - AWSSecretsManagerGetSecretValuePolicy:
-            SecretArn: !Ref StripeSecret
-        - AWSSecretsManagerGetSecretValuePolicy:
-            SecretArn: !Ref HospitableSecret
-      Events:
-        StripeWebhook:
-          Type: Api
-          Properties:
-            RestApiId: !Ref ApiGateway
-            Path: /webhooks/stripe
-            Method: POST
-            Auth:
-              Authorizer: NONE   # validated by stripe-signature header in handler
-
   # ── Lambda: getGuidebook ──────────────────
   GetGuidebookFunction:
     Type: AWS::Serverless::Function
@@ -333,6 +287,12 @@ Resources:
             RestApiId: !Ref ApiGateway
             Path: /admin/properties
             Method: GET
+        GetProperty:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/properties/{propertyId}
+            Method: GET
         CreateProperty:
           Type: Api
           Properties:
@@ -345,6 +305,94 @@ Resources:
             RestApiId: !Ref ApiGateway
             Path: /admin/properties/{propertyId}
             Method: PUT
+
+  # ── Lambda: syncProperty ──────────────────
+  SyncPropertyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub altus-retreats-syncProperty-${Environment}
+      CodeUri: ../backend/functions/syncProperty
+      Handler: index.handler
+      Timeout: 60
+      Description: Fetches Hospitable listing data and caches it in DynamoDB — admin only
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MainTable
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref HospitableSecret
+      Events:
+        SyncProperty:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/properties/{propertyId}/sync
+            Method: POST
+
+  # ── Lambda: adminHub ──────────────────────
+  AdminHubFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub altus-retreats-adminHub-${Environment}
+      CodeUri: ../backend/functions/adminHub
+      Handler: index.handler
+      Description: GET/PUT hub site content (altusretreats.net) — admin only
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MainTable
+      Events:
+        GetHub:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/hub
+            Method: GET
+        UpdateHub:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/hub
+            Method: PUT
+
+  # ── Lambda: adminMedia ────────────────────
+  AdminMediaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub altus-retreats-adminMedia-${Environment}
+      CodeUri: ../backend/functions/adminMedia
+      Handler: index.handler
+      Description: Returns presigned S3 PUT URLs for direct browser media upload — admin only
+      Environment:
+        Variables:
+          MEDIA_BUCKET: !Ref MediaBucket
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref MainTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - s3:PutObject
+              Resource: !Sub "${MediaBucket.Arn}/properties/*"
+      Events:
+        SignUpload:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/media/sign
+            Method: POST
+
+  # ── EventBridge: daily Hospitable sync ───
+  DailySyncRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub altus-retreats-daily-sync-${Environment}
+      Description: Triggers daily Hospitable sync for all properties at 2am UTC
+      ScheduleExpression: cron(0 7 * * ? *)   # 2am EST = 7am UTC
+      State: ENABLED
+      Targets:
+        - Id: SyncPropertyKentucky
+          Arn: !GetAtt SyncPropertyFunction.Arn
+          Input: !Sub |
+            {"httpMethod":"POST","pathParameters":{"propertyId":"kentucky"},"body":"{}","headers":{"Authorization":"internal-scheduler"}}
 
   # ── Lambda: adminGuidebook ────────────────
   AdminGuidebookFunction:
@@ -377,6 +425,122 @@ Resources:
             Path: /admin/properties/{propertyId}/guidebook/{sectionId}
             Method: DELETE
 
+  # ── Lambda: waitlist ──────────────────────
+  WaitlistFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub altus-retreats-waitlist-${Environment}
+      CodeUri: ../backend/functions/waitlist
+      Handler: index.handler
+      Description: Public POST to capture waitlist emails; authenticated GET for admin to list them.
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MainTable
+      Events:
+        SubmitWaitlist:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /waitlist
+            Method: POST
+            Auth:
+              Authorizer: NONE
+        GetWaitlist:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/waitlist
+            Method: GET
+
+  # ── Lambda: adminBookings ─────────────────
+  AdminBookingsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub altus-retreats-adminBookings-${Environment}
+      CodeUri: ../backend/functions/adminBookings
+      Handler: index.handler
+      Description: Lists bookings for a property — admin only (Cognito protected). Supports filtering by status and date range.
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref MainTable
+      Events:
+        ListBookings:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/properties/{propertyId}/bookings
+            Method: GET
+
+  # ── Lambda: sendConfirmationEmail ────────
+  SendConfirmationEmailFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub altus-retreats-sendConfirmationEmail-${Environment}
+      CodeUri: ../backend/functions/sendConfirmationEmail
+      Handler: index.handler
+      Description: Sends booking confirmation email via SES after payment confirmed. Invoked async from stripeWebhook.
+      Environment:
+        Variables:
+          FROM_EMAIL: !Sub "Altus Retreats <support@${DomainName}>"
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ses:SendEmail
+                - ses:SendRawEmail
+              Resource: "*"
+      # No API event — invoked directly from stripeWebhook
+
+  # ── Lambda: sendPreArrivalEmail ───────────
+  SendPreArrivalEmailFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub altus-retreats-sendPreArrivalEmail-${Environment}
+      CodeUri: ../backend/functions/sendPreArrivalEmail
+      Handler: index.handler
+      Description: Sends pre-arrival email with guidebook link 48hrs before check-in. Invoked by EventBridge Scheduler.
+      Environment:
+        Variables:
+          FROM_EMAIL: !Sub "Altus Retreats <support@${DomainName}>"
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ses:SendEmail
+                - ses:SendRawEmail
+              Resource: "*"
+      # No API event — invoked by EventBridge Scheduler
+
+  # ── IAM Role: EventBridge Scheduler → Lambda ─
+  SchedulerInvokeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub altus-retreats-scheduler-invoke-${Environment}
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: scheduler.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: InvokePreArrivalEmailLambda
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource: !GetAtt SendPreArrivalEmailFunction.Arn
+
+  # ── Permission: EventBridge → SyncProperty ─
+  DailySyncPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt SyncPropertyFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt DailySyncRule.Arn
+
   # ── S3 Buckets ────────────────────────────
   MediaBucket:
     Type: AWS::S3::Bucket
@@ -385,7 +549,7 @@ Resources:
       CorsConfiguration:
         CorsRules:
           - AllowedHeaders: ['*']
-            AllowedMethods: [GET]
+            AllowedMethods: [GET, PUT, POST]
             AllowedOrigins: ['*']
             MaxAge: 3600
       PublicAccessBlockConfiguration:
@@ -403,6 +567,221 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
+
+  # ── CloudFront Function: directory index rewrite ──
+  # S3 with OAC doesn't serve index.html for directory paths (/guidebook/ etc.)
+  # This function rewrites /path/ → /path/index.html before hitting S3.
+  DirectoryIndexFunction:
+    Type: AWS::CloudFront::Function
+    Properties:
+      Name: !Sub altus-directory-index-${Environment}
+      AutoPublish: true
+      FunctionConfig:
+        Comment: Rewrite directory URLs to index.html
+        Runtime: cloudfront-js-2.0
+      FunctionCode: |
+        function handler(event) {
+          var request = event.request;
+          var uri = request.uri;
+          if (uri.endsWith('/')) {
+            request.uri += 'index.html';
+          } else if (!uri.split('/').pop().includes('.')) {
+            request.uri += '/index.html';
+          }
+          return request;
+        }
+
+  # ── CloudFront OAC (Origin Access Control) ──
+  FrontendOAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub altus-retreats-oac-${Environment}
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  # ── Hub Site (altusretreats.net) ─────────────
+  HubSiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub altus-retreats-hub-${Environment}-${AWS::AccountId}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  HubSiteDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        DefaultRootObject: index.html
+        HttpVersion: http2
+        PriceClass: PriceClass_100
+        Aliases:
+          - altusretreats.net
+          - www.altusretreats.net
+        ViewerCertificate:
+          AcmCertificateArn: arn:aws:acm:us-east-1:817760095908:certificate/8706f7a7-0149-4b42-b9ed-cdc8c7644573
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
+        Origins:
+          - Id: S3Hub
+            DomainName: !GetAtt HubSiteBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt FrontendOAC.Id
+            S3OriginConfig: {}
+        DefaultCacheBehavior:
+          TargetOriginId: S3Hub
+          ViewerProtocolPolicy: redirect-to-https
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          CachedMethods: [GET, HEAD]
+          Compress: true
+        CustomErrorResponses:
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
+      Tags:
+        - Key: Project
+          Value: altus-retreats
+        - Key: Environment
+          Value: !Ref Environment
+
+  HubSiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref HubSiteBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub "${HubSiteBucket.Arn}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${HubSiteDistribution}"
+
+  # ── CloudFront: Property Booking Site ────────
+  PropertySiteDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        DefaultRootObject: index.html
+        HttpVersion: http2
+        PriceClass: PriceClass_100
+        Aliases:
+          - staytheoverhang.com
+          - www.staytheoverhang.com
+        ViewerCertificate:
+          AcmCertificateArn: arn:aws:acm:us-east-1:817760095908:certificate/f5ddb05c-69c5-43cc-95af-9445a788ac22
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
+        Origins:
+          - Id: S3Frontend
+            DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt FrontendOAC.Id
+            S3OriginConfig: {}
+        DefaultCacheBehavior:
+          TargetOriginId: S3Frontend
+          ViewerProtocolPolicy: redirect-to-https
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          CachedMethods: [GET, HEAD]
+          Compress: true
+          FunctionAssociations:
+            - EventType: viewer-request
+              FunctionARN: !GetAtt DirectoryIndexFunction.FunctionMetadata.FunctionARN
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
+      Tags:
+        - Key: Project
+          Value: altus-retreats
+        - Key: Environment
+          Value: !Ref Environment
+
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub "${FrontendBucket.Arn}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${PropertySiteDistribution}"
+
+  # ── CloudFront: Admin SPA ─────────────────────
+  AdminSPABucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub altus-retreats-admin-${Environment}-${AWS::AccountId}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  AdminSPADistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        DefaultRootObject: index.html
+        HttpVersion: http2
+        PriceClass: PriceClass_100
+        Aliases:
+          - admin.altusretreats.net
+        ViewerCertificate:
+          AcmCertificateArn: arn:aws:acm:us-east-1:817760095908:certificate/11d974d7-4aa6-42d7-bcf0-4a9ae09bfd08
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
+        Origins:
+          - Id: S3Admin
+            DomainName: !GetAtt AdminSPABucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt FrontendOAC.Id
+            S3OriginConfig: {}
+        DefaultCacheBehavior:
+          TargetOriginId: S3Admin
+          ViewerProtocolPolicy: redirect-to-https
+          CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          Compress: true
+        CustomErrorResponses:
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
+
+  AdminSPABucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref AdminSPABucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub "${AdminSPABucket.Arn}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${AdminSPADistribution}"
 
 # ─────────────────────────────────────────────
 # Outputs
@@ -438,148 +817,17 @@ Outputs:
     Export:
       Name: !Sub altus-retreats-MediaBucket-${Environment}
 
-  # ── CloudFront OAC (Origin Access Control) ────
-  # Restricts S3 access to CloudFront only — guests can't hit S3 directly
-  FrontendOAC:
-    Type: AWS::CloudFront::OriginAccessControl
-    Properties:
-      OriginAccessControlConfig:
-        Name: !Sub altus-retreats-oac-${Environment}
-        OriginAccessControlOriginType: s3
-        SigningBehavior: always
-        SigningProtocol: sigv4
+  HubSiteUrl:
+    Description: CloudFront URL for the hub site (altusretreats.net)
+    Value: !Sub "https://${HubSiteDistribution.DomainName}"
+    Export:
+      Name: !Sub altus-retreats-HubSiteUrl-${Environment}
 
-  # ── ACM Certificate (must be in us-east-1 for CloudFront) ────
-  # NOTE: Set DomainName parameter when deploying.
-  # This resource will be in PENDING_VALIDATION until you add the CNAME
-  # records that ACM gives you to your Route 53 hosted zone.
-  # PropertyDomain must be set to your actual property domain name.
-  #
-  # Uncomment and configure after Route 53 hosted zone exists:
-  #
-  # SiteCertificate:
-  #   Type: AWS::CertificateManager::Certificate
-  #   Properties:
-  #     DomainName: !Sub "kentucky.${DomainName}"
-  #     SubjectAlternativeNames:
-  #       - !Ref DomainName
-  #       - !Sub "www.${DomainName}"
-  #       - !Sub "admin.${DomainName}"
-  #     ValidationMethod: DNS
-  #     DomainValidationOptions:
-  #       - DomainName: !Sub "kentucky.${DomainName}"
-  #         HostedZoneName: !Sub "${DomainName}."
-
-  # ── CloudFront: Property Booking Site ────────
-  PropertySiteDistribution:
-    Type: AWS::CloudFront::Distribution
-    Properties:
-      DistributionConfig:
-        Enabled: true
-        DefaultRootObject: index.html
-        HttpVersion: http2
-        PriceClass: PriceClass_100   # US + Europe + Canada
-        # Aliases:                   # Uncomment after cert is ready
-        #   - !Sub "kentucky.${DomainName}"
-        # ViewerCertificate:
-        #   AcmCertificateArn: !Ref SiteCertificate
-        #   SslSupportMethod: sni-only
-        #   MinimumProtocolVersion: TLSv1.2_2021
-        ViewerCertificate:
-          CloudFrontDefaultCertificate: true
-        Origins:
-          - Id: S3Frontend
-            DomainName: !GetAtt FrontendBucket.RegionalDomainName
-            OriginAccessControlId: !GetAtt FrontendOAC.Id
-            S3OriginConfig: {}
-        DefaultCacheBehavior:
-          TargetOriginId: S3Frontend
-          ViewerProtocolPolicy: redirect-to-https
-          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6  # CachingOptimized
-          AllowedMethods: [GET, HEAD, OPTIONS]
-          CachedMethods: [GET, HEAD]
-          Compress: true
-        CustomErrorResponses:
-          # SPA fallback — 404 → index.html for client-side routing
-          - ErrorCode: 404
-            ResponseCode: 200
-            ResponsePagePath: /index.html
-            ErrorCachingMinTTL: 0
-        Tags:
-          - Key: Project
-            Value: altus-retreats
-          - Key: Environment
-            Value: !Ref Environment
-
-  # ── S3 Bucket Policy: allow CloudFront OAC ───
-  FrontendBucketPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: !Ref FrontendBucket
-      PolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: cloudfront.amazonaws.com
-            Action: s3:GetObject
-            Resource: !Sub "${FrontendBucket.Arn}/*"
-            Condition:
-              StringEquals:
-                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${PropertySiteDistribution}"
-
-  # ── CloudFront: Admin SPA ─────────────────────
-  AdminSPABucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Sub altus-retreats-admin-${Environment}-${AWS::AccountId}
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
-
-  AdminSPADistribution:
-    Type: AWS::CloudFront::Distribution
-    Properties:
-      DistributionConfig:
-        Enabled: true
-        DefaultRootObject: index.html
-        HttpVersion: http2
-        PriceClass: PriceClass_100
-        # Aliases: [!Sub "admin.${DomainName}"]  # Uncomment after cert
-        ViewerCertificate:
-          CloudFrontDefaultCertificate: true
-        Origins:
-          - Id: S3Admin
-            DomainName: !GetAtt AdminSPABucket.RegionalDomainName
-            OriginAccessControlId: !GetAtt FrontendOAC.Id
-            S3OriginConfig: {}
-        DefaultCacheBehavior:
-          TargetOriginId: S3Admin
-          ViewerProtocolPolicy: redirect-to-https
-          CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad  # CachingDisabled (admin, always fresh)
-          AllowedMethods: [GET, HEAD, OPTIONS]
-          Compress: true
-        CustomErrorResponses:
-          - ErrorCode: 404
-            ResponseCode: 200
-            ResponsePagePath: /index.html
-            ErrorCachingMinTTL: 0
-
-  AdminSPABucketPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: !Ref AdminSPABucket
-      PolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: cloudfront.amazonaws.com
-            Action: s3:GetObject
-            Resource: !Sub "${AdminSPABucket.Arn}/*"
-            Condition:
-              StringEquals:
-                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${AdminSPADistribution}"
+  HubSiteBucketName:
+    Description: S3 bucket for hub site
+    Value: !Ref HubSiteBucket
+    Export:
+      Name: !Sub altus-retreats-HubSiteBucket-${Environment}
 
   PropertySiteUrl:
     Description: CloudFront URL for the property booking site
@@ -598,3 +846,9 @@ Outputs:
     Value: !Ref AdminSPABucket
     Export:
       Name: !Sub altus-retreats-AdminSPABucket-${Environment}
+
+  MediaBucketArn:
+    Description: S3 ARN for media bucket (used by adminMedia presigned URL policy)
+    Value: !GetAtt MediaBucket.Arn
+    Export:
+      Name: !Sub altus-retreats-MediaBucketArn-${Environment}

@@ -1,0 +1,21 @@
+version = 0.1
+
+[dev.deploy.parameters]
+stack_name   = "altus-retreats-dev"
+resolve_s3   = true
+s3_prefix    = "altus-retreats"
+region       = "us-east-1"
+confirm_changeset = false
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
+parameter_overrides = "Environment=dev"
+template_file = "infrastructure/template.yaml"
+
+[prod.deploy.parameters]
+stack_name   = "altus-retreats-prod"
+resolve_s3   = true
+s3_prefix    = "altus-retreats"
+region       = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
+parameter_overrides = "Environment=prod"
+template_file = "infrastructure/template.yaml"

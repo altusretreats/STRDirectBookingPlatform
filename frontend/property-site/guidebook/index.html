@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex"> <!-- guidebook is private/guest-only -->
+  <title>Guest Guidebook — Altus Retreats</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/guidebook.css">
+</head>
+<body class="loading">
+
+<!-- ── Top header ──────────────────────────────────── -->
+<header class="gb-header">
+  <button class="gb-header__menu-btn" id="gb-menu-btn" aria-label="Open menu">☰</button>
+  <div class="gb-header__property">
+    <div class="gb-header__label">Guest Guidebook</div>
+    <div class="gb-header__name property-name">Altus Kentucky Retreat</div>
+  </div>
+  <button class="gb-header__search-btn" id="gb-search-btn" aria-label="Search guidebook" title="Search (⌘K)">🔍</button>
+  <a href="../index.html" class="gb-header__book-btn">Book Again</a>
+</header>
+
+<!-- ── Mobile nav overlay ──────────────────────────── -->
+<div class="gb-nav-overlay" id="gb-nav-overlay"></div>
+
+<!-- ── Layout ──────────────────────────────────────── -->
+<div class="gb-layout">
+
+  <!-- Sidebar nav -->
+  <nav class="gb-nav" id="gb-nav" aria-label="Guidebook sections">
+    <div class="gb-nav__inner">
+      <div class="gb-nav__label">Contents</div>
+      <div id="gb-nav-items">
+        <!-- Skeleton -->
+        <div class="skeleton" style="height:36px;margin-bottom:8px;"></div>
+        <div class="skeleton" style="height:36px;margin-bottom:8px;width:80%;"></div>
+        <div class="skeleton" style="height:36px;margin-bottom:8px;width:90%;"></div>
+        <div class="skeleton" style="height:36px;margin-bottom:8px;width:70%;"></div>
+        <div class="skeleton" style="height:36px;margin-bottom:8px;"></div>
+        <div class="skeleton" style="height:36px;margin-bottom:8px;width:85%;"></div>
+      </div>
+    </div>
+    <div class="gb-nav__book-wrap">
+      <button class="gb-nav__book-btn" onclick="window.location='../index.html'">
+        Book Your Next Stay →
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <main class="gb-main" id="gb-main">
+
+    <!-- Welcome hero (populated by JS) -->
+    <div class="gb-welcome" id="gb-welcome">
+      <div class="gb-welcome__eyebrow">✦ Welcome</div>
+      <h1 class="gb-welcome__title property-name">Altus Kentucky Retreat</h1>
+      <p class="gb-welcome__message" id="gb-welcome-msg">
+        We're so glad you're here. This guidebook has everything you need
+        for a wonderful stay — from check-in instructions to local recommendations.
+      </p>
+      <div class="gb-welcome__meta" id="gb-welcome-meta">
+        <div class="gb-welcome__meta-item">⏰ Check-in: <strong>3:00 PM</strong></div>
+        <div class="gb-welcome__meta-item">🚪 Check-out: <strong>11:00 AM</strong></div>
+        <div class="gb-welcome__meta-item">📞 Need help? See Emergency Contacts below</div>
+      </div>
+    </div>
+
+    <!-- Quick access grid -->
+    <div id="gb-quick" class="gb-quick">
+      <!-- Loading skeletons -->
+      <div class="skeleton" style="height:90px;"></div>
+      <div class="skeleton" style="height:90px;"></div>
+      <div class="skeleton" style="height:90px;"></div>
+      <div class="skeleton" style="height:90px;"></div>
+    </div>
+
+    <!-- Sections (injected by JS) -->
+    <div id="gb-sections">
+      <!-- Loading skeleton -->
+      <div id="gb-loading">
+        <div style="display:flex;gap:14px;margin-bottom:48px;align-items:center;">
+          <div class="skeleton" style="width:48px;height:48px;border-radius:12px;flex-shrink:0;"></div>
+          <div style="flex:1;"><div class="skeleton" style="height:24px;width:40%;margin-bottom:8px;"></div>
+          <div class="skeleton" style="height:14px;width:60%;"></div></div>
+        </div>
+        <div class="skeleton" style="height:80px;margin-bottom:12px;"></div>
+        <div class="skeleton" style="height:80px;margin-bottom:48px;width:80%;"></div>
+        <div style="display:flex;gap:14px;margin-bottom:48px;align-items:center;">
+          <div class="skeleton" style="width:48px;height:48px;border-radius:12px;flex-shrink:0;"></div>
+          <div style="flex:1;"><div class="skeleton" style="height:24px;width:35%;margin-bottom:8px;"></div></div>
+        </div>
+        <div class="skeleton" style="height:100px;margin-bottom:12px;"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ── Search overlay ───────────────────────────────── -->
+<div class="gb-search" id="gb-search" role="dialog" aria-label="Search guidebook">
+  <div class="gb-search__box">
+    <div class="gb-search__input-wrap">
+      <span class="gb-search__icon">🔍</span>
+      <input type="text" class="gb-search__input" id="gb-search-input"
+             placeholder="Search the guidebook…" autocomplete="off">
+      <button class="gb-search__clear" id="gb-search-clear" aria-label="Close search">✕</button>
+    </div>
+    <div class="gb-search__results" id="gb-search-results">
+      <div class="gb-search__empty">Type to search the guidebook…</div>
+    </div>
+  </div>
+</div>
+
+<script src="js/guidebook.js"></script>
+</body>
+</html>

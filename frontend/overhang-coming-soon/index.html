@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Overhang — Red River Gorge, Kentucky</title>
+  <meta name="description" content="A luxury retreat inside Daniel Boone National Forest. World-class climbing, ancient arches, hidden waterfalls — and a home worth coming back to. Coming soon.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400;1,600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --stone:  #1C1F1A;
+      --green:  #2D3A2E;
+      --gold:   #C9A84C;
+      --cream:  #F5EFE4;
+      --muted:  rgba(245,239,228,0.45);
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--stone);
+      color: var(--cream);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 48px 24px;
+      text-align: center;
+      overflow-x: hidden;
+    }
+
+    /* Forest atmosphere */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse at 30% 70%, rgba(45,58,46,0.6) 0%, transparent 55%),
+        radial-gradient(ellipse at 75% 20%, rgba(201,168,76,0.05) 0%, transparent 45%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 32px;
+      opacity: 0;
+      animation: fadeUp 0.8s ease forwards 0.2s;
+    }
+
+    .wordmark {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(52px, 10vw, 110px);
+      font-weight: 300;
+      letter-spacing: -0.01em;
+      line-height: 0.95;
+      color: var(--cream);
+      margin-bottom: 8px;
+      opacity: 0;
+      animation: fadeUp 1s ease forwards 0.3s;
+    }
+
+    .wordmark span {
+      display: block;
+      font-style: italic;
+      font-weight: 300;
+      color: rgba(245,239,228,0.5);
+      font-size: 0.45em;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      font-style: normal;
+      margin-top: 12px;
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      justify-content: center;
+      margin: 32px auto;
+      opacity: 0;
+      animation: fadeUp 0.8s ease forwards 0.6s;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      width: 48px; height: 1px;
+      background: var(--gold);
+      opacity: 0.6;
+    }
+    .divider-icon { color: var(--gold); font-size: 14px; }
+
+    .tagline {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(18px, 3vw, 26px);
+      font-weight: 400;
+      font-style: italic;
+      color: rgba(245,239,228,0.75);
+      line-height: 1.5;
+      max-width: 520px;
+      margin-bottom: 12px;
+      opacity: 0;
+      animation: fadeUp 0.8s ease forwards 0.75s;
+    }
+
+    .location {
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 56px;
+      opacity: 0;
+      animation: fadeUp 0.8s ease forwards 0.9s;
+    }
+
+    .notify-form {
+      display: flex;
+      gap: 0;
+      max-width: 400px;
+      width: 100%;
+      margin: 0 auto 20px;
+      opacity: 0;
+      animation: fadeUp 0.8s ease forwards 1.05s;
+    }
+
+    .notify-form input {
+      flex: 1;
+      padding: 14px 20px;
+      background: rgba(245,239,228,0.06);
+      border: 1px solid rgba(245,239,228,0.15);
+      border-right: none;
+      border-radius: 4px 0 0 4px;
+      color: var(--cream);
+      font-size: 13px;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .notify-form input::placeholder { color: rgba(245,239,228,0.3); }
+    .notify-form input:focus {
+      background: rgba(245,239,228,0.1);
+      border-color: rgba(245,239,228,0.3);
+    }
+
+    .notify-form button {
+      padding: 14px 22px;
+      background: var(--gold);
+      color: var(--stone);
+      border: none;
+      border-radius: 0 4px 4px 0;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      white-space: nowrap;
+      transition: opacity 0.2s;
+    }
+    .notify-form button:hover { opacity: 0.85; }
+
+    .success-msg {
+      display: none;
+      font-size: 13px;
+      color: var(--gold);
+      letter-spacing: 0.05em;
+      margin-bottom: 20px;
+    }
+
+    .amenities {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      max-width: 480px;
+      margin: 28px auto 0;
+      opacity: 0;
+      animation: fadeUp 0.8s ease forwards 1.2s;
+    }
+    .amenity {
+      font-size: 11px;
+      color: rgba(245,239,228,0.45);
+      border: 1px solid rgba(245,239,228,0.1);
+      padding: 5px 14px;
+      border-radius: 100px;
+      letter-spacing: 0.05em;
+    }
+
+    .footer-link {
+      margin-top: 56px;
+      font-size: 11px;
+      color: rgba(245,239,228,0.2);
+      letter-spacing: 0.1em;
+      opacity: 0;
+      animation: fadeUp 0.8s ease forwards 1.3s;
+    }
+    .footer-link a {
+      color: rgba(245,239,228,0.3);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-link a:hover { color: var(--gold); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 480px) {
+      .notify-form { flex-direction: column; }
+      .notify-form input {
+        border-right: 1px solid rgba(245,239,228,0.15);
+        border-bottom: none;
+        border-radius: 4px 4px 0 0;
+      }
+      .notify-form button { border-radius: 0 0 4px 4px; }
+    }
+  </style>
+</head>
+<body>
+
+  <p class="eyebrow">Daniel Boone National Forest · Kentucky</p>
+
+  <h1 class="wordmark">
+    The Overhang
+    <span>A Luxury Retreat</span>
+  </h1>
+
+  <div class="divider">
+    <span class="divider-icon">🌲</span>
+  </div>
+
+  <p class="tagline">Your basecamp for all things Red River Gorge — where adventure meets the kind of comfort you'll want to come back to.</p>
+
+  <p class="location">Opening Soon &nbsp;·&nbsp; Red River Gorge, KY</p>
+
+  <form class="notify-form" id="notifyForm">
+    <input type="email" placeholder="Your email address" required id="emailInput">
+    <button type="submit">Notify Me</button>
+  </form>
+  <p class="success-msg" id="successMsg">✓ &nbsp;You're on the list.</p>
+
+  <div class="amenities">
+    <span class="amenity">Hot Tub</span>
+    <span class="amenity">Sauna + Cold Plunge</span>
+    <span class="amenity">Fire Pit</span>
+    <span class="amenity">World-Class Climbing</span>
+    <span class="amenity">2 BR · Sleeps 4</span>
+    <span class="amenity">Trail Access</span>
+  </div>
+
+  <p class="footer-link">
+    An <a href="https://www.altusretreats.net">Altus Retreats</a> property &nbsp;·&nbsp;
+    <a href="mailto:support@altusretreats.net">support@altusretreats.net</a>
+  </p>
+
+  <script>
+    const API = 'https://teh1cl4b6a.execute-api.us-east-1.amazonaws.com/dev';
+    document.getElementById('notifyForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const email = document.getElementById('emailInput').value.trim();
+      try {
+        await fetch(`${API}/waitlist`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, source: 'staytheoverhang.com' }),
+        });
+      } catch (_) {}
+      this.style.display = 'none';
+      document.getElementById('successMsg').style.display = 'block';
+    });
+  </script>
+
+</body>
+</html>

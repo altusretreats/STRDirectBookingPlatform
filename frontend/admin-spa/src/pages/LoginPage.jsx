@@ -47,11 +47,11 @@ export default function LoginPage() {
 const s = {
   page:  { display:'flex', alignItems:'center', justifyContent:'center', minHeight:'100vh', background:'#F3F4F6' },
   card:  { background:'#fff', borderRadius:12, boxShadow:'0 4px 24px rgba(0,0,0,0.08)', padding:'40px 48px', width:'100%', maxWidth:420 },
-  logo:  { fontWeight:700, fontSize:20, color:'#2D4A3E', marginBottom:8 },
+  logo:  { fontWeight:700, fontSize:20, color:'#2D3A2E', marginBottom:8 },
   title: { fontSize:24, fontWeight:700, marginBottom:28, color:'#111827' },
   group: { marginBottom:20 },
   label: { display:'block', fontSize:13, fontWeight:600, color:'#374151', marginBottom:6 },
   input: { width:'100%', padding:'10px 14px', border:'2px solid #E5E7EB', borderRadius:8, fontSize:15, fontFamily:'inherit', outline:'none', color:'#111827' },
   error: { background:'#FEF2F2', border:'1px solid #FECACA', color:'#DC2626', padding:'10px 14px', borderRadius:8, fontSize:14, marginBottom:16 },
-  btn:   { width:'100%', padding:'12px', background:'#2D4A3E', color:'#fff', border:'none', borderRadius:8, fontSize:16, fontWeight:600, cursor:'pointer', fontFamily:'inherit' },
+  btn:   { width:'100%', padding:'12px', background:'#2D3A2E', color:'#fff', border:'none', borderRadius:8, fontSize:16, fontWeight:600, cursor:'pointer', fontFamily:'inherit' },
 };

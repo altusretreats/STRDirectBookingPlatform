@@ -3,16 +3,21 @@ version = 0.1
 [dev.deploy.parameters]
 stack_name = "altus-retreats-dev"
 region = "us-east-1"
-capabilities = "CAPABILITY_IAM"
-parameter_overrides = "Environment=dev"
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
+parameter_overrides = "Environment=\"dev\" DomainName=\"altusretreats.net\""
 resolve_s3 = true
 s3_prefix = "altus-retreats-dev"
-confirm_changeset = false
+confirm_changeset = true
+disable_rollback = true
+image_repositories = []
 
+
+[dev.global.parameters]
+region = "us-east-1"
 [prod.deploy.parameters]
 stack_name = "altus-retreats-prod"
 region = "us-east-1"
-capabilities = "CAPABILITY_IAM"
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
 parameter_overrides = "Environment=prod"
 resolve_s3 = true
 s3_prefix = "altus-retreats-prod"

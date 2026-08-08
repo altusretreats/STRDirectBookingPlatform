@@ -33,23 +33,63 @@ async function seed() {
     GSI1SK: 'PROPERTY#kentucky',
     entityType: 'PROPERTY',
     slug: 'kentucky',
-    name: 'Altus Kentucky Retreat',
-    domain: null,           // set after DNS is configured
+    name: 'The Overhang',
+    domain: 'staytheoverhang.com',
     hospitable: {
-      listingId: 'REPLACE_ME',   // fill in after Hospitable PAT is available
+      // Set this to your Hospitable property UUID (found in app.hospitable.com/properties/{uuid})
+      // then run "Sync" in the admin → Properties → The Overhang → Sync tab
+      propertyId: '2331834',   // Hospitable property UUID (NOT Airbnb listing ID)
+      platform:   'hospitable',
+      cached:     null,        // populated by syncProperty Lambda
+      lastSyncedAt: null,
+    },
+    // Admin-editable content overrides (populated via admin → Content tab)
+    content: {
+      heroHeadline: '',     // overrides hospitable.cached.name if set
+      heroSubtitle: '',     // overrides hospitable.cached.summary if set
+      aboutTitle:   '',
+      aboutBody:    '',
+      heroPhoto:    null,   // S3 URL of hero photo
+    },
+    // Admin-editable location overrides (merged with hospitable.cached.location)
+    location: {
+      neighborhood:    'Red River Gorge',
+      neighborhoodDesc:'Nestled in the heart of the Red River Gorge Geological Area — a National Natural Landmark renowned for its ancient rock shelters, natural arches, and world-class climbing.',
+      directions:      'From the Bert T. Combs Mountain Parkway, take exit 33 toward Campton. Follow KY-15 south for 8 miles, then turn left on KY-77. Continue 4 miles and follow the signs to the property.',
+      gettingAround:   'A car is essential. The nearest town (Campton) is 12 miles away. Stanton has a grocery store 18 miles out.',
+      pinLat:          37.7918,
+      pinLng:          -83.6832,
+      mapsEmbed:       null,
     },
     branding: {
-      primaryColor: '#2D4A3E',
+      tagline:     'Your basecamp for all things Red River Gorge.',
+      description: 'A two-bedroom luxury retreat nestled deep inside Daniel Boone National Forest — where world-class climbing crags, ancient arches, and hidden waterfalls are minutes from your front door.',
+      primaryColor: '#2D3A2E',
       accentColor:  '#C9A84C',
-      logoS3Key:    null,         // fill in after logo is uploaded
+      logoS3Key:    null,
     },
     address: {
+      city:    'Stanton',
       state:   'KY',
+      zip:     '40380',
       country: 'US',
     },
-    checkInTime:  '15:00',
-    checkOutTime: '11:00',
-    minimumStay:  2,
+    pricing: {
+      nightlyRate:  35000,   // cents — $350/night
+      cleaningFee:  15000,   // cents — $150
+      minNights:    2,
+      maxNights:    14,
+      checkInTime:  '15:00',
+      checkOutTime: '11:00',
+    },
+    amenities: [
+      'Hot Tub', 'Sauna', 'Cold Plunge', 'Fire Pit',
+      'Full Kitchen', 'WiFi', 'Smart TV', 'EV Charger',
+      'Trail Access', 'World-Class Climbing Nearby',
+    ],
+    bedrooms: 2,
+    bathrooms: 2,
+    maxGuests: 4,
     active: true,
     createdAt: now,
     updatedAt: now,
@@ -61,7 +101,7 @@ async function seed() {
       id: 'welcome', order: 10, icon: '👋', title: 'Welcome',
       items: [
         { itemId: 'welcome-msg', type: 'text', label: 'Welcome message', order: 10,
-          content: 'Welcome to Altus Kentucky Retreat! We\'re so glad you\'re here. This guidebook has everything you need for a perfect stay.' },
+          content: 'Welcome to The Overhang! We\'re so glad you\'re here. You\'re steps away from some of the best climbing, hiking, and scenery in the country. This guidebook has everything you need for an unforgettable stay.' },
       ],
     },
     {
@@ -140,9 +180,9 @@ async function seed() {
 
   console.log('\n✅  Seed complete!\n');
   console.log('Next steps:');
-  console.log('  1. Update hospitable.listingId once you have the Hospitable PAT');
+  console.log('  1. Go to admin → Properties → The Overhang → Sync tab, click "Sync from Hospitable"');
   console.log('  2. Replace REPLACE_ME values in guidebook sections via the admin panel');
-  console.log('  3. Upload logo to S3 and update branding.logoS3Key\n');
+  console.log('  3. Upload hero photo via admin → Media tab\n');
 }
 
 seed().catch(err => { console.error('Seed failed:', err); process.exit(1); });

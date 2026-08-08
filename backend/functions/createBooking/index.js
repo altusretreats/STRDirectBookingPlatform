@@ -1,4 +1,5 @@
 const { randomUUID } = require('crypto');
+const Stripe = require('stripe');
 const db = require('/opt/nodejs/lib/db');
 const { getSecret } = require('/opt/nodejs/lib/secrets');
 const { ok, badRequest, notFound, serverError } = require('/opt/nodejs/lib/response');
@@ -22,7 +23,6 @@ exports.handler = async (event) => {
 
     // Init Stripe
     const stripeSecrets = await getSecret(`altus-retreats/${process.env.ENVIRONMENT}/stripe`);
-    const Stripe = require('stripe');
     const stripe = Stripe(stripeSecrets.secretKey);
 
     // Create PaymentIntent

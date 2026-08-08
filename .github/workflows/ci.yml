@@ -1,0 +1,191 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+env:
+  AWS_REGION: us-east-1
+  NODE_VERSION: '20'
+
+jobs:
+  # ── Test ─────────────────────────────────────────────────────────────
+  test:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test -- --forceExit --no-coverage
+
+  # ── Build ─────────────────────────────────────────────────────────────
+  build:
+    name: SAM Build
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Set up Python (SAM CLI dependency)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install SAM CLI
+        uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: SAM build
+        run: sam build --template infrastructure/template.yaml --use-container
+        # --use-container ensures arm64 Lambda build artifacts are correct
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sam-build-${{ github.sha }}
+          path: .aws-sam/
+          retention-days: 3
+
+  # ── Deploy Dev ─────────────────────────────────────────────────────────
+  deploy-dev:
+    name: Deploy → Dev
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: dev
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: sam-build-${{ github.sha }}
+          path: .aws-sam/
+
+      - name: Install SAM CLI
+        uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to dev
+        run: |
+          sam deploy \
+            --config-env dev \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --template infrastructure/template.yaml
+
+      - name: Build & deploy admin SPA
+        working-directory: frontend/admin-spa
+        run: |
+          npm ci
+          npm run build
+          BUCKET=$(aws cloudformation describe-stack-resource \
+            --stack-name altus-retreats-dev \
+            --logical-resource-id AdminSPABucket \
+            --query 'StackResourceDetail.PhysicalResourceId' \
+            --output text)
+          aws s3 sync dist/ s3://$BUCKET --delete
+
+      - name: Deploy property site
+        run: |
+          BUCKET=$(aws cloudformation describe-stack-resource \
+            --stack-name altus-retreats-dev \
+            --logical-resource-id FrontendBucket \
+            --query 'StackResourceDetail.PhysicalResourceId' \
+            --output text)
+          aws s3 sync frontend/property-site/ s3://$BUCKET --delete
+
+  # ── Deploy Prod ─────────────────────────────────────────────────────────
+  deploy-prod:
+    name: Deploy → Prod
+    runs-on: ubuntu-latest
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    environment: prod   # requires manual approval in GitHub repo settings
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: sam-build-${{ github.sha }}
+          path: .aws-sam/
+
+      - name: Install SAM CLI
+        uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - name: Configure AWS credentials (prod)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to prod
+        run: |
+          sam deploy \
+            --config-env prod \
+            --no-fail-on-empty-changeset \
+            --template infrastructure/template.yaml
+
+      - name: Build & deploy admin SPA
+        working-directory: frontend/admin-spa
+        run: |
+          npm ci
+          npm run build
+          BUCKET=$(aws cloudformation describe-stack-resource \
+            --stack-name altus-retreats-prod \
+            --logical-resource-id AdminSPABucket \
+            --query 'StackResourceDetail.PhysicalResourceId' \
+            --output text)
+          aws s3 sync dist/ s3://$BUCKET --delete
+
+      - name: Deploy property site
+        run: |
+          BUCKET=$(aws cloudformation describe-stack-resource \
+            --stack-name altus-retreats-prod \
+            --logical-resource-id FrontendBucket \
+            --query 'StackResourceDetail.PhysicalResourceId' \
+            --output text)
+          aws s3 sync frontend/property-site/ s3://$BUCKET --delete
+
+      - name: Tag release in GitHub
+        run: |
+          echo "Deployed ${{ github.ref_name }} to prod at $(date -u '+%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_STEP_SUMMARY

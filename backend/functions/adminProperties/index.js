@@ -17,6 +17,13 @@ exports.handler = async (event) => {
       return ok({ properties: Items ?? [] });
     }
 
+    // GET /admin/properties/{propertyId} — get single
+    if (method === 'GET' && propertyId) {
+      const { Item } = await db.get({ PK: `PROPERTY#${propertyId}`, SK: 'METADATA' });
+      if (!Item) return notFound(`Property not found: ${propertyId}`);
+      return ok(Item);
+    }
+
     // POST /admin/properties — create
     if (method === 'POST') {
       const { slug, name, domain, hospitable, branding, address } = body;

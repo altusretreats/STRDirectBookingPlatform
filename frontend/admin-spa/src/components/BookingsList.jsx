@@ -14,10 +14,13 @@ export default function BookingsList({ propertyId }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (!propertyId) return;
     setLoading(true);
-    // TODO: add admin/bookings endpoint — for now show placeholder
-    setLoading(false);
-    setBookings(MOCK_BOOKINGS);
+    setError('');
+    adminApi.getBookings(propertyId)
+      .then(data => setBookings(data.bookings || []))
+      .catch(err => setError(err.message || 'Failed to load bookings'))
+      .finally(() => setLoading(false));
   }, [propertyId]);
 
   const fmt = (dateStr) => new Date(dateStr).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });

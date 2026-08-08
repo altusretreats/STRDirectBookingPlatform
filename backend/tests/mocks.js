@@ -51,7 +51,7 @@ const SAMPLE_PROPERTY = {
   name: 'Altus Kentucky Retreat',
   active: true,
   hospitable: { listingId: 'listing-123' },
-  branding: { primaryColor: '#2D4A3E' },
+  branding: { primaryColor: '#2D3A2E' },
 };
 
 // ── Sample booking record ─────────────────────────────────────────────────────

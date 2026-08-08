@@ -1,0 +1,19 @@
+{
+  "name": "strdirectbookingplatform",
+  "version": "1.0.0",
+  "description": "Multi-property direct booking site, digital guidebook, and admin system for Altus Retreats LLC. Hub: **altusretreats.net**",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1106.0",
+    "@aws-sdk/lib-dynamodb": "^3.1106.0"
+  }
+}

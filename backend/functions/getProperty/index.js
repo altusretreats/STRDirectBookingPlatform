@@ -1,50 +1,72 @@
+/**
+ * GET /properties/{propertyId}
+ *
+ * Returns property data for the public booking site.
+ * Data is composed from:
+ *   1. DynamoDB METADATA record (authoritative config + admin-edited content)
+ *   2. hospitable.cached — Hospitable data written by syncProperty Lambda
+ *
+ * The response shape expected by the frontend:
+ *   { property, hospitable }
+ *   property.content  — admin overrides (heroHeadline, heroPhoto, aboutBody…)
+ *   property.location — admin-edited location fields
+ *   hospitable        — cached Hospitable data (photos, amenities, rules…)
+ */
 const db = require('/opt/nodejs/lib/db');
-const { getHospitableClient } = require('/opt/nodejs/lib/hospitable');
 const { ok, notFound, serverError } = require('/opt/nodejs/lib/response');
-
-const CACHE_TTL_SECONDS = 3600; // 1 hour
 
 exports.handler = async (event) => {
   try {
     const { propertyId } = event.pathParameters;
 
-    // 1. Get property config
     const { Item: property } = await db.get({
       PK: `PROPERTY#${propertyId}`,
       SK: 'METADATA',
     });
-    if (!property || !property.active) return notFound(`Property not found: ${propertyId}`);
 
-    // 2. Check Hospitable cache
-    const { Item: cache } = await db.get({
-      PK: `PROPERTY#${propertyId}`,
-      SK: 'CACHE#HOSPITABLE',
-    });
-
-    const now = Math.floor(Date.now() / 1000);
-    if (cache && cache.ttl > now) {
-      return ok({ property, hospitable: cache });
+    if (!property || !property.active) {
+      return notFound(`Property not found: ${propertyId}`);
     }
 
-    // 3. Fetch fresh from Hospitable
-    const hospitable = await getHospitableClient(propertyId);
-    const listing = await hospitable.getListing(property.hospitable.listingId);
+    // Hospitable cached data lives on the METADATA record itself (written by syncProperty)
+    // Merge admin location overrides on top of Hospitable location data
+    const hospCached   = property.hospitable?.cached ?? null;
+    const adminContent = property.content  ?? {};
+    const adminLocation= property.location ?? {};
 
-    // 4. Write cache
-    const ttl = now + CACHE_TTL_SECONDS;
-    const cacheItem = {
-      PK: `PROPERTY#${propertyId}`,
-      SK: 'CACHE#HOSPITABLE',
-      entityType: 'HOSPITABLE_CACHE',
-      propertyId,
-      ...listing,
-      cachedAt: new Date().toISOString(),
-      ttl,
-    };
-    await db.put(cacheItem);
+    // Resolve location: admin overrides Hospitable
+    const resolvedLocation = hospCached?.location
+      ? { ...hospCached.location, ...stripEmpty(adminLocation) }
+      : stripEmpty(adminLocation) || null;
 
-    return ok({ property, hospitable: cacheItem });
+    return ok({
+      property: {
+        slug:      property.slug,
+        name:      property.name,
+        domain:    property.domain,
+        active:    property.active,
+        bedrooms:  property.bedrooms,
+        bathrooms: property.bathrooms,
+        maxGuests: property.maxGuests,
+        content:   adminContent,
+        location:  resolvedLocation,
+        branding:  property.branding ?? {},
+        pricing:   property.pricing  ?? {},
+      },
+      hospitable: hospCached,
+      meta: {
+        lastSyncedAt: property.hospitable?.lastSyncedAt ?? null,
+      },
+    });
   } catch (err) {
     return serverError(err);
   }
 };
+
+// Remove null/undefined/empty-string values so we don't clobber Hospitable data with blanks
+function stripEmpty(obj) {
+  if (!obj) return {};
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== null && v !== undefined && v !== '')
+  );
+}

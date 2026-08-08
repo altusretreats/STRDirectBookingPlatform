@@ -7,7 +7,5 @@ window.ALTUS_CONFIG = {
   propertyId: 'kentucky',
   apiBase: window.location.hostname === 'localhost'
     ? 'http://localhost:3001'
-    : 'https://api.altusretreats.net/prod',
-  stripePublishableKey: 'pk_test_REPLACE_ME',
-  googleFontsUrl: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap',
+    : 'https://teh1cl4b6a.execute-api.us-east-1.amazonaws.com/dev',
 };

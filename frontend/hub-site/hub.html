@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Altus Retreats — Elevate Your Getaway</title>
+  <meta name="description" content="Altus Retreats offers a curated collection of unique, unforgettable vacation properties. Not just places to stay. Places you'll never forget.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green:  #2D3A2E;
+      --gold:   #C9A84C;
+      --cream:  #F5EFE4;
+      --cream2: #EDE6D8;
+      --text:   #111111;
+      --muted:  #6B6356;
+      --white:  #FFFFFF;
+    }
+
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', sans-serif; background: var(--cream); color: var(--text); overflow-x: hidden; }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      padding: 22px 56px;
+      display: flex; align-items: center; justify-content: space-between;
+      transition: background 0.4s, padding 0.3s, box-shadow 0.4s;
+    }
+    nav.scrolled {
+      background: rgba(245,239,228,0.97); backdrop-filter: blur(12px);
+      padding: 14px 56px; box-shadow: 0 1px 24px rgba(45,58,46,0.08);
+    }
+    .nav-logo img { height: 58px; transition: height 0.3s; }
+    nav.scrolled .nav-logo img { height: 44px; }
+    .nav-links { display: flex; gap: 36px; align-items: center; }
+    .nav-links a {
+      font-size: 12px; font-weight: 500; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--green); text-decoration: none;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--gold); }
+    .nav-cta {
+      background: var(--green) !important; color: var(--white) !important;
+      padding: 10px 22px; border-radius: 4px;
+    }
+    .nav-cta:hover { opacity: 0.88; }
+
+    /* ── Hero ── */
+    .hero {
+      min-height: 100vh; background: var(--green);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center; padding: 140px 24px 80px;
+      position: relative; overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse at 25% 60%, rgba(201,168,76,0.08) 0%, transparent 55%),
+        radial-gradient(ellipse at 75% 30%, rgba(255,255,255,0.03) 0%, transparent 45%);
+      pointer-events: none;
+    }
+    .hero-logo { width: 200px; margin-bottom: 48px; filter: brightness(0) invert(1); position: relative; }
+    .hero-eyebrow {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.22em;
+      text-transform: uppercase; color: var(--gold); margin-bottom: 20px; position: relative;
+    }
+    .hero h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(48px, 7.5vw, 96px);
+      font-weight: 700; color: var(--white);
+      line-height: 1.02; margin-bottom: 24px; position: relative;
+    }
+    .hero h1 em { font-style: italic; color: var(--gold); }
+    .hero-divider { width: 56px; height: 1px; background: var(--gold); margin: 0 auto 28px; position: relative; }
+    .hero-sub {
+      font-size: clamp(15px, 2vw, 18px); color: rgba(255,255,255,0.65);
+      max-width: 540px; line-height: 1.75; margin-bottom: 52px; position: relative;
+    }
+    .hero-actions { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; position: relative; }
+    .btn-gold {
+      background: var(--gold); color: var(--green);
+      padding: 15px 36px; border-radius: 4px;
+      font-size: 12px; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(201,168,76,0.35); }
+    .btn-ghost {
+      border: 1px solid rgba(255,255,255,0.35); color: var(--white);
+      padding: 15px 36px; border-radius: 4px;
+      font-size: 12px; font-weight: 500; letter-spacing: 0.1em;
+      text-transform: uppercase; text-decoration: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .btn-ghost:hover { border-color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.06); }
+    .hero-scroll {
+      position: absolute; bottom: 36px; left: 50%; transform: translateX(-50%);
+      color: rgba(255,255,255,0.3); font-size: 10px; letter-spacing: 0.2em;
+      text-transform: uppercase; display: flex; flex-direction: column;
+      align-items: center; gap: 8px;
+    }
+    .hero-scroll::after { content: ''; width: 1px; height: 36px; background: linear-gradient(to bottom, rgba(255,255,255,0.3), transparent); }
+
+    /* ── Sections ── */
+    .section { padding: 108px 24px; }
+    .container { max-width: 1160px; margin: 0 auto; }
+    .eyebrow { font-size: 10px; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); display: block; margin-bottom: 14px; }
+    .section-title { font-family: 'Cormorant Garamond', serif; font-size: clamp(36px, 5vw, 58px); font-weight: 700; color: var(--green); line-height: 1.08; margin-bottom: 16px; }
+    .section-sub { font-size: 16px; color: var(--muted); line-height: 1.8; max-width: 540px; }
+
+    /* ── Properties ── */
+    .properties { background: var(--white); }
+    .properties-head { text-align: center; margin-bottom: 72px; }
+    .properties-head .section-sub { margin: 0 auto; }
+    .properties-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(480px, 1fr)); gap: 3px; }
+
+    .property-card { position: relative; overflow: hidden; min-height: 620px; display: flex; flex-direction: column; justify-content: flex-end; }
+    .card-bg { position: absolute; inset: 0; background-size: cover; background-position: center; transition: transform 0.7s ease; }
+    .property-card:hover .card-bg { transform: scale(1.04); }
+    .card-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(17,17,17,0.92) 0%, rgba(17,17,17,0.4) 50%, transparent 100%); }
+    .card-content { position: relative; z-index: 2; padding: 52px; }
+    .card-tag {
+      display: inline-block; font-size: 10px; font-weight: 600; letter-spacing: 0.15em;
+      text-transform: uppercase; color: var(--gold);
+      border: 1px solid rgba(201,168,76,0.5); padding: 5px 14px; border-radius: 2px; margin-bottom: 18px;
+    }
+    .card-name { font-family: 'Cormorant Garamond', serif; font-size: 42px; font-weight: 700; color: var(--white); line-height: 1.05; margin-bottom: 8px; }
+    .card-location { font-size: 12px; color: rgba(255,255,255,0.55); letter-spacing: 0.08em; margin-bottom: 18px; }
+    .card-desc { font-size: 14px; color: rgba(255,255,255,0.7); line-height: 1.75; margin-bottom: 26px; max-width: 400px; }
+    .card-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+    .pill { font-size: 11px; color: rgba(255,255,255,0.65); background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.14); padding: 4px 13px; border-radius: 100px; }
+    .card-link { display: inline-flex; align-items: center; gap: 10px; color: var(--gold); text-decoration: none; font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; transition: gap 0.2s; }
+    .card-link:hover { gap: 16px; }
+    .card-link::after { content: '→'; }
+    .coming-badge { position: absolute; top: 32px; right: 32px; z-index: 3; background: var(--gold); color: var(--green); font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 6px 16px; border-radius: 2px; }
+
+    .overhang-bg { background-image: linear-gradient(135deg, #1a2e1b 0%, #2d4a2e 40%, #4a6741 70%, #3d5c3e 100%); }
+    .lazypam-bg  { background-image: linear-gradient(135deg, #1a3040 0%, #1e4d6b 40%, #2d7299 70%, #1a4f6e 100%); }
+
+    /* ── Brand Story ── */
+    .brand { background: var(--cream); }
+    .brand-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 88px; align-items: center; }
+    .brand-visual { position: relative; }
+    .brand-logo-wrap { background: var(--green); border-radius: 6px; padding: 64px; display: flex; align-items: center; justify-content: center; }
+    .brand-logo-wrap img { width: 100%; max-width: 260px; filter: brightness(0) invert(1); }
+    .brand-accent { position: absolute; bottom: -22px; right: -22px; width: 110px; height: 110px; background: var(--gold); opacity: 0.12; border-radius: 6px; }
+    .brand-text .section-sub { margin-bottom: 20px; }
+    .brand-text p { font-size: 15px; color: var(--muted); line-height: 1.9; margin-bottom: 20px; }
+    .brand-text p strong { color: var(--green); font-weight: 600; }
+    .pillars { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 36px; }
+    .pillar { padding: 20px; border: 1px solid var(--cream2); border-radius: 6px; background: var(--white); }
+    .pillar-icon { font-size: 20px; margin-bottom: 8px; }
+    .pillar-title { font-size: 12px; font-weight: 600; color: var(--green); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px; }
+    .pillar-desc { font-size: 12px; color: var(--muted); line-height: 1.6; }
+
+    /* ── Promise ── */
+    .promise { background: var(--green); text-align: center; padding: 128px 24px; }
+    .promise-quote { font-family: 'Cormorant Garamond', serif; font-size: clamp(26px, 4vw, 48px); font-style: italic; color: var(--white); max-width: 780px; margin: 0 auto 20px; line-height: 1.45; }
+    .promise-divider { width: 48px; height: 1px; background: var(--gold); margin: 28px auto; }
+    .promise-attr { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); }
+
+    /* ── Footer ── */
+    footer { background: #141a14; padding: 72px 56px 40px; }
+    .footer-inner { max-width: 1160px; margin: 0 auto; }
+    .footer-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 56px; padding-bottom: 56px; border-bottom: 1px solid rgba(255,255,255,0.06); flex-wrap: wrap; }
+    .footer-brand img { height: 48px; filter: brightness(0) invert(1); opacity: 0.85; margin-bottom: 16px; }
+    .footer-brand p { font-size: 13px; color: rgba(255,255,255,0.35); line-height: 1.7; max-width: 240px; }
+    .footer-col h4 { font-size: 10px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); margin-bottom: 20px; }
+    .footer-col a { display: block; color: rgba(255,255,255,0.4); text-decoration: none; font-size: 13px; margin-bottom: 10px; transition: color 0.2s; }
+    .footer-col a:hover { color: var(--white); }
+    .footer-bottom { display: flex; justify-content: space-between; align-items: center; padding-top: 28px; flex-wrap: wrap; gap: 16px; }
+    .footer-copy { font-size: 12px; color: rgba(255,255,255,0.2); }
+    .footer-tagline { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 15px; color: rgba(255,255,255,0.25); }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      nav { padding: 16px 24px; }
+      nav.scrolled { padding: 12px 24px; }
+      .nav-links { display: none; }
+      .properties-grid { grid-template-columns: 1fr; }
+      .brand-inner { grid-template-columns: 1fr; gap: 40px; }
+      .brand-visual { display: none; }
+      .pillars { grid-template-columns: 1fr; }
+      footer { padding: 48px 24px 32px; }
+      .footer-top { flex-direction: column; gap: 36px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav id="nav">
+    <a href="/" class="nav-logo"><img src="assets/altus-logo.png" alt="Altus Retreats"></a>
+    <div class="nav-links">
+      <a href="#properties">Properties</a>
+      <a href="#story">Our Story</a>
+      <a href="mailto:support@altusretreats.net">Contact</a>
+      <a href="#properties" class="nav-cta">Book a Stay</a>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <img src="assets/altus-logo.png" alt="Altus Retreats" class="hero-logo">
+    <p class="hero-eyebrow">A Curated Collection of Unforgettable Stays</p>
+    <h1>Not just places to stay.<br><em>Places you'll never forget.</em></h1>
+    <div class="hero-divider"></div>
+    <p class="hero-sub">Every Altus Retreats property is designed to make the destination feel present inside the home — where the adventure, the luxury, and the landscape all come together.</p>
+    <div class="hero-actions">
+      <a href="#properties" class="btn-gold">Explore Properties</a>
+      <a href="#story" class="btn-ghost">Our Story</a>
+    </div>
+    <div class="hero-scroll">Scroll</div>
+  </section>
+
+  <!-- Properties -->
+  <section class="properties section" id="properties">
+    <div class="container">
+      <div class="properties-head">
+        <span class="eyebrow">Our Portfolio</span>
+        <h2 class="section-title">Choose Your Escape</h2>
+        <p class="section-sub">Each Altus property tells its own story — a different landscape, a different adventure, the same commitment to an unforgettable experience.</p>
+      </div>
+      <div class="properties-grid">
+
+        <!-- The Overhang -->
+        <div class="property-card">
+          <div class="card-bg overhang-bg"></div>
+          <div class="card-overlay"></div>
+          <div class="card-content">
+            <span class="card-tag">Available Now · Red River Gorge, KY</span>
+            <h3 class="card-name">The Overhang</h3>
+            <p class="card-location">📍 Daniel Boone National Forest, Kentucky</p>
+            <p class="card-desc">Your basecamp for all things Red River Gorge. A two-bedroom luxury retreat nestled deep inside Daniel Boone National Forest — world-class climbing crags, ancient arches, and hidden waterfalls minutes away.</p>
+            <div class="card-pills">
+              <span class="pill">2 BR · 2 BA · Sleeps 4</span>
+              <span class="pill">♨️ Hot Tub</span>
+              <span class="pill">🧖 Sauna + Cold Plunge</span>
+              <span class="pill">🔥 Fire Pit</span>
+              <span class="pill">🪨 World-Class Climbing</span>
+              <span class="pill">🥾 Trail Access</span>
+            </div>
+            <a href="https://www.staytheoverhang.com" class="card-link">Book The Overhang</a>
+          </div>
+        </div>
+
+        <!-- The Lazy Palm -->
+        <div class="property-card">
+          <div class="card-bg lazypam-bg"></div>
+          <div class="card-overlay"></div>
+          <span class="coming-badge">Coming Soon</span>
+          <div class="card-content">
+            <span class="card-tag">Bradenton, Florida</span>
+            <h3 class="card-name">The Lazy Palm</h3>
+            <p class="card-location">📍 Bradenton, Florida</p>
+            <p class="card-desc">Sun, warmth, and the unhurried pace of the Gulf Coast. A tropical escape designed around pool days, family memories, and the best of the Florida lifestyle.</p>
+            <div class="card-pills">
+              <span class="pill">Pool</span>
+              <span class="pill">🌴 Tropical Setting</span>
+              <span class="pill">🔥 Fire Pit</span>
+              <span class="pill">🎱 Game Room</span>
+              <span class="pill">Family Friendly</span>
+            </div>
+            <span style="color:rgba(255,255,255,0.35);font-size:12px;letter-spacing:0.06em;">Launching Soon — <a href="https://www.altusretreats.net" style="color:rgba(201,168,76,0.7);text-decoration:none;">Join the Waitlist</a></span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Brand Story -->
+  <section class="brand section" id="story">
+    <div class="container">
+      <div class="brand-inner">
+        <div class="brand-visual">
+          <div class="brand-logo-wrap"><img src="assets/altus-logo.png" alt="Altus Retreats"></div>
+          <div class="brand-accent"></div>
+        </div>
+        <div class="brand-text">
+          <span class="eyebrow">Who We Are</span>
+          <h2 class="section-title">Elevate Your Getaway</h2>
+          <p>Altus Retreats is building a nationwide collection of <strong>distinctive vacation properties</strong> — each one a destination in its own right. We believe the best vacation rental should feel like part of the trip itself, not just a place to sleep between adventures.</p>
+          <p>Every property in our portfolio is designed around a single conviction: that <strong>adventure and luxury are not opposites</strong>. They belong together. Every home we create proves it.</p>
+          <div class="pillars">
+            <div class="pillar"><div class="pillar-icon">🏔️</div><div class="pillar-title">Adventure</div><div class="pillar-desc">Properties built for those who want to explore, not just relax.</div></div>
+            <div class="pillar"><div class="pillar-icon">✨</div><div class="pillar-title">Luxury</div><div class="pillar-desc">Premium amenities that make every moment between adventures just as good.</div></div>
+            <div class="pillar"><div class="pillar-icon">🌿</div><div class="pillar-title">Nature</div><div class="pillar-desc">Locations where the landscape is part of the experience from day one.</div></div>
+            <div class="pillar"><div class="pillar-icon">💛</div><div class="pillar-title">Memory</div><div class="pillar-desc">Stays that guests plan return visits to before they've even left.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Promise -->
+  <section class="promise">
+    <div class="container">
+      <p class="promise-quote">"There is a certain kind of trip that changes the way you think about what a vacation can be. Altus Retreats is that kind of trip."</p>
+      <div class="promise-divider"></div>
+      <p class="promise-attr">The Altus Retreats Promise</p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <img src="assets/altus-logo.png" alt="Altus Retreats">
+          <p>Not just places to stay. Places you'll never forget.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Properties</h4>
+          <a href="https://www.staytheoverhang.com">The Overhang — Kentucky</a>
+          <a href="#">The Lazy Palm — Florida (Soon)</a>
+        </div>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <a href="#story">Our Story</a>
+          <a href="mailto:support@altusretreats.net">Contact Us</a>
+        </div>
+        <div class="footer-col">
+          <h4>Connect</h4>
+          <a href="https://instagram.com/altusretreats" target="_blank">Instagram</a>
+          <a href="https://facebook.com/altusretreats" target="_blank">Facebook</a>
+          <a href="mailto:support@altusretreats.net">support@altusretreats.net</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p class="footer-copy">© 2026 Altus Retreats LLC · All rights reserved</p>
+        <p class="footer-tagline">Elevate Your Getaway.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 60));
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', e => {
+        const t = document.querySelector(a.getAttribute('href'));
+        if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth' }); }
+      });
+    });
+  </script>
+</body>
+</html>

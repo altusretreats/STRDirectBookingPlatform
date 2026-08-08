@@ -19,9 +19,11 @@ exports.handler = async (event) => {
     if (!property || !property.active) return notFound(`Property not found: ${propertyId}`);
 
     // Fetch calendar from Hospitable (live — no cache, guests need real-time availability)
+    // Falls back to mock if no listing ID configured
+    const hospPropertyId = property.hospitable?.listingId;
     const hospitable = await getHospitableClient(propertyId);
     const calendar = await hospitable.getCalendar(
-      property.hospitable.listingId,
+      hospPropertyId || 'mock',
       start_date,
       end_date
     );

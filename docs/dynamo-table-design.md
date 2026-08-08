@@ -43,7 +43,7 @@ Stores metadata for each rental property. One record per property.
     "secretKey": "stripe/prod/kentucky"         // Secrets Manager key reference
   },
   "branding": {
-    "primaryColor": "#2D4A3E",
+    "primaryColor": "#2D3A2E",
     "accentColor": "#C9A84C",
     "logoS3Key": "kentucky/logo.svg"
   },

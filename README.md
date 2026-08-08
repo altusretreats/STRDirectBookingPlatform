@@ -5,6 +5,41 @@ Hub: **altusretreats.net**
 
 ---
 
+## Live URLs & AWS Resources (dev)
+
+| Site | URL | CloudFront ID | S3 Bucket |
+|------|-----|---------------|-----------|
+| Hub (coming soon) | https://www.altusretreats.net | `E1X6NMJ8MCF7HR` | `altus-retreats-hub-dev-817760095908` |
+| Hub (full future site preview) | https://www.altusretreats.net/hub.html | `E1X6NMJ8MCF7HR` | same bucket |
+| The Overhang (coming soon) | https://www.staytheoverhang.com | `EP3TSR36W3F7N` | `altus-retreats-frontend-dev-817760095908` |
+| The Overhang — Booking site preview | https://www.staytheoverhang.com/preview.html | `EP3TSR36W3F7N` | same bucket |
+| The Overhang — Guidebook | https://www.staytheoverhang.com/guidebook/ | `EP3TSR36W3F7N` | same bucket |
+| Admin panel | https://admin.altusretreats.net | `E6XS2Y3HPS1YG` | `altus-retreats-admin-dev-817760095908` |
+| API | https://teh1cl4b6a.execute-api.us-east-1.amazonaws.com/dev | — | — |
+
+| Resource | Value |
+|----------|-------|
+| DynamoDB table | `altus-retreats-dev` |
+| Cognito User Pool | `us-east-1_eMVB4AFGD` |
+| Cognito Client ID | `3l3km5lsgnqcitv295ltb5bq86` |
+| SES verified address | `support@altusretreats.net` |
+| AWS Account | `817760095908` |
+| Region | `us-east-1` |
+
+### ACM Certificates
+| Domain | ARN |
+|--------|-----|
+| altusretreats.net | `arn:aws:acm:us-east-1:817760095908:certificate/8706f7a7-0149-4b42-b9ed-cdc8c7644573` |
+| staytheoverhang.com | `arn:aws:acm:us-east-1:817760095908:certificate/f5ddb05c-69c5-43cc-95af-9445a788ac22` |
+| admin.altusretreats.net | `arn:aws:acm:us-east-1:817760095908:certificate/11d974d7-4aa6-42d7-bcf0-4a9ae09bfd08` |
+
+### Domains (GoDaddy)
+- `altusretreats.net` — hub + admin subdomain
+- `staytheoverhang.com` — The Overhang property site
+- `staythelazypalm.com` — The Lazy Palm (registered, no infrastructure yet)
+
+---
+
 ## Project structure
 
 ```
@@ -216,24 +251,37 @@ npm run dev
 
 ## Deploy commands
 
-```bash
-# Build
+```powershell
+# 1 — Backend (run first)
 sam build --template infrastructure/template.yaml
-
-# Deploy dev
+cd infrastructure
 sam deploy --config-env dev
+cd ..
 
-# Deploy prod
-sam deploy --config-env prod
+# 2 — Admin SPA
+cd frontend\admin-spa
+$env:VITE_API_BASE="https://teh1cl4b6a.execute-api.us-east-1.amazonaws.com/dev"
+$env:VITE_COGNITO_USER_POOL_ID="us-east-1_eMVB4AFGD"
+$env:VITE_COGNITO_CLIENT_ID="3l3km5lsgnqcitv295ltb5bq86"
+npm run build
+aws s3 sync dist s3://altus-retreats-admin-dev-817760095908 --delete --region us-east-1
+aws s3 cp dist s3://altus-retreats-admin-dev-817760095908 --recursive --exclude "*.html" --exclude "*.css" --exclude "*.ico" --content-type "application/javascript" --metadata-directive REPLACE --region us-east-1
+aws cloudfront create-invalidation --distribution-id E6XS2Y3HPS1YG --paths "/*" --region us-east-1
+cd ..\..
 
-# Deploy admin SPA to S3
-aws s3 sync frontend/admin-spa/dist s3://<AdminSPABucketName> --delete
-aws cloudfront create-invalidation --distribution-id <AdminSPADistributionId> --paths "/*"
+# 3 — Property site + hub (re-pin coming soon + upload preview)
+aws s3 sync frontend\property-site s3://altus-retreats-frontend-dev-817760095908 --delete --region us-east-1
+aws s3 cp frontend\overhang-coming-soon\index.html s3://altus-retreats-frontend-dev-817760095908/index.html --region us-east-1
+aws s3 cp frontend\property-site\index.html s3://altus-retreats-frontend-dev-817760095908/preview.html --region us-east-1
+aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/*" --region us-east-1
+aws s3 sync frontend\hub-site s3://altus-retreats-hub-dev-817760095908 --delete --region us-east-1
+aws cloudfront create-invalidation --distribution-id E1X6NMJ8MCF7HR --paths "/*" --region us-east-1
 
-# Deploy property site to S3
-aws s3 sync frontend/property-site s3://<FrontendBucketName>/kentucky --delete
-aws cloudfront create-invalidation --distribution-id <PropertySiteDistributionId> --paths "/*"
+# 4 — Smoke test (after CloudFront propagates ~2 min)
+node scripts/smoke-test.js
 ```
+
+All three deploy steps can run in parallel in separate PowerShell windows.
 
 ---
 
@@ -272,3 +320,88 @@ No code changes needed. The architecture is multi-property from day one.
 - [ ] Property domain — register + configure Route 53 + ACM
 - [ ] Real Stripe keys — switch from test to live when ready to accept payments
 - [ ] Guidebook content — fill in REPLACE_ME values via admin panel
+
+---
+
+## Email setup (SES)
+
+Guest emails (booking confirmation + pre-arrival) use Amazon SES. Before emails will send:
+
+### 1. Verify your sending domain (prod) or email address (dev)
+
+**Dev/staging — verify a single address for testing:**
+```bash
+aws ses verify-email-identity --email-address support@altusretreats.net
+```
+Check your inbox and click the verification link.
+
+**Prod — verify the full domain (recommended):**
+```bash
+aws ses verify-domain-identity --domain altusretreats.net
+```
+AWS gives you DKIM + verification TXT/CNAME records to add in Route 53.
+
+### 2. Request SES production access (prod only)
+
+New AWS accounts start in SES sandbox (can only send to verified addresses). Submit a production access request in the AWS console:
+- **Service Quota** → `ses` → "Sending in Production"
+- Describe your use case: transactional booking confirmations for short-term rental guests
+
+Approval typically takes 24–48 hours.
+
+### 3. Deploy
+
+Email Lambdas are deployed automatically with `sam deploy`. No extra steps needed.
+
+### 4. Test
+
+Book a reservation using Stripe's test card `4242 4242 4242 4242`. The confirmation email fires automatically after payment. Pre-arrival emails are scheduled for 48hrs before check-in.
+
+---
+
+## CI/CD (GitHub Actions)
+
+The `.github/workflows/ci.yml` pipeline runs automatically:
+
+| Trigger | Jobs |
+|---------|------|
+| Push to `main` | Tests → SAM build → Deploy to dev |
+| Tag `v*` (e.g., `v1.0.0`) | Tests → SAM build → Deploy to prod (requires manual approval) |
+| Pull request | Tests + SAM build only (no deploy) |
+
+### Required GitHub secrets
+
+**Dev secrets** (in the `dev` environment):
+| Secret | Value |
+|--------|-------|
+| `AWS_ACCESS_KEY_ID` | IAM user key with deploy permissions |
+| `AWS_SECRET_ACCESS_KEY` | Corresponding secret |
+
+**Prod secrets** (in the `prod` environment):
+| Secret | Value |
+|--------|-------|
+| `AWS_ACCESS_KEY_ID_PROD` | Separate prod IAM user |
+| `AWS_SECRET_ACCESS_KEY_PROD` | Corresponding secret |
+
+Add secrets in: GitHub repo → Settings → Secrets and variables → Actions
+
+### Deploy to prod
+
+```bash
+git tag v1.0.0 && git push origin v1.0.0
+```
+
+GitHub will run tests + build, then pause for manual approval (configure required reviewers in Settings → Environments → prod).
+
+---
+
+## Deploy scripts
+
+```bash
+# Backend + frontends in one shot
+./scripts/deploy.sh dev
+./scripts/deploy.sh prod
+
+# Frontends only (faster for UI-only changes)
+./scripts/deploy-frontend.sh dev
+```

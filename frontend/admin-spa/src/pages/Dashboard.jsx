@@ -3,6 +3,8 @@ import { useAuth } from '../hooks/useAuth';
 import { adminApi } from '../lib/api';
 import GuidebookEditor from '../components/GuidebookEditor';
 import BookingsList from '../components/BookingsList';
+import WaitlistTable from '../components/WaitlistTable';
+import PropertySettings from '../components/PropertySettings';
 
 export default function Dashboard({ page, setPage }) {
   const { user, logout } = useAuth();
@@ -39,7 +41,8 @@ export default function Dashboard({ page, setPage }) {
             { id: 'dashboard', icon: '⊞', label: 'Overview' },
             { id: 'guidebook', icon: '📖', label: 'Guidebook' },
             { id: 'bookings',  icon: '📅', label: 'Bookings' },
-            { id: 'settings',  icon: '⚙️', label: 'Settings' },
+            { id: 'waitlist',  icon: '✉️', label: 'Waitlist' },
+            { id: 'settings',  icon: '⚙️', label: 'Property Settings' },
           ].map(item => (
             <button key={item.id}
               style={{ ...s.navBtn, ...(page === item.id ? s.navBtnActive : {}) }}
@@ -60,7 +63,9 @@ export default function Dashboard({ page, setPage }) {
         {page === 'dashboard' && <OverviewPage property={selectedProperty} />}
         {page === 'guidebook' && selectedProperty && <GuidebookEditor propertyId={selectedProperty.slug} propertyName={selectedProperty.name} />}
         {page === 'bookings'  && selectedProperty && <BookingsList propertyId={selectedProperty.slug} />}
-        {page === 'settings'  && <div style={s.placeholder}>Settings — coming soon</div>}
+        {page === 'waitlist'  && <WaitlistTable />}
+        {page === 'settings'  && selectedProperty && <PropertySettings propertyId={selectedProperty.slug} propertyName={selectedProperty.name} />}
+        {page === 'settings'  && !selectedProperty && <div style={s.placeholder}>Select a property to edit settings.</div>}
         {!selectedProperty && page !== 'dashboard' && <div style={s.placeholder}>Select a property to get started.</div>}
       </main>
     </div>
@@ -83,7 +88,7 @@ function OverviewPage({ property }) {
   );
 }
 
-function StatCard({ label, value, icon, color = '#2D4A3E' }) {
+function StatCard({ label, value, icon, color = '#2D3A2E' }) {
   return (
     <div style={s.statCard}>
       <div style={{ fontSize: 24, marginBottom: 8 }}>{icon}</div>
@@ -113,7 +118,7 @@ const s = {
   pageSub:     { color:'#6B7280', marginBottom:32, fontSize:15 },
   cards:       { display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:20 },
   statCard:    { background:'#fff', border:'1px solid #E5E7EB', borderRadius:12, padding:'24px 20px' },
-  statValue:   { fontSize:16, fontWeight:700, marginBottom:4, color:'#2D4A3E', wordBreak:'break-all' },
+  statValue:   { fontSize:16, fontWeight:700, marginBottom:4, color:'#2D3A2E', wordBreak:'break-all' },
   statLabel:   { fontSize:13, color:'#6B7280' },
   placeholder: { color:'#6B7280', fontSize:16, textAlign:'center', marginTop:80 },
 };
