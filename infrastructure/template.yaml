@@ -437,3 +437,164 @@ Outputs:
     Value: !Ref MediaBucket
     Export:
       Name: !Sub altus-retreats-MediaBucket-${Environment}
+
+  # ── CloudFront OAC (Origin Access Control) ────
+  # Restricts S3 access to CloudFront only — guests can't hit S3 directly
+  FrontendOAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub altus-retreats-oac-${Environment}
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  # ── ACM Certificate (must be in us-east-1 for CloudFront) ────
+  # NOTE: Set DomainName parameter when deploying.
+  # This resource will be in PENDING_VALIDATION until you add the CNAME
+  # records that ACM gives you to your Route 53 hosted zone.
+  # PropertyDomain must be set to your actual property domain name.
+  #
+  # Uncomment and configure after Route 53 hosted zone exists:
+  #
+  # SiteCertificate:
+  #   Type: AWS::CertificateManager::Certificate
+  #   Properties:
+  #     DomainName: !Sub "kentucky.${DomainName}"
+  #     SubjectAlternativeNames:
+  #       - !Ref DomainName
+  #       - !Sub "www.${DomainName}"
+  #       - !Sub "admin.${DomainName}"
+  #     ValidationMethod: DNS
+  #     DomainValidationOptions:
+  #       - DomainName: !Sub "kentucky.${DomainName}"
+  #         HostedZoneName: !Sub "${DomainName}."
+
+  # ── CloudFront: Property Booking Site ────────
+  PropertySiteDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        DefaultRootObject: index.html
+        HttpVersion: http2
+        PriceClass: PriceClass_100   # US + Europe + Canada
+        # Aliases:                   # Uncomment after cert is ready
+        #   - !Sub "kentucky.${DomainName}"
+        # ViewerCertificate:
+        #   AcmCertificateArn: !Ref SiteCertificate
+        #   SslSupportMethod: sni-only
+        #   MinimumProtocolVersion: TLSv1.2_2021
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+        Origins:
+          - Id: S3Frontend
+            DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt FrontendOAC.Id
+            S3OriginConfig: {}
+        DefaultCacheBehavior:
+          TargetOriginId: S3Frontend
+          ViewerProtocolPolicy: redirect-to-https
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6  # CachingOptimized
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          CachedMethods: [GET, HEAD]
+          Compress: true
+        CustomErrorResponses:
+          # SPA fallback — 404 → index.html for client-side routing
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
+        Tags:
+          - Key: Project
+            Value: altus-retreats
+          - Key: Environment
+            Value: !Ref Environment
+
+  # ── S3 Bucket Policy: allow CloudFront OAC ───
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub "${FrontendBucket.Arn}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${PropertySiteDistribution}"
+
+  # ── CloudFront: Admin SPA ─────────────────────
+  AdminSPABucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub altus-retreats-admin-${Environment}-${AWS::AccountId}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  AdminSPADistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        DefaultRootObject: index.html
+        HttpVersion: http2
+        PriceClass: PriceClass_100
+        # Aliases: [!Sub "admin.${DomainName}"]  # Uncomment after cert
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+        Origins:
+          - Id: S3Admin
+            DomainName: !GetAtt AdminSPABucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt FrontendOAC.Id
+            S3OriginConfig: {}
+        DefaultCacheBehavior:
+          TargetOriginId: S3Admin
+          ViewerProtocolPolicy: redirect-to-https
+          CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad  # CachingDisabled (admin, always fresh)
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          Compress: true
+        CustomErrorResponses:
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+            ErrorCachingMinTTL: 0
+
+  AdminSPABucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref AdminSPABucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub "${AdminSPABucket.Arn}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${AdminSPADistribution}"
+
+  PropertySiteUrl:
+    Description: CloudFront URL for the property booking site
+    Value: !Sub "https://${PropertySiteDistribution.DomainName}"
+    Export:
+      Name: !Sub altus-retreats-PropertySiteUrl-${Environment}
+
+  AdminSPAUrl:
+    Description: CloudFront URL for the admin SPA
+    Value: !Sub "https://${AdminSPADistribution.DomainName}"
+    Export:
+      Name: !Sub altus-retreats-AdminSPAUrl-${Environment}
+
+  AdminSPABucketName:
+    Description: S3 bucket for admin SPA
+    Value: !Ref AdminSPABucket
+    Export:
+      Name: !Sub altus-retreats-AdminSPABucket-${Environment}

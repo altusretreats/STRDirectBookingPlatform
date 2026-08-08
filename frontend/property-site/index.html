@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Book directly with us and save. No OTA fees, no middleman.">
+
+  <!-- Canonical URL injected by deploy script -->
+  <!-- <link rel="canonical" href="https://yourpropertydomain.com"> -->
+
+  <title>Altus Kentucky Retreat — Direct Booking</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+
+  <!-- Stripe -->
+  <script src="https://js.stripe.com/v3/"></script>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<!-- ── Navigation ─────────────────────────────────── -->
+<nav class="nav" aria-label="Main navigation">
+  <div class="container nav__inner">
+    <a href="/" class="nav__logo">Altus Retreats</a>
+    <div class="nav__cta">
+      <button class="btn btn--accent" data-scroll="#section-dates">Check Availability</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Hero ───────────────────────────────────────── -->
+<section class="hero" aria-label="Property hero">
+  <div class="hero__gallery" aria-hidden="true">
+    <!-- Slides injected by JS -->
+  </div>
+  <div class="hero__overlay" aria-hidden="true"></div>
+  <div class="container hero__content">
+    <div class="hero__badge">✦ Direct Booking — No Service Fees</div>
+    <h1 class="hero__title property-name">Altus Kentucky Retreat</h1>
+    <p class="hero__subtitle property-description">
+      A stunning retreat nestled in the Kentucky hills — perfect for families and groups.
+    </p>
+    <div class="hero__meta">
+      <div class="hero__meta-item">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span><span class="stat-bedrooms">4</span> bedrooms</span>
+      </div>
+      <div class="hero__meta-item">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 6h1M7 6h-.01M15 6h1M17 6h.01M3 9a2 2 0 012-2h14a2 2 0 012 2v4H3V9z"/><path d="M3 13v4a2 2 0 002 2h14a2 2 0 002-2v-4"/></svg>
+        <span><span class="stat-bathrooms">3</span> bathrooms</span>
+      </div>
+      <div class="hero__meta-item">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        <span>Up to <span class="stat-guests">10</span> guests</span>
+      </div>
+    </div>
+    <button class="btn btn--accent btn--lg" data-scroll="#section-dates">
+      Check Availability &amp; Book
+    </button>
+    <div class="hero__dots" aria-label="Gallery navigation"></div>
+  </div>
+</section>
+
+<!-- ── Booking Bar ─────────────────────────────────── -->
+<section class="section" style="padding: 40px 0 0;">
+  <div class="container">
+    <div class="booking-bar">
+      <div class="booking-bar__field">
+        <label class="booking-bar__label" for="bar-checkin">Check-in</label>
+        <input type="date" id="bar-checkin" class="booking-bar__input"
+               min="" placeholder="Select date">
+      </div>
+      <div class="booking-bar__field">
+        <label class="booking-bar__label" for="bar-checkout">Check-out</label>
+        <input type="date" id="bar-checkout" class="booking-bar__input"
+               min="" placeholder="Select date">
+      </div>
+      <div class="booking-bar__field">
+        <label class="booking-bar__label" for="bar-guests">Guests</label>
+        <select id="bar-guests" class="booking-bar__input">
+          <option value="1">1 guest</option>
+          <option value="2" selected>2 guests</option>
+          <option value="3">3 guests</option>
+          <option value="4">4 guests</option>
+          <option value="5">5 guests</option>
+          <option value="6">6 guests</option>
+          <option value="7">7 guests</option>
+          <option value="8">8 guests</option>
+          <option value="9">9 guests</option>
+          <option value="10">10 guests</option>
+        </select>
+      </div>
+      <button id="check-availability-btn" class="btn btn--primary btn--lg">
+        Check Availability
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- ── About ───────────────────────────────────────── -->
+<section class="section">
+  <div class="container">
+    <div class="about-grid">
+      <div>
+        <p style="color: var(--color-accent); font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.85rem; margin-bottom: 12px;">The Property</p>
+        <h2 style="margin-bottom: 20px;">Your perfect Kentucky escape</h2>
+        <p class="property-description" style="margin-bottom: 24px;">
+          Escape to this stunning Kentucky retreat nestled among rolling hills.
+          Perfect for families and groups seeking a luxurious, private getaway.
+        </p>
+        <div class="about__stats">
+          <div class="about__stat">
+            <div class="about__stat-value stat-bedrooms">4</div>
+            <div class="about__stat-label">Bedrooms</div>
+          </div>
+          <div class="about__stat">
+            <div class="about__stat-value stat-bathrooms">3</div>
+            <div class="about__stat-label">Bathrooms</div>
+          </div>
+          <div class="about__stat">
+            <div class="about__stat-value stat-guests">10</div>
+            <div class="about__stat-label">Max guests</div>
+          </div>
+        </div>
+        <button class="btn btn--primary" data-scroll="#section-dates">View Availability</button>
+      </div>
+      <div>
+        <div class="photo-grid">
+          <!-- Injected by JS -->
+          <div class="photo-grid__item skeleton" style="height: 100%;"></div>
+          <div class="photo-grid__item skeleton" style="height: 100%;"></div>
+          <div class="photo-grid__item skeleton" style="height: 100%;"></div>
+          <div class="photo-grid__item skeleton" style="height: 100%;"></div>
+          <div class="photo-grid__item skeleton" style="height: 100%;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Amenities ───────────────────────────────────── -->
+<section class="section section--alt">
+  <div class="container">
+    <h2 style="margin-bottom: 8px;">What's included</h2>
+    <p style="margin-bottom: 40px;">Everything you need for a perfect stay.</p>
+    <div class="amenities-grid">
+      <!-- Injected by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- ── Availability Calendar ──────────────────────── -->
+<section id="section-dates" class="section">
+  <div class="container">
+
+    <!-- Steps -->
+    <div class="steps" aria-label="Booking progress">
+      <div class="step active" aria-current="step">
+        <div class="step__num">1</div>
+        <div class="step__label">Dates</div>
+      </div>
+      <div class="step__line"></div>
+      <div class="step">
+        <div class="step__num">2</div>
+        <div class="step__label">Your details</div>
+      </div>
+      <div class="step__line"></div>
+      <div class="step">
+        <div class="step__num">3</div>
+        <div class="step__label">Payment</div>
+      </div>
+    </div>
+
+    <div class="calendar-wrap">
+      <h2 style="margin-bottom: 8px;">Select your dates</h2>
+      <p style="margin-bottom: 32px;">Prices shown are per night. Minimum 2-night stay.</p>
+      <div id="availability-calendar"></div>
+    </div>
+
+    <!-- Pricing summary + CTA (shown after dates selected) -->
+    <div id="pricing-preview" style="margin-top: 40px; display: none;">
+      <div style="background: var(--color-surface-alt); border: 1px solid var(--color-border); border-radius: var(--radius); padding: 28px; max-width: 480px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom: 12px;">
+          <span style="color: var(--color-text-muted);">Dates</span>
+          <span><strong id="summary-checkin">—</strong> → <strong id="summary-checkout">—</strong></span>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom: 8px;">
+          <span style="color: var(--color-text-muted);">Nightly rate</span>
+          <span id="summary-nightly">—</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom: 8px;">
+          <span style="color: var(--color-text-muted);">Cleaning fee</span>
+          <span id="summary-cleaning">—</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom: 16px;">
+          <span style="color: var(--color-text-muted);">Taxes</span>
+          <span id="summary-taxes">—</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-weight: 700; font-size: 1.1rem; padding-top: 12px; border-top: 1px solid var(--color-border);">
+          <span>Total</span>
+          <span id="summary-total">—</span>
+        </div>
+        <button id="btn-to-details" class="btn btn--primary btn--full" style="margin-top: 20px;">
+          Continue to Your Details →
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Guest Details ────────────────────────────────── -->
+<section id="section-details" class="booking-section" hidden>
+  <div class="container">
+    <div class="booking-layout">
+      <div>
+        <h2 class="form-section-title">Your details</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="guest-first">First name <span>*</span></label>
+            <input type="text" id="guest-first" class="form-input" autocomplete="given-name">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="guest-last">Last name <span>*</span></label>
+            <input type="text" id="guest-last" class="form-input" autocomplete="family-name">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="guest-email">Email address <span>*</span></label>
+          <input type="email" id="guest-email" class="form-input" autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="guest-phone">Phone number</label>
+          <input type="tel" id="guest-phone" class="form-input" autocomplete="tel">
+        </div>
+
+        <h3 class="form-section-title" style="margin-top: 40px;">Guest count</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="guest-adults">Adults</label>
+            <select id="guest-adults" class="form-select">
+              <option value="1">1</option><option value="2" selected>2</option>
+              <option value="3">3</option><option value="4">4</option>
+              <option value="5">5</option><option value="6">6</option>
+              <option value="7">7</option><option value="8">8</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="guest-children">Children (under 12)</label>
+            <select id="guest-children" class="form-select">
+              <option value="0" selected>0</option><option value="1">1</option>
+              <option value="2">2</option><option value="3">3</option><option value="4">4</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 16px; margin-top: 8px;">
+          <button id="btn-back-to-dates" class="btn btn--outline">← Back</button>
+          <button id="btn-to-payment" class="btn btn--primary" style="flex: 1;">
+            Continue to Payment →
+          </button>
+        </div>
+      </div>
+
+      <!-- Booking summary card -->
+      <div class="booking-card">
+        <div style="display:flex; align-items:baseline; gap: 6px; margin-bottom: 4px;">
+          <span class="booking-card__price" id="hero-nightly">$295</span>
+          <span class="booking-card__per">/ night</span>
+        </div>
+        <p style="color: var(--color-success); font-size: 0.85rem; font-weight: 600; margin-bottom: 20px;">
+          ✓ No OTA service fees — book direct & save
+        </p>
+        <hr class="booking-card__divider">
+        <div class="booking-card__line">
+          <span>Check-in</span><strong id="summary-checkin-2">—</strong>
+        </div>
+        <div class="booking-card__line">
+          <span>Check-out</span><strong id="summary-checkout-2">—</strong>
+        </div>
+        <div class="booking-card__line">
+          <span id="summary-nightly-2">—</span><span id="summary-nightly-amt-2">—</span>
+        </div>
+        <div class="booking-card__line">
+          <span>Cleaning fee</span><span id="summary-cleaning-2">—</span>
+        </div>
+        <div class="booking-card__line">
+          <span>Taxes</span><span id="summary-taxes-2">—</span>
+        </div>
+        <div class="booking-card__line booking-card__line--total">
+          <span>Total</span><span id="summary-total-2">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Payment ─────────────────────────────────────── -->
+<section id="section-payment" class="booking-section" hidden>
+  <div class="container">
+    <div class="booking-layout">
+      <div>
+        <h2 class="form-section-title">Payment</h2>
+        <p style="margin-bottom: 28px; color: var(--color-text-muted);">
+          Your card will be charged in full to confirm your reservation.
+          Payment is processed securely via Stripe.
+        </p>
+
+        <div class="form-group">
+          <label class="form-label">Card details <span>*</span></label>
+          <div id="stripe-card-element"></div>
+          <div id="stripe-card-errors" role="alert"></div>
+        </div>
+
+        <div style="background: var(--color-surface-alt); border-radius: var(--radius-sm); padding: 16px; margin: 24px 0; font-size: 0.9rem; color: var(--color-text-muted);">
+          🔒 Your payment is secured by Stripe. We never store your card details.
+        </div>
+
+        <div style="display: flex; gap: 16px;">
+          <button id="btn-back-to-details" class="btn btn--outline">← Back</button>
+          <button id="pay-btn" class="btn btn--primary" style="flex: 1;">
+            Complete Booking
+          </button>
+        </div>
+      </div>
+
+      <!-- Summary card (same as details step) -->
+      <div class="booking-card">
+        <div style="display:flex; align-items:baseline; gap: 6px; margin-bottom: 4px;">
+          <span class="booking-card__price" id="hero-nightly-2">$295</span>
+          <span class="booking-card__per">/ night</span>
+        </div>
+        <hr class="booking-card__divider">
+        <div class="booking-card__line">
+          <span>Check-in</span><strong id="summary-checkin-3">—</strong>
+        </div>
+        <div class="booking-card__line">
+          <span>Check-out</span><strong id="summary-checkout-3">—</strong>
+        </div>
+        <div class="booking-card__line">
+          <span id="summary-nights-3">Nights</span><span id="summary-subtotal-3">—</span>
+        </div>
+        <div class="booking-card__line">
+          <span>Cleaning fee</span><span id="summary-cleaning-3">—</span>
+        </div>
+        <div class="booking-card__line">
+          <span>Taxes</span><span id="summary-taxes-3">—</span>
+        </div>
+        <div class="booking-card__line booking-card__line--total">
+          <span>Total</span><span id="summary-total-3">—</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Confirmation ────────────────────────────────── -->
+<section id="section-confirmation" class="section" hidden>
+  <div class="container">
+    <div class="confirmation">
+      <div>
+        <div class="confirmation__icon">✓</div>
+        <h2 class="confirmation__title">You're all booked!</h2>
+        <p>A confirmation email has been sent to <strong id="conf-email">—</strong>.</p>
+        <div class="confirmation__detail">
+          <div class="confirmation__row">
+            <span>Guest</span><strong id="conf-name">—</strong>
+          </div>
+          <div class="confirmation__row">
+            <span>Check-in</span><strong id="conf-checkin">—</strong>
+          </div>
+          <div class="confirmation__row">
+            <span>Check-out</span><strong id="conf-checkout">—</strong>
+          </div>
+          <div class="confirmation__row">
+            <span>Nights</span><strong id="conf-nights">—</strong>
+          </div>
+          <div class="confirmation__row">
+            <span>Total paid</span><strong id="conf-total">—</strong>
+          </div>
+          <div class="confirmation__row">
+            <span>Booking ID</span><strong id="conf-booking-id">—</strong>
+          </div>
+        </div>
+        <p style="font-size: 0.9rem; color: var(--color-text-muted);">
+          Check-in instructions and the digital guidebook will be emailed 48 hours before your arrival.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ──────────────────────────────────────── -->
+<footer class="footer">
+  <div class="container footer__inner">
+    <div class="footer__brand">Altus Retreats</div>
+    <div class="footer__links">
+      <a href="/guidebook" class="footer__link">Guest Guidebook</a>
+      <a href="mailto:hello@altusretreats.net" class="footer__link">Contact</a>
+      <a href="/privacy" class="footer__link">Privacy</a>
+    </div>
+    <div class="footer__copy">© 2026 Altus Retreats LLC. All rights reserved.</div>
+  </div>
+</footer>
+
+<!-- Toast container -->
+<div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+<!-- Scripts -->
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/calendar.js"></script>
+<script src="js/booking.js"></script>
+<script src="js/app.js"></script>
+
+<script>
+  // Show pricing preview after dates selected
+  const originalOnDatesSelected = booking.onDatesSelected.bind(booking);
+  booking.onDatesSelected = function(dates) {
+    originalOnDatesSelected(dates);
+    document.getElementById('pricing-preview').style.display = 'block';
+    document.getElementById('pricing-preview').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
+
+  // Set min date on date inputs to today
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('bar-checkin').min = today;
+  document.getElementById('bar-checkout').min = today;
+  document.getElementById('bar-checkin').addEventListener('change', (e) => {
+    document.getElementById('bar-checkout').min = e.target.value;
+  });
+</script>
+
+</body>
+</html>
