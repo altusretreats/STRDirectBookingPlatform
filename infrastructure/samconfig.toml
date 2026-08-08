@@ -1,0 +1,19 @@
+version = 0.1
+
+[dev.deploy.parameters]
+stack_name = "altus-retreats-dev"
+region = "us-east-1"
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Environment=dev"
+resolve_s3 = true
+s3_prefix = "altus-retreats-dev"
+confirm_changeset = false
+
+[prod.deploy.parameters]
+stack_name = "altus-retreats-prod"
+region = "us-east-1"
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Environment=prod"
+resolve_s3 = true
+s3_prefix = "altus-retreats-prod"
+confirm_changeset = true
