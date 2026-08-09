@@ -1,4 +1,8 @@
-# Altus Retreats — Claude Code Instructions
+# Altus Retreats — Claude Instructions
+
+## Keep this file updated
+**Update CLAUDE.md whenever the stack, architecture, secrets, or key decisions change — then commit it.**
+This file is the primary context source when starting a new session on any machine.
 
 ## Project
 Multi-property STR direct booking platform + digital guidebook for Altus Retreats LLC.
@@ -8,55 +12,109 @@ Hub domain: altusretreats.net
 Run any bash command needed. Install packages. Deploy. Don't ask for permission on individual steps — complete the full task and report back when done.
 
 ## Stack
-- **Runtime:** Node.js 20 (arm64 Lambda)
+- **Runtime:** Node.js 22.x (arm64 Lambda)
 - **IaC:** AWS SAM (`infrastructure/template.yaml`)
 - **Database:** DynamoDB single-table (`altus-retreats-{env}`) — see `docs/dynamo-table-design.md`
 - **Auth:** AWS Cognito (admin only; guest endpoints are public)
 - **Secrets:** AWS Secrets Manager — never hardcode keys
-- **Payments:** Stripe (not Hospitable's built-in)
-- **Calendar sync:** Write reservation block to Hospitable API on `payment_intent.succeeded`
+- **Payments:** Hospitable is merchant of record — their widget handles checkout. No Stripe.
+- **Calendar sync:** Hospitable API (sync via `syncProperty` Lambda)
 - **Frontend:** Static S3 + CloudFront (no SSR)
+- **Admin SPA:** React + Vite (hash routing `#/properties/{id}/{tab}`, `#/hub/{tab}`)
 
 ## Multi-property — non-negotiable
 Every function, query, and data record is scoped by `propertyId`. Never hardcode a property. Adding a new property is a data operation only.
 
+## Properties
+- **kentucky** — The Overhang, staytheoverhang.com, Hospitable property ID: 2331834
+
 ## Project structure
 ```
-infrastructure/   SAM template + supporting CFN resources
+infrastructure/   SAM template + samconfig.toml
 backend/
   functions/      One directory per Lambda handler
   layers/shared/  Shared utilities (DynamoDB client, Secrets Manager helper, Hospitable client)
 frontend/
-  property-site/  Per-property booking site (vanilla JS or lightweight framework)
-  admin-spa/      Admin panel (React)
+  property-site/  Per-property booking site (vanilla JS)
+    guidebook/    Guest digital guidebook (separate page)
+  admin-spa/      Admin panel (React + Vite)
   hub-site/       altusretreats.net aggregate view
 docs/             Architecture and design decisions
+scripts/          Seed scripts (minimal — Hospitable is source of truth for content)
 ```
 
-## Deploy commands
-```bash
-# Build
-sam build --template infrastructure/template.yaml
+## Lambda functions
+| Function | Route | Notes |
+|---|---|---|
+| getProperty | GET /properties/{id} | Public. Reads METADATA record, merges admin overrides over hospitable.cached |
+| getAvailability | GET /properties/{id}/availability | Public. Proxies Hospitable calendar |
+| getGuidebook | GET /properties/{id}/guidebook | Public. Returns guidebook sections |
+| adminProperties | GET+POST+PUT /admin/properties | CRUD for property records |
+| syncProperty | POST /admin/properties/{id}/sync | Fetches Hospitable listing → stores in hospitable.cached on METADATA |
+| adminGuidebook | GET+PUT+DELETE /admin/properties/{id}/guidebook/{sectionId} | Guidebook section CRUD |
+| adminHub | GET+PUT /admin/hub | Hub site content |
+| adminMedia | POST /admin/media/sign | Presigned S3 PUT URLs for media upload |
+| adminPlaceLookup | POST /admin/properties/{id}/places/lookup | Google Places API v2 lookup → distance calc |
+| adminBookings | GET /admin/properties/{id}/bookings | List bookings |
+| waitlist | POST /waitlist, GET /admin/waitlist | Waitlist capture |
 
-# Deploy dev
+## Deploy commands (PowerShell on Windows)
+```powershell
+# Backend
+sam build --template infrastructure/template.yaml
 sam deploy --config-env dev
 
-# Deploy prod
-sam deploy --config-env prod
+# Admin SPA
+cd frontend\admin-spa
+npm run build
+aws s3 sync dist/ s3://altus-retreats-admin-dev-817760095908/ --delete
+# Fix MIME types (get exact filename from Get-Item dist\assets\index-*.js first)
+aws s3 cp dist\assets\index-XXXX.js s3://altus-retreats-admin-dev-817760095908/assets/index-XXXX.js --content-type "application/javascript" --metadata-directive REPLACE
+aws cloudfront create-invalidation --distribution-id E6XS2Y3HPS1YG --paths "/*"
+
+# Property site / guidebook
+aws s3 sync frontend\property-site\ s3://altus-retreats-frontend-dev-817760095908/ --delete
+aws s3 cp frontend\property-site\guidebook\js\guidebook.js s3://altus-retreats-frontend-dev-817760095908/guidebook/js/guidebook.js --content-type "application/javascript" --metadata-directive REPLACE
+aws s3 cp frontend\property-site\guidebook\css\guidebook.css s3://altus-retreats-frontend-dev-817760095908/guidebook/css/guidebook.css --content-type "text/css" --metadata-directive REPLACE
+aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/*"
 ```
 
-## Environment config
-Use `samconfig.toml` for per-environment deploy parameters. Never commit real secrets — they live in Secrets Manager.
+## CloudFront distribution IDs
+- Admin SPA: `E6XS2Y3HPS1YG` (admin.altusretreats.net)
+- Property site: `EP3TSR36W3F7N` (staytheoverhang.com)
+- Hub site: `E1X6NMJ8MCF7HR` (altusretreats.net)
+
+## S3 buckets
+- Admin: `altus-retreats-admin-dev-817760095908`
+- Property/guidebook: `altus-retreats-frontend-dev-817760095908`
+- Hub: `altus-retreats-hub-dev-817760095908`
+- Media: `altus-retreats-media-dev-817760095908`
+
+## API Gateway
+- Dev endpoint: `https://teh1cl4b6a.execute-api.us-east-1.amazonaws.com/dev`
 
 ## Secrets Manager convention
-- Hospitable PAT: `altus-retreats/{env}/hospitable` → `{ "kentucky": "<PAT>", "florida": "<PAT>" }`
-- Stripe: `altus-retreats/{env}/stripe` → `{ "secretKey": "sk_...", "webhookSecret": "whsec_..." }`
+- Hospitable PAT: `altus-retreats/{env}/hospitable` → `{ "default": "<PAT>", "kentucky": "<PAT>" }`
+- Google Places API: `altus-retreats/{env}/google` → `{ "placesApiKey": "AIza..." }`
+- (Stripe removed — Hospitable handles payments)
 
 ## DynamoDB conventions
 - All money in **cents** (integers)
 - `ttl` attribute on FAILED bookings and cache entries (Unix timestamp)
-- Guidebook section SK order: zero-padded integers (`010`, `020`) for correct lexicographic sort
+- Guidebook section SK: `GUIDEBOOK#SECTION#{order_padded}#{sectionId}` — zero-padded order for correct lexicographic sort
+- Property METADATA record holds `hospitable.cached` (full synced listing), `content` (admin overrides), `location` (admin overrides), `branding`
+
+## Data architecture — key decisions
+- **Hospitable is source of truth** for all listing content (name, photos, amenities, house rules, description, location). Admin overrides are merged on top via `stripEmpty()` so blank fields never clobber Hospitable data.
+- **Seed script is minimal** — only creates the structural record with slug, name, domain, Hospitable property ID, and empty content/location. Never seed content.
+- **syncProperty** stores the full Hospitable listing under `property.hospitable.cached` and `lastSyncedAt`. Run from admin → Sync tab or daily at 2am EST via EventBridge.
+- **Guidebook place items** (`type: 'place'`) store Google Places v2 data under `item.place`. `aiContext` and `hostNotes` fields on every item/section are hidden from guests and reserved for future AI concierge.
+
+## Guidebook — place items
+Place items in a recommendations section (`sectionType: 'recommendations'`) render as a card grid grouped by category (Restaurants / Attractions / Activities / Shopping). Clicking a card opens a detail modal with Directions button (uses lat/lng coordinates for reliable Google Maps routing).
 
 ## Key pending items
 - Hospitable PAT not yet provided — mock responses until available
-- Logo/branding pending ~2026-08-09 — no visual polish until then
+- Logo/branding pending ~2026-08-09
+- AI concierge feature (uses `aiContext` fields already being collected)
+- Real booking flow (Hospitable widget integration on property site)
