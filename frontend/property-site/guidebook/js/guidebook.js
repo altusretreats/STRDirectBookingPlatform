@@ -85,9 +85,22 @@ function renderSections(sections) {
     `;
 
     const itemsEl = el.querySelector('.gb-section__items');
-    (section.items || []).forEach(item => {
-      itemsEl.appendChild(renderItem(item));
-    });
+    const isRecs  = section.sectionType === 'recommendations'
+      || (section.items || []).some(i => i.type === 'place');
+
+    if (isRecs) {
+      const grid = document.createElement('div');
+      grid.className = 'gb-place-grid';
+      (section.items || []).forEach(item => {
+        if (item.type === 'place') grid.appendChild(renderPlaceCard(item));
+        else                       itemsEl.appendChild(renderItem(item));
+      });
+      if (grid.children.length) itemsEl.appendChild(grid);
+    } else {
+      (section.items || []).forEach(item => {
+        itemsEl.appendChild(renderItem(item));
+      });
+    }
 
     container.appendChild(el);
   });
@@ -168,6 +181,89 @@ function renderItem(item) {
 
   el.innerHTML = label + body;
   return el;
+}
+
+
+// ── Render place card ─────────────────────────────────
+function renderPlaceCard(item) {
+  const p   = item.place || {};
+  const cat = p.category || 'place';
+  const catIcon = { restaurant: '🍽️', attraction: '🏞️', activity: '🧗', shop: '🛒', services: '⛽' }[cat] || '📍';
+
+  const card = document.createElement('div');
+  card.className = 'gb-place-card';
+  card.setAttribute('role', 'button');
+  card.setAttribute('tabindex', '0');
+
+  card.innerHTML = `
+    <div class="gb-place-card__photo">
+      ${p.photoUrl
+        ? `<img src="${p.photoUrl}" alt="${escapeHtml(p.name || '')}" loading="lazy">`
+        : `<div class="gb-place-card__photo-placeholder">${catIcon}</div>`}
+    </div>
+    <div class="gb-place-card__body">
+      <div class="gb-place-card__cat">${catIcon} ${cat.charAt(0).toUpperCase() + cat.slice(1)}</div>
+      <div class="gb-place-card__name">${escapeHtml(p.name || item.label || 'Place')}</div>
+      ${item.description ? `<div class="gb-place-card__desc">${escapeHtml(item.description)}</div>` : ''}
+      <div class="gb-place-card__meta">
+        ${p.rating ? `<span>⭐ ${p.rating}</span>` : ''}
+        ${p.distanceMiles != null ? `<span>🚗 ${p.distanceMiles} mi</span>` : ''}
+        ${p.travelMinutes  != null ? `<span>~${p.travelMinutes} min</span>` : ''}
+        ${p.priceLabelString ? `<span>${p.priceLabelString}</span>` : ''}
+      </div>
+    </div>
+  `;
+
+  function openModal() { showPlaceModal(item); }
+  card.addEventListener('click', openModal);
+  card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') openModal(); });
+
+  return card;
+}
+
+// ── Place detail modal ────────────────────────────────
+function showPlaceModal(item) {
+  const p = item.place || {};
+
+  // Remove existing
+  document.querySelector('.gb-place-modal')?.remove();
+
+  const overlay = document.createElement('div');
+  overlay.className = 'gb-place-modal';
+
+  const catIcon = { restaurant: '🍽️', attraction: '🏞️', activity: '🧗', shop: '🛒', services: '⛽' }[p.category] || '📍';
+
+  overlay.innerHTML = `
+    <div class="gb-place-modal__inner">
+      <button class="gb-place-modal__close" aria-label="Close">✕</button>
+      ${p.photoUrl ? `<img class="gb-place-modal__photo" src="${p.photoUrl}" alt="${escapeHtml(p.name || '')}">` : ''}
+      <div class="gb-place-modal__body">
+        <div class="gb-place-modal__cat">${catIcon} ${(p.category || 'place').charAt(0).toUpperCase() + (p.category || 'place').slice(1)}</div>
+        <h2 class="gb-place-modal__name">${escapeHtml(p.name || item.label || 'Place')}</h2>
+        ${item.description ? `<p class="gb-place-modal__desc">${escapeHtml(item.description)}</p>` : ''}
+        <div class="gb-place-modal__chips">
+          ${p.rating        ? `<span class="gb-chip">⭐ ${p.rating}${p.totalRatings ? ` (${p.totalRatings.toLocaleString()})` : ''}</span>` : ''}
+          ${p.priceLabelString ? `<span class="gb-chip">${p.priceLabelString}</span>` : ''}
+          ${p.distanceMiles != null ? `<span class="gb-chip">🚗 ${p.distanceMiles} miles away</span>` : ''}
+          ${p.travelMinutes  != null ? `<span class="gb-chip">~${p.travelMinutes} min drive</span>` : ''}
+        </div>
+        ${p.address ? `<div class="gb-place-modal__info"><span>📍</span>${escapeHtml(p.address)}</div>` : ''}
+        ${p.phone   ? `<div class="gb-place-modal__info"><span>📞</span><a href="tel:${p.phone}">${escapeHtml(p.phone)}</a></div>` : ''}
+        ${p.website ? `<div class="gb-place-modal__info"><span>🌐</span><a href="${p.website}" target="_blank" rel="noopener">${escapeHtml(p.website.replace(/^https?:\/\/(www\.)?/, ''))}</a></div>` : ''}
+        ${p.directionsUrl ? `
+          <a class="gb-place-modal__directions" href="${p.directionsUrl}" target="_blank" rel="noopener">
+            Get Directions
+          </a>` : ''}
+      </div>
+    </div>
+  `;
+
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  overlay.querySelector('.gb-place-modal__close').addEventListener('click', () => overlay.remove());
+  document.addEventListener('keydown', function esc(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', esc); } });
+
+  document.body.appendChild(overlay);
+  requestAnimationFrame(() => overlay.classList.add('open'));
 }
 
 function getEmbedUrl(url) {
