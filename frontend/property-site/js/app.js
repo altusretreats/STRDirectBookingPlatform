@@ -284,9 +284,9 @@ async function loadProperty() {
     const eyebrowEl   = document.querySelector('.hero__eyebrow');
     const subtitleEl  = document.querySelector('.hero__subtitle');
 
-    if (titleMain   && heroTitleLine1)  titleMain.textContent    = heroTitleLine1;
-    if (titleAccent && heroAccentWord)  titleAccent.textContent  = heroAccentWord;
-    if (titleDim    && heroTitleSuffix) titleDim.textContent     = ' ' + heroTitleSuffix;
+    if (titleMain)   { titleMain.textContent   = heroTitleLine1  || ''; titleMain.style.display   = heroTitleLine1  ? '' : 'none'; }
+    if (titleAccent) { titleAccent.textContent = heroAccentWord  || ''; titleAccent.style.display = heroAccentWord  ? '' : 'none'; }
+    if (titleDim)    { titleDim.textContent    = heroTitleSuffix || ''; titleDim.style.display    = heroTitleSuffix ? '' : 'none'; }
     if (eyebrowEl   && heroEyebrow)     eyebrowEl.textContent    = heroEyebrow;
 
     // Hero subtitle — only show if admin explicitly set it
