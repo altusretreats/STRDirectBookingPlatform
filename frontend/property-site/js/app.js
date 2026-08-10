@@ -261,6 +261,17 @@ async function loadProperty() {
     const cancellationPolicy= h.cancellationPolicy || null;
     const heroPhoto   = c.heroPhoto     || null;
 
+    // Hero rating (admin-managed)
+    const heroRating      = c.heroRating      || null;
+    const heroReviewCount = c.heroReviewCount || null;
+
+    const ratingEl = document.querySelector('.hero__rating');
+    if (ratingEl && heroRating) {
+      document.querySelector('.rating-number').textContent = heroRating;
+      document.querySelector('.rating-count').textContent  = heroReviewCount || '';
+      ratingEl.style.display = '';
+    }
+
     // Hero title fields (admin-manageable, no Hospitable fallback)
     const heroEyebrow     = c.heroEyebrow     || null;
     const heroTitleLine1  = c.heroTitleLine1  || null;

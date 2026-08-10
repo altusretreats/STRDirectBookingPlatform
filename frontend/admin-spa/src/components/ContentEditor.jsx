@@ -78,6 +78,8 @@ export default function ContentEditor({ property, onSaved }) {
   // Hero
   const [heroHeadline,    setHeroHeadline]    = useState(content.heroHeadline    ?? '');
   const [heroSubtitle,    setHeroSubtitle]    = useState(content.heroSubtitle    ?? '');
+  const [heroRating,      setHeroRating]      = useState(content.heroRating      ?? '');
+  const [heroReviewCount, setHeroReviewCount] = useState(content.heroReviewCount ?? '');
   const [heroEyebrow,     setHeroEyebrow]     = useState(content.heroEyebrow     ?? '');
   const [heroTitleLine1,  setHeroTitleLine1]  = useState(content.heroTitleLine1  ?? '');
   const [heroAccentWord,  setHeroAccentWord]  = useState(content.heroAccentWord  ?? '');
@@ -132,6 +134,8 @@ export default function ContentEditor({ property, onSaved }) {
           heroSubtitle,
           heroEyebrow,
           heroTitleLine1,
+          heroRating,
+          heroReviewCount,
           heroAccentWord,
           heroAccentColor,
           heroTitleSuffix,
@@ -182,6 +186,25 @@ export default function ContentEditor({ property, onSaved }) {
             onChange={e => setHeroHeadline(e.target.value)}
           />
         </FieldRow>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <FormField label="Star Rating" hint='Shown bottom-right of hero. e.g. "4.9". Leave blank to hide.'>
+            <input
+              style={s.input}
+              placeholder="4.9"
+              value={heroRating}
+              onChange={e => setHeroRating(e.target.value)}
+            />
+          </FormField>
+          <FormField label="Review Count" hint='e.g. "120+" — shown as "from 120+ reviews"'>
+            <input
+              style={s.input}
+              placeholder="120+"
+              value={heroReviewCount}
+              onChange={e => setHeroReviewCount(e.target.value)}
+            />
+          </FormField>
+        </div>
 
         <FieldRow
           label="Hero Subtitle"
