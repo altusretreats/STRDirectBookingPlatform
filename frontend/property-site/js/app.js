@@ -96,12 +96,44 @@ function initAmenities(amenities) {
   const grid = document.querySelector('.amenities-grid');
   if (!grid || !amenities?.length) return;
   grid.innerHTML = '';
-  amenities.forEach(name => {
-    const el = document.createElement('div');
-    el.className = 'amenity';
-    el.innerHTML = `<span class="amenity__icon" aria-hidden="true">${AMENITY_ICONS[name] || '✓'}</span><span>${name}</span>`;
-    grid.appendChild(el);
-  });
+
+  // Normalize: support both legacy strings and new {name, category} objects
+  const normalized = amenities.map(a =>
+    typeof a === 'string' ? { name: a, category: 'Other' } : { name: a.name || String(a), category: a.category || 'Other' }
+  );
+
+  // Group by category
+  const groups = normalized.reduce((acc, a) => {
+    if (!acc[a.category]) acc[a.category] = [];
+    acc[a.category].push(a.name);
+    return acc;
+  }, {});
+
+  const hasCategories = Object.keys(groups).length > 1 || !groups['Other'];
+
+  if (hasCategories) {
+    // Render category headers + amenity chips
+    Object.entries(groups).forEach(([cat, names]) => {
+      const header = document.createElement('div');
+      header.className = 'amenity-cat-header';
+      header.textContent = cat;
+      grid.appendChild(header);
+      names.forEach(name => {
+        const el = document.createElement('div');
+        el.className = 'amenity';
+        el.innerHTML = `<span class="amenity__icon" aria-hidden="true">${AMENITY_ICONS[name] || '✓'}</span><span>${name}</span>`;
+        grid.appendChild(el);
+      });
+    });
+  } else {
+    // No categories — flat list
+    normalized.forEach(({ name }) => {
+      const el = document.createElement('div');
+      el.className = 'amenity';
+      el.innerHTML = `<span class="amenity__icon" aria-hidden="true">${AMENITY_ICONS[name] || '✓'}</span><span>${name}</span>`;
+      grid.appendChild(el);
+    });
+  }
 }
 
 // ── Location section ──────────────────────────────────
@@ -167,7 +199,8 @@ function initHouseRules(houseRules, cancellationPolicy) {
     houseRules.forEach(rule => {
       const li = document.createElement('li');
       li.className = 'rules-list__item';
-      li.textContent = rule;
+      // Normalize: handle string or object {body/rule/text}
+      li.textContent = typeof rule === 'string' ? rule : (rule.body || rule.rule || rule.text || rule.name || JSON.stringify(rule));
       rulesList.appendChild(li);
     });
   }

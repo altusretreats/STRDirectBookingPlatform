@@ -9,6 +9,22 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
+const ICON_OPTIONS = [
+  '🔑','🚪','🛎️','🏠','🏡',
+  '📶','📡','💻','📱','📺',
+  '📋','📝','📌','📍','🗓️',
+  '🍽️','🍳','☕','🧁','🍕',
+  '♨️','🛁','🚿','🪥','🧼',
+  '🗺️','🧭','🚗','🚶','🚴',
+  '🚨','🆘','📞','🏥','🔒',
+  '🧺','🗑️','♻️','🧹','🪣',
+  '💡','⚡','🔧','🪟','🪑',
+  '🌿','🌲','🏔️','🌊','⛺',
+  '🎸','🎮','🎯','🎱','🏋️',
+  '🐾','🐕','🐈','🦮','🌸',
+  '👋','❤️','⭐','✨','🎉',
+];
+
 const SECTION_TEMPLATES = [
   { icon: '🔑', title: 'Check-In' },
   { icon: '🌐', title: 'WiFi & Tech' },
@@ -222,7 +238,7 @@ function SectionModal({ section, saving, propertyId, onSave, onClose }) {
           <div style={s.formRow}>
             <div style={s.formGroup}>
               <label style={s.label}>Icon</label>
-              <input style={s.input} value={data.icon} onChange={e => set('icon', e.target.value)} maxLength={4} />
+              <IconPicker value={data.icon} onChange={v => set('icon', v)} />
             </div>
             <div style={{ ...s.formGroup, flex: 3 }}>
               <label style={s.label}>Section title *</label>
@@ -559,6 +575,50 @@ function PlacePreview({ place: initialPlace, onAdd, onDismiss }) {
   );
 }
 
+// ── Icon picker ───────────────────────────────────────────────────────────────
+function IconPicker({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        type="button"
+        style={s.iconPickerBtn}
+        onClick={() => setOpen(o => !o)}
+        title="Choose icon"
+      >
+        <span style={{ fontSize: 22 }}>{value || '📄'}</span>
+        <span style={{ fontSize: 11, color: '#9CA3AF', marginLeft: 4 }}>▼</span>
+      </button>
+
+      {open && (
+        <>
+          <div style={s.iconPickerOverlay} onClick={() => setOpen(false)} />
+          <div style={s.iconPickerDropdown}>
+            <div style={s.iconGrid}>
+              {ICON_OPTIONS.map(icon => (
+                <button
+                  key={icon}
+                  type="button"
+                  style={{
+                    ...s.iconOption,
+                    background: icon === value ? '#E8F4ED' : 'transparent',
+                    outline: icon === value ? '2px solid #2D3A2E' : 'none',
+                  }}
+                  onClick={() => { onChange(icon); setOpen(false); }}
+                  title={icon}
+                >
+                  {icon}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ── Styles ────────────────────────────────────────────────────────────────────
 const s = {
   header:        { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 },
@@ -599,6 +659,11 @@ const s = {
   aiBox:         { background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 8, padding: 14, marginBottom: 0 },
   aiToggle:      { background: 'none', border: 'none', fontFamily: 'inherit', fontSize: 13, fontWeight: 600, color: '#16A34A', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, padding: 0 },
   aiToggleSub:   { fontSize: 11, color: '#6B7280', fontWeight: 400 },
-  placePreview:  { marginTop: 14, padding: 14, background: '#F9FAFB', borderRadius: 10, border: '1px solid #E5E7EB' },
-  mockWarning:   { marginTop: 10, padding: '8px 12px', background: '#FFFBEB', border: '1px solid #FCD34D', borderRadius: 6, fontSize: 12, color: '#92400E' },
+  placePreview:       { marginTop: 14, padding: 14, background: '#F9FAFB', borderRadius: 10, border: '1px solid #E5E7EB' },
+  mockWarning:        { marginTop: 10, padding: '8px 12px', background: '#FFFBEB', border: '1px solid #FCD34D', borderRadius: 6, fontSize: 12, color: '#92400E' },
+  iconPickerBtn:      { display: 'flex', alignItems: 'center', padding: '7px 10px', border: '1px solid #D1D5DB', borderRadius: 7, background: '#fff', cursor: 'pointer', fontFamily: 'inherit', width: '100%' },
+  iconPickerOverlay:  { position: 'fixed', inset: 0, zIndex: 10 },
+  iconPickerDropdown: { position: 'absolute', top: '100%', left: 0, zIndex: 20, marginTop: 4, background: '#fff', border: '1px solid #E5E7EB', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', padding: 10, width: 220 },
+  iconGrid:           { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 4 },
+  iconOption:         { border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 20, padding: 6, lineHeight: 1, fontFamily: 'inherit' },
 };

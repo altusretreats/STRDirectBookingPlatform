@@ -1,16 +1,11 @@
 /**
  * adminPlaceLookup — POST /admin/properties/{propertyId}/places/lookup
  *
- * Parses a Google Maps URL, calls the Places API, calculates distance from the
- * property, and returns enriched place data for the admin to review/override
- * before saving to the guidebook.
+ * Parses a Google Maps URL, calls the Places API v2, calculates distance
+ * from the property, and returns enriched place data for the admin to
+ * review/override before saving to the guidebook.
  *
  * Body: { googleUrl: "https://maps.google.com/..." }
- *
- * Returns:
- *   { name, placeId, address, phone, website, rating, totalRatings, priceLevel,
- *     priceLabelString, types, category, photoUrl, mapsUrl, directionsUrl,
- *     distanceMiles, travelMinutes, lat, lng }
  */
 
 const { DynamoDBDocumentClient, GetCommand } = require('@aws-sdk/lib-dynamodb');
@@ -30,8 +25,7 @@ async function getGoogleKey() {
   const res = await secrets.send(new GetSecretValueCommand({
     SecretId: `altus-retreats/${ENV}/google`,
   }));
-  const parsed = JSON.parse(res.SecretString);
-  _googleKey = parsed.placesApiKey;
+  _googleKey = JSON.parse(res.SecretString).placesApiKey;
   return _googleKey;
 }
 
@@ -41,22 +35,23 @@ function haversine(lat1, lon1, lat2, lon2) {
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
   const a    = Math.sin(dLat / 2) ** 2
-    + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+    + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180)
+    * Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// ── Drive time estimate (rural roads — ~30 mph average) ──────────────────────
 function estimateDriveMinutes(miles) {
+  // Rural/mountain roads — ~30 mph average
   return Math.max(5, Math.round((miles / 30) * 60 / 5) * 5);
 }
 
-// ── Derive human category from Place types ────────────────────────────────────
+// ── Category from place types ─────────────────────────────────────────────────
 function deriveCategory(types = []) {
   if (types.some(t => ['restaurant', 'food', 'cafe', 'bakery', 'bar',
-    'meal_delivery', 'meal_takeaway', 'brewery'].includes(t))) return 'restaurant';
+    'meal_delivery', 'meal_takeaway', 'brewery', 'coffee_shop'].includes(t))) return 'restaurant';
   if (types.some(t => ['tourist_attraction', 'amusement_park', 'museum',
-    'park', 'natural_feature', 'campground', 'rv_park', 'hiking_area'].includes(t))) return 'attraction';
-  if (types.some(t => ['store', 'shopping_mall', 'grocery_or_supermarket',
+    'park', 'natural_feature', 'campground', 'hiking_area', 'national_park'].includes(t))) return 'attraction';
+  if (types.some(t => ['store', 'shopping_mall', 'grocery_store',
     'supermarket', 'convenience_store', 'hardware_store'].includes(t))) return 'shop';
   if (types.some(t => ['gas_station', 'car_repair', 'car_wash'].includes(t))) return 'services';
   return 'activity';
@@ -64,7 +59,7 @@ function deriveCategory(types = []) {
 
 const PRICE_LABELS = { 0: 'Free', 1: '$', 2: '$$', 3: '$$$', 4: '$$$$' };
 
-// ── Parse a Google Maps URL → { name, lat, lng, placeId } ────────────────────
+// ── Parse Google Maps URL → { name, lat, lng, placeId } ──────────────────────
 async function parseGoogleUrl(rawUrl) {
   let url = rawUrl.trim();
 
@@ -73,145 +68,172 @@ async function parseGoogleUrl(rawUrl) {
     try {
       const res = await fetch(url, { redirect: 'follow', method: 'HEAD' });
       url = res.url;
-    } catch {
-      // fall through with original URL
-    }
+    } catch { /* fall through */ }
   }
 
   const parsed = new URL(url);
-  const path   = parsed.pathname;  // e.g. /maps/place/Miguel's+Pizza/@37.78,-83.67,17z/data=...
+  const path   = parsed.pathname;
 
   // Extract place_id from data param: !1s<PLACE_ID>
-  const dataParam = parsed.searchParams.get('data') || '';
+  const dataParam    = parsed.searchParams.get('data') || '';
   const placeIdMatch = dataParam.match(/!1s([^!]+)/);
-  const placeId = placeIdMatch ? decodeURIComponent(placeIdMatch[1]) : null;
+  const placeId      = placeIdMatch ? decodeURIComponent(placeIdMatch[1]) : null;
 
-  // Extract name from path
+  // Name from path /maps/place/Name/@lat,lng
   const namePath = path.match(/\/maps\/place\/([^/@]+)/);
-  const nameRaw  = namePath ? decodeURIComponent(namePath[1].replace(/\+/g, ' ')) : null;
+  const name     = namePath ? decodeURIComponent(namePath[1].replace(/\+/g, ' ')) : null;
 
-  // Extract coords from @lat,lng or from path
+  // Coordinates from @lat,lng
   const coordsMatch = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
   const lat = coordsMatch ? parseFloat(coordsMatch[1]) : null;
   const lng = coordsMatch ? parseFloat(coordsMatch[2]) : null;
 
-  return { name: nameRaw, lat, lng, placeId };
+  return { name, lat, lng, placeId };
 }
 
-// ── Resolve a photo reference → final CDN URL (no API key in stored URL) ─────
-async function resolvePhotoUrl(photoReference, apiKey) {
-  const url = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=800&photoreference=${photoReference}&key=${apiKey}`;
-  try {
-    const res = await fetch(url, { redirect: 'follow' });
-    // The response URL after redirects is the final CDN URL — no API key
-    return res.url || null;
-  } catch {
-    return null;
-  }
-}
+// ── Places API v2 lookup ──────────────────────────────────────────────────────
+const PLACES_BASE  = 'https://places.googleapis.com/v1';
+const FIELD_MASK   = [
+  'places.id',
+  'places.displayName',
+  'places.formattedAddress',
+  'places.internationalPhoneNumber',
+  'places.websiteUri',
+  'places.rating',
+  'places.userRatingCount',
+  'places.priceLevel',
+  'places.types',
+  'places.location',
+  'places.photos',
+  'places.googleMapsUri',
+].join(',');
 
-// ── Main Places API lookup ────────────────────────────────────────────────────
 async function lookupPlace(parsed, propertyLat, propertyLng, apiKey) {
-  let placeId = parsed.placeId;
+  const headers = {
+    'Content-Type':   'application/json',
+    'X-Goog-Api-Key': apiKey,
+    'X-Goog-FieldMask': FIELD_MASK,
+  };
 
-  // If we have a placeId from the URL, skip text search
-  if (!placeId) {
-    // Build text search query
-    let query = parsed.name || '';
-    const locationBias = (parsed.lat && parsed.lng)
-      ? `&location=${parsed.lat},${parsed.lng}&radius=50000`
-      : (propertyLat && propertyLng ? `&location=${propertyLat},${propertyLng}&radius=80000` : '');
+  let place;
 
-    const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}${locationBias}&key=${apiKey}`;
-    const searchRes = await fetch(searchUrl);
-    const searchData = await searchRes.json();
-
-    if (!searchData.results?.length) {
-      throw new Error(`No places found for "${query}". Try a more specific search term.`);
+  // If we have a placeId from the URL, fetch details directly
+  if (parsed.placeId) {
+    const detailMask = FIELD_MASK.replace(/places\./g, '');
+    const res = await fetch(`${PLACES_BASE}/places/${parsed.placeId}`, {
+      headers: { 'X-Goog-Api-Key': apiKey, 'X-Goog-FieldMask': detailMask },
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(`Places API: ${data.error.message}`);
+    place = data;
+  } else {
+    // Text search using name + location bias
+    const body = { textQuery: parsed.name || '' };
+    if (parsed.lat && parsed.lng) {
+      body.locationBias = {
+        circle: { center: { latitude: parsed.lat, longitude: parsed.lng }, radius: 50000 },
+      };
+    } else if (propertyLat && propertyLng) {
+      body.locationBias = {
+        circle: { center: { latitude: propertyLat, longitude: propertyLng }, radius: 80000 },
+      };
     }
-    placeId = searchData.results[0].place_id;
+
+    const res  = await fetch(`${PLACES_BASE}/places:searchText`, { method: 'POST', headers, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (data.error) throw new Error(`Places API: ${data.error.message}`);
+    if (!data.places?.length) throw new Error(`No places found for "${parsed.name}". Try a more specific search term.`);
+    place = data.places[0];
   }
 
-  // Get place details
-  const fields = 'name,place_id,formatted_address,formatted_phone_number,website,rating,user_ratings_total,price_level,types,geometry,photos,url';
-  const detailUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=${fields}&key=${apiKey}`;
-  const detailRes = await fetch(detailUrl);
-  const detailData = await detailRes.json();
+  // Coordinates
+  const placeLat = place.location?.latitude;
+  const placeLng = place.location?.longitude;
 
-  if (detailData.status !== 'OK') {
-    throw new Error(`Places API error: ${detailData.status} — ${detailData.error_message || 'Unknown error'}`);
-  }
-
-  const p = detailData.result;
-  const placeLat = p.geometry?.location?.lat;
-  const placeLng = p.geometry?.location?.lng;
-
-  // Distance & drive time
-  let distanceMiles  = null;
-  let travelMinutes  = null;
+  // Distance + drive time
+  let distanceMiles = null;
+  let travelMinutes = null;
   if (propertyLat && propertyLng && placeLat && placeLng) {
     distanceMiles = Math.round(haversine(propertyLat, propertyLng, placeLat, placeLng) * 10) / 10;
     travelMinutes = estimateDriveMinutes(distanceMiles);
   }
 
-  // Resolve first photo
+  // Photo — v2 returns a photo resource name; fetch the media URI directly
   let photoUrl = null;
-  if (p.photos?.length) {
-    photoUrl = await resolvePhotoUrl(p.photos[0].photo_reference, apiKey);
+  if (place.photos?.length) {
+    const photoName = place.photos[0].name;
+    const photoRes  = await fetch(
+      `${PLACES_BASE}/${photoName}/media?maxWidthPx=800&skipHttpRedirect=true&key=${apiKey}`
+    );
+    const photoData = await photoRes.json();
+    photoUrl = photoData.photoUri || null;
   }
 
-  const category = deriveCategory(p.types || []);
+  // Price level — v2 returns a string enum e.g. "PRICE_LEVEL_MODERATE"
+  const priceLevelMap = {
+    PRICE_LEVEL_FREE:           0,
+    PRICE_LEVEL_INEXPENSIVE:    1,
+    PRICE_LEVEL_MODERATE:       2,
+    PRICE_LEVEL_EXPENSIVE:      3,
+    PRICE_LEVEL_VERY_EXPENSIVE: 4,
+  };
+  const priceLevelNum = priceLevelMap[place.priceLevel] ?? null;
+
+  const types    = place.types || [];
+  const category = deriveCategory(types);
 
   return {
-    name:            p.name,
-    placeId:         p.place_id,
-    address:         p.formatted_address,
-    phone:           p.formatted_phone_number || null,
-    website:         p.website || null,
-    rating:          p.rating || null,
-    totalRatings:    p.user_ratings_total || null,
-    priceLevel:      p.price_level ?? null,
-    priceLabelString: p.price_level != null ? PRICE_LABELS[p.price_level] : null,
-    types:           p.types || [],
+    name:             place.displayName?.text || parsed.name,
+    placeId:          place.id,
+    address:          place.formattedAddress,
+    phone:            place.internationalPhoneNumber || null,
+    website:          place.websiteUri || null,
+    rating:           place.rating || null,
+    totalRatings:     place.userRatingCount || null,
+    priceLevel:       priceLevelNum,
+    priceLabelString: priceLevelNum != null ? PRICE_LABELS[priceLevelNum] : null,
+    types,
     category,
     photoUrl,
-    mapsUrl:         p.url || `https://www.google.com/maps/place/?q=place_id:${p.place_id}`,
-    directionsUrl:   `https://www.google.com/maps/dir/?api=1&destination_place_id=${p.place_id}`,
-    lat:             placeLat,
-    lng:             placeLng,
+    mapsUrl:          place.googleMapsUri || null,
+    directionsUrl:    (placeLat && placeLng)
+      ? `https://www.google.com/maps/dir/?api=1&destination=${placeLat},${placeLng}${place.id ? `&destination_place_id=${place.id}` : ''}`
+      : (place.id ? `https://www.google.com/maps/dir/?api=1&destination_place_id=${place.id}` : null),
+    lat:              placeLat,
+    lng:              placeLng,
     distanceMiles,
     travelMinutes,
   };
 }
 
-// ── Mock (no API key yet) ─────────────────────────────────────────────────────
+// ── Mock (no API key / key not yet valid) ─────────────────────────────────────
 function mockLookup(parsed, propertyLat, propertyLng) {
-  const name         = parsed.name || 'Sample Place';
-  const placeLat     = parsed.lat  || (propertyLat ? propertyLat + 0.05 : 37.82);
-  const placeLng     = parsed.lng  || (propertyLng ? propertyLng + 0.02 : -83.71);
+  const name        = parsed.name || 'Sample Place';
+  const placeLat    = parsed.lat  || (propertyLat ? propertyLat + 0.05 : 37.82);
+  const placeLng    = parsed.lng  || (propertyLng ? propertyLng + 0.02 : -83.71);
   const distanceMiles = (propertyLat && propertyLng)
     ? Math.round(haversine(propertyLat, propertyLng, placeLat, placeLng) * 10) / 10
     : 3.2;
   return {
     name,
-    placeId:         'MOCK_PLACE_ID',
-    address:         '123 Main St, Slade, KY 40376',
-    phone:           '+1-606-663-0000',
-    website:         null,
-    rating:          4.5,
-    totalRatings:    312,
-    priceLevel:      1,
+    placeId:          'MOCK_PLACE_ID',
+    address:          '123 Main St, Slade, KY 40376',
+    phone:            '+1-606-663-0000',
+    website:          null,
+    rating:           4.5,
+    totalRatings:     312,
+    priceLevel:       1,
     priceLabelString: '$',
-    types:           ['restaurant', 'food'],
-    category:        'restaurant',
-    photoUrl:        null,
-    mapsUrl:         `https://www.google.com/maps/place/${encodeURIComponent(name)}`,
-    directionsUrl:   `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(name)}`,
-    lat:             placeLat,
-    lng:             placeLng,
+    types:            ['restaurant', 'food'],
+    category:         'restaurant',
+    photoUrl:         null,
+    mapsUrl:          `https://www.google.com/maps/place/${encodeURIComponent(name)}`,
+    directionsUrl:    `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(name)}`,
+    lat:              placeLat,
+    lng:              placeLng,
     distanceMiles,
-    travelMinutes:   estimateDriveMinutes(distanceMiles),
-    _mock:           true,
+    travelMinutes:    estimateDriveMinutes(distanceMiles),
+    _mock:            true,
   };
 }
 
@@ -219,10 +241,7 @@ function mockLookup(parsed, propertyLat, propertyLng) {
 function respond(statusCode, body) {
   return {
     statusCode,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-    },
+    headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
     body: JSON.stringify(body),
   };
 }
@@ -252,17 +271,14 @@ exports.handler = async (event) => {
     const propertyLat = prop.location?.pinLat || prop.hospitable?.cached?.location?.pinLat || null;
     const propertyLng = prop.location?.pinLng || prop.hospitable?.cached?.location?.pinLng || null;
 
-    // Parse the Google URL
     const parsed = await parseGoogleUrl(googleUrl);
 
-    // Try real Google Places API; fall back to mock if no key
     let placeData;
     try {
       const apiKey = await getGoogleKey();
       placeData    = await lookupPlace(parsed, propertyLat, propertyLng, apiKey);
     } catch (keyErr) {
       if (keyErr.name === 'ResourceNotFoundException' || keyErr.message?.includes('secret')) {
-        // No key configured yet — return mock
         placeData = mockLookup(parsed, propertyLat, propertyLng);
       } else {
         throw keyErr;

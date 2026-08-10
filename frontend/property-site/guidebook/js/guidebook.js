@@ -89,13 +89,41 @@ function renderSections(sections) {
       || (section.items || []).some(i => i.type === 'place');
 
     if (isRecs) {
-      const grid = document.createElement('div');
-      grid.className = 'gb-place-grid';
-      (section.items || []).forEach(item => {
-        if (item.type === 'place') grid.appendChild(renderPlaceCard(item));
-        else                       itemsEl.appendChild(renderItem(item));
+      // Non-place items render normally
+      (section.items || []).filter(i => i.type !== 'place').forEach(item => {
+        itemsEl.appendChild(renderItem(item));
       });
-      if (grid.children.length) itemsEl.appendChild(grid);
+
+      // Group place items by category
+      const placeItems = (section.items || []).filter(i => i.type === 'place');
+      const CAT_ORDER  = ['restaurant', 'attraction', 'activity', 'shop', 'services'];
+      const CAT_LABELS = {
+        restaurant: '🍽️ Restaurants',
+        attraction: '🏞️ Attractions',
+        activity:   '🧗 Activities',
+        shop:       '🛒 Shopping',
+        services:   '⛽ Services',
+      };
+
+      const byCategory = {};
+      placeItems.forEach(item => {
+        const cat = item.place?.category || 'activity';
+        if (!byCategory[cat]) byCategory[cat] = [];
+        byCategory[cat].push(item);
+      });
+
+      CAT_ORDER.forEach(cat => {
+        if (!byCategory[cat]) return;
+        const header = document.createElement('h3');
+        header.className = 'gb-place-cat-header';
+        header.textContent = CAT_LABELS[cat];
+        itemsEl.appendChild(header);
+
+        const grid = document.createElement('div');
+        grid.className = 'gb-place-grid';
+        byCategory[cat].forEach(item => grid.appendChild(renderPlaceCard(item)));
+        itemsEl.appendChild(grid);
+      });
     } else {
       (section.items || []).forEach(item => {
         itemsEl.appendChild(renderItem(item));

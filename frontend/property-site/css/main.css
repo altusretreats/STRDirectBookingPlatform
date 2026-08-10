@@ -246,6 +246,14 @@ p { color: var(--color-text-muted); line-height: 1.75; }
 .amenities-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px;
 }
+.amenity-cat-header {
+  grid-column: 1 / -1;
+  font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--color-text-muted);
+  padding-bottom: 4px; border-bottom: 1px solid var(--color-border);
+  margin-top: 8px;
+}
+.amenity-cat-header:first-child { margin-top: 0; }
 .amenity {
   display: flex; align-items: center; gap: 12px;
   padding: 14px 16px; border-radius: var(--radius-sm);

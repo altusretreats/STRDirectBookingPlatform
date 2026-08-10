@@ -26,7 +26,7 @@ Run any bash command needed. Install packages. Deploy. Don't ask for permission 
 Every function, query, and data record is scoped by `propertyId`. Never hardcode a property. Adding a new property is a data operation only.
 
 ## Properties
-- **kentucky** — The Overhang, staytheoverhang.com, Hospitable property ID: 2331834
+- **kentucky** — The Overhang, staytheoverhang.com, Hospitable property UUID: c62c4391-eca2-48c2-8bfe-d0193f6890dc
 
 ## Project structure
 ```

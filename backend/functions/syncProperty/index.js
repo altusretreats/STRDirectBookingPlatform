@@ -44,7 +44,8 @@ exports.handler = async (event) => {
       checkInTime:        listing.checkInTime       ?? null,
       checkOutTime:       listing.checkOutTime      ?? null,
       minimumStay:        listing.minimumStay       ?? 2,
-      amenities:          listing.amenities         ?? [],
+      // amenities: array of {name, category} objects
+      amenities:          listing.amenities ?? [],
       photos:             (listing.photos ?? []).map(p => ({
                             url:     p.url || p.large || p.original || p,
                             caption: p.caption || p.description || '',
@@ -58,13 +59,39 @@ exports.handler = async (event) => {
 
     const now = new Date().toISOString();
 
+    // Respect content overrides — don't let sync clobber manually-managed fields.
+    // If content.overrides.{field} is true, we keep the existing cached value for that field.
+    const overrides = property.content?.overrides || {};
+    const existing  = property.hospitable?.cached  || {};
+    const OVERRIDE_MAP = {
+      heroHeadline:    'name',
+      heroSubtitle:    'summary',
+      neighborhood:    'location.neighborhood',
+      neighborhoodDesc:'location.neighborhoodDescription',
+      directions:      'location.directions',
+      gettingAround:   'location.gettingAround',
+      houseRules:      'houseRules',
+    };
+
+    // For each overridden field, restore the previously cached value
+    for (const [overrideKey, cachedPath] of Object.entries(OVERRIDE_MAP)) {
+      if (!overrides[overrideKey]) continue;
+      const parts = cachedPath.split('.');
+      if (parts.length === 1) {
+        synced[parts[0]] = existing[parts[0]] ?? synced[parts[0]];
+      } else {
+        synced[parts[0]] = synced[parts[0]] || {};
+        synced[parts[0]][parts[1]] = existing[parts[0]]?.[parts[1]] ?? synced[parts[0]][parts[1]];
+      }
+    }
+
     await db.update({
       Key: { PK: `PROPERTY#${propertyId}`, SK: 'METADATA' },
       UpdateExpression: 'SET #h = :h, #updatedAt = :now',
       ExpressionAttributeNames: { '#h': 'hospitable', '#updatedAt': 'updatedAt' },
       ExpressionAttributeValues: {
         ':h': {
-          ...property.hospitable,   // preserve propertyId and any other config fields
+          ...property.hospitable,
           cached: synced,
           lastSyncedAt: now,
         },

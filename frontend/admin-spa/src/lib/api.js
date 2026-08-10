@@ -9,6 +9,11 @@ async function request(method, path, body) {
     headers: { 'Content-Type': 'application/json', Authorization: token },
     body: body ? JSON.stringify(body) : undefined,
   });
+  if (res.status === 401 || res.status === 403) {
+    // Session expired — redirect to login
+    window.location.hash = '#/login';
+    throw new Error('Session expired. Please log in again.');
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `${method} ${path} failed: ${res.status}`);
   return data;

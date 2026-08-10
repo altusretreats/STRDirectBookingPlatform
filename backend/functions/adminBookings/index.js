@@ -2,7 +2,7 @@
 const db = require('/opt/nodejs/lib/db');
 const { ok, badRequest, serverError } = require('/opt/nodejs/lib/response');
 const { withMiddleware } = require('/opt/nodejs/lib/middleware');
-const { logger } = require('/opt/nodejs/lib/logger');
+const logger = require('/opt/nodejs/lib/logger');
 
 /**
  * GET /admin/properties/{propertyId}/bookings

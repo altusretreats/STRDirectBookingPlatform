@@ -588,3 +588,15 @@ a:hover { text-decoration: underline; }
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   }
 }
+
+/* ── Place category header ─────────────────────────────── */
+.gb-place-cat-header {
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin: 24px 0 10px;
+}
+.gb-place-cat-header:first-child { margin-top: 8px; }
