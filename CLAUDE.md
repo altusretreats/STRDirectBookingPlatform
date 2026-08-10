@@ -125,6 +125,8 @@ Place items in a recommendations section (`sectionType: 'recommendations'`) rend
   - `heroAccentWord` — gold accent word (e.g. "Escape")
   - `heroTitleSuffix` — faded suffix (e.g. "Awaits.")
   - `heroPhoto` — hero image URL override
+  - `heroLandingPills` — array of up to 5 pill strings shown at bottom of hero (independent of amenities)
+  - `heroSliderPhotos` — array of S3 URLs for custom hero background images; takes priority over heroPhoto and Hospitable photos in the slider
   - `aboutShow`, `aboutTitle`, `aboutBody` — about section
   - `houseRulesOverride`, `houseRules` — rules override
   - `customSections[]` — extra content sections

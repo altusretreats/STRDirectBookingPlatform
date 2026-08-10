@@ -58,25 +58,26 @@ function initGallery(photos) {
 }
 
 // ── Hero amenity pills ────────────────────────────────
-const HERO_PRIORITY = ['Hot tub','Hot Tub','Fire pit','Fire Pit','Wifi','WiFi','Pet friendly','Pet Friendly','Self check-in','Sauna'];
-
-function initHeroPills(amenities) {
+// landingPills: admin-curated array of strings (content.heroLandingPills)
+// amenities: Hospitable amenities — used as fallback only if no curated pills set
+function initHeroPills(landingPills, amenities) {
   const pillsEl = document.querySelector('.hero__pills');
-  if (!pillsEl || !amenities?.length) return;
+  if (!pillsEl) return;
 
-  const normalized = amenities.map(a =>
-    typeof a === 'string' ? a : (a.name || String(a))
-  );
+  let picks = [];
 
-  // Show priority amenities first, then fill up to 5 total
-  const priority = normalized.filter(n => HERO_PRIORITY.some(p => p.toLowerCase() === n.toLowerCase()));
-  const rest      = normalized.filter(n => !HERO_PRIORITY.some(p => p.toLowerCase() === n.toLowerCase()));
-  const picks     = [...priority, ...rest].slice(0, 5);
+  if (landingPills?.length) {
+    // Admin curated — use exactly as set
+    picks = landingPills.filter(Boolean).slice(0, 6);
+  }
+  // If nothing curated, show nothing — admin should set these
 
-  picks.forEach(name => {
+  if (!picks.length) return;
+
+  picks.forEach(text => {
     const pill = document.createElement('span');
     pill.className = 'hero__pill';
-    pill.textContent = `◆ ${name}`;
+    pill.textContent = `◆ ${text}`;
     pillsEl.appendChild(pill);
   });
 }
@@ -246,7 +247,8 @@ async function loadProperty() {
     const c = p.content       || {};
 
     const name        = c.heroHeadline  || h.name        || p.name        || 'Our Retreat';
-    const description = c.heroSubtitle  || h.summary     || h.description || '';
+    const heroSubtitleText = c.heroSubtitle || '';           // landing page only — no Hospitable fallback
+    const description = h.summary     || h.description || ''; // used only in below-fold sections
     const aboutTitle  = c.aboutTitle    || '';
     const aboutBody   = c.aboutBody     || h.description || description;
     const bedrooms    = p.bedrooms      || h.bedrooms    || '—';
@@ -259,11 +261,12 @@ async function loadProperty() {
     const cancellationPolicy= h.cancellationPolicy || null;
     const heroPhoto   = c.heroPhoto     || null;
 
-    // Hero title fields (admin-manageable)
-    const heroEyebrow    = c.heroEyebrow    || null;
-    const heroTitleLine1 = c.heroTitleLine1 || null;
-    const heroAccentWord = c.heroAccentWord || null;
-    const heroTitleSuffix= c.heroTitleSuffix|| null;
+    // Hero title fields (admin-manageable, no Hospitable fallback)
+    const heroEyebrow     = c.heroEyebrow     || null;
+    const heroTitleLine1  = c.heroTitleLine1  || null;
+    const heroAccentWord  = c.heroAccentWord  || null;
+    const heroTitleSuffix = c.heroTitleSuffix || null;
+    const heroLandingPills = c.heroLandingPills || [];
 
     // Branding
     if (p.branding) {
@@ -274,19 +277,27 @@ async function loadProperty() {
 
     updateSEO(name, aboutBody);
 
-    // Hero title
+    // Hero title (admin-managed only)
     const titleMain   = document.querySelector('.hero__title-main');
     const titleAccent = document.querySelector('.hero__title-accent');
     const titleDim    = document.querySelector('.hero__title-dim');
     const eyebrowEl   = document.querySelector('.hero__eyebrow');
+    const subtitleEl  = document.querySelector('.hero__subtitle');
 
-    if (titleMain   && heroTitleLine1) titleMain.textContent   = heroTitleLine1;
-    if (titleAccent && heroAccentWord) titleAccent.textContent  = heroAccentWord;
-    if (titleDim    && heroTitleSuffix) titleDim.textContent   = ' ' + heroTitleSuffix;
-    if (eyebrowEl   && heroEyebrow)    eyebrowEl.textContent   = heroEyebrow;
+    if (titleMain   && heroTitleLine1)  titleMain.textContent    = heroTitleLine1;
+    if (titleAccent && heroAccentWord)  titleAccent.textContent  = heroAccentWord;
+    if (titleDim    && heroTitleSuffix) titleDim.textContent     = ' ' + heroTitleSuffix;
+    if (eyebrowEl   && heroEyebrow)     eyebrowEl.textContent    = heroEyebrow;
+
+    // Hero subtitle — only show if admin explicitly set it
+    if (subtitleEl) {
+      subtitleEl.textContent = heroSubtitleText;
+      subtitleEl.style.display = heroSubtitleText ? '' : 'none';
+    }
 
     // Property name in nav logo
     document.querySelectorAll('.property-name').forEach(el => el.textContent = name);
+    // Below-fold description (about section only)
     document.querySelectorAll('.property-description').forEach(el => el.textContent = description);
 
     const aboutTitleEl = document.querySelector('.about-title');
@@ -301,10 +312,22 @@ async function loadProperty() {
     setMeta('.stat-guests',    maxGuests);
     setMeta('.stat-type',      h.propertyType || 'Entire home');
 
-    const heroPhotos = heroPhoto ? [{ url: heroPhoto, caption: name }, ...photos] : photos;
+    // Hero slider: custom uploads take priority → single heroPhoto override → Hospitable photos
+    const heroSliderPhotos = (c.heroSliderPhotos || [])
+      .filter(Boolean)
+      .map(url => ({ url }));
+
+    let heroPhotos;
+    if (heroSliderPhotos.length) {
+      heroPhotos = heroSliderPhotos;
+    } else if (heroPhoto) {
+      heroPhotos = [{ url: heroPhoto, caption: name }, ...photos];
+    } else {
+      heroPhotos = photos;
+    }
 
     initGallery(heroPhotos);
-    initHeroPills(amenities);
+    initHeroPills(heroLandingPills, amenities);
     initPhotoGrid(photos);
     initAmenities(amenities);
     initLocation(location);
