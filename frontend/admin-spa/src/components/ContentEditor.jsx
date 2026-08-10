@@ -76,8 +76,12 @@ export default function ContentEditor({ property, onSaved }) {
   const hospCached = property?.hospitable?.cached ?? {};
 
   // Hero
-  const [heroHeadline, setHeroHeadline] = useState(content.heroHeadline ?? '');
-  const [heroSubtitle, setHeroSubtitle] = useState(content.heroSubtitle ?? '');
+  const [heroHeadline,    setHeroHeadline]    = useState(content.heroHeadline    ?? '');
+  const [heroSubtitle,    setHeroSubtitle]    = useState(content.heroSubtitle    ?? '');
+  const [heroEyebrow,     setHeroEyebrow]     = useState(content.heroEyebrow     ?? '');
+  const [heroTitleLine1,  setHeroTitleLine1]  = useState(content.heroTitleLine1  ?? '');
+  const [heroAccentWord,  setHeroAccentWord]  = useState(content.heroAccentWord  ?? '');
+  const [heroTitleSuffix, setHeroTitleSuffix] = useState(content.heroTitleSuffix ?? '');
 
   // About
   const [aboutShow,  setAboutShow]  = useState(content.aboutShow  ?? true);
@@ -122,6 +126,10 @@ export default function ContentEditor({ property, onSaved }) {
         content: {
           heroHeadline,
           heroSubtitle,
+          heroEyebrow,
+          heroTitleLine1,
+          heroAccentWord,
+          heroTitleSuffix,
           aboutShow,
           aboutTitle,
           aboutBody,
@@ -183,6 +191,53 @@ export default function ContentEditor({ property, onSaved }) {
             rows={3}
           />
         </FieldRow>
+      </Card>
+
+      {/* ── Hero Title Block ───────────────────────────────────────────────── */}
+      <Card>
+        <CardHeader
+          title="Hero Title Block"
+          subtitle='Controls the large 3-part title: "[Line 1]" "[Accent Word]" "[Suffix]". Leave blank to use defaults.'
+        />
+        <FormField label="Eyebrow Text" hint='Small text above the title. e.g. "Daniel Boone National Forest · Kentucky"'>
+          <input
+            style={s.input}
+            placeholder="e.g. Daniel Boone National Forest · Kentucky"
+            value={heroEyebrow}
+            onChange={e => setHeroEyebrow(e.target.value)}
+          />
+        </FormField>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+          <FormField label="Title Line 1" hint='White text. e.g. "Your Kentucky"'>
+            <input
+              style={s.input}
+              placeholder="Your Kentucky"
+              value={heroTitleLine1}
+              onChange={e => setHeroTitleLine1(e.target.value)}
+            />
+          </FormField>
+          <FormField label="Accent Word" hint='Gold text. e.g. "Escape"'>
+            <input
+              style={s.input}
+              placeholder="Escape"
+              value={heroAccentWord}
+              onChange={e => setHeroAccentWord(e.target.value)}
+            />
+          </FormField>
+          <FormField label="Title Suffix" hint='Faded text. e.g. "Awaits."'>
+            <input
+              style={s.input}
+              placeholder="Awaits."
+              value={heroTitleSuffix}
+              onChange={e => setHeroTitleSuffix(e.target.value)}
+            />
+          </FormField>
+        </div>
+        <div style={{ marginTop: 12, padding: '12px 16px', background: '#F9FAFB', borderRadius: 8, fontSize: 13, color: '#6B7280' }}>
+          Preview: <strong style={{ color: '#111' }}>{heroTitleLine1 || 'Your Kentucky'}</strong>{' '}
+          <strong style={{ color: '#C9B87A' }}>{heroAccentWord || 'Escape'}</strong>{' '}
+          <span style={{ color: '#9CA3AF' }}>{heroTitleSuffix || 'Awaits.'}</span>
+        </div>
       </Card>
 
       {/* ── About Section ─────────────────────────────────────────────────── */}

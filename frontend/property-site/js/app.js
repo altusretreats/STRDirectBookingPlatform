@@ -2,7 +2,7 @@
  * Main app bootstrap — fetches property data, mounts components.
  */
 
-// ── Toast utility (global) ──────────────────────────
+// ── Toast utility ────────────────────────────────────
 window.showToast = function(message, type = 'info', duration = 5000) {
   let container = document.getElementById('toast-container');
   if (!container) {
@@ -16,49 +16,72 @@ window.showToast = function(message, type = 'info', duration = 5000) {
   setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, duration);
 };
 
-// ── Photo gallery ────────────────────────────────────
+// ── Hero gallery (full-page background slides) ────────
 function initGallery(photos) {
-  const hero = document.querySelector('.hero__gallery');
-  const dotsContainer = document.querySelector('.hero__dots');
-  if (!hero || !photos?.length) return;
+  const slidesEl     = document.querySelector('.slides');
+  const dotsEl       = document.querySelector('.dots');
+  if (!slidesEl || !photos?.length) return;
 
   photos.forEach((photo, i) => {
     const slide = document.createElement('div');
-    slide.className = `hero__slide${i === 0 ? ' active' : ''}`;
+    slide.className = `slide${i === 0 ? ' active' : ''}`;
     slide.style.backgroundImage = `url('${photo.url}')`;
-    hero.appendChild(slide);
+    if (photo.position) slide.style.backgroundPosition = photo.position;
+    slidesEl.appendChild(slide);
 
-    const dot = document.createElement('button');
-    dot.className = `hero__dot${i === 0 ? ' active' : ''}`;
-    dot.setAttribute('aria-label', photo.caption || `Photo ${i + 1}`);
-    dot.setAttribute('role', 'tab');
-    dot.addEventListener('click', () => goToSlide(i));
-    dotsContainer?.appendChild(dot);
+    if (dotsEl) {
+      const dot = document.createElement('button');
+      dot.className = `dot${i === 0 ? ' active' : ''}`;
+      dot.setAttribute('aria-label', photo.caption || `Photo ${i + 1}`);
+      dot.setAttribute('role', 'tab');
+      dot.addEventListener('click', () => goToSlide(i));
+      dotsEl.appendChild(dot);
+    }
   });
 
   let current = 0;
   let timer = null;
 
   function goToSlide(idx) {
-    hero.querySelectorAll('.hero__slide')[current]?.classList.remove('active');
-    dotsContainer?.querySelectorAll('.hero__dot')[current]?.classList.remove('active');
+    slidesEl.querySelectorAll('.slide')[current]?.classList.remove('active');
+    dotsEl?.querySelectorAll('.dot')[current]?.classList.remove('active');
     current = (idx + photos.length) % photos.length;
-    hero.querySelectorAll('.hero__slide')[current]?.classList.add('active');
-    dotsContainer?.querySelectorAll('.hero__dot')[current]?.classList.add('active');
+    slidesEl.querySelectorAll('.slide')[current]?.classList.add('active');
+    dotsEl?.querySelectorAll('.dot')[current]?.classList.add('active');
   }
 
-  // Auto-advance every 5s
-  function startTimer() {
-    timer = setInterval(() => goToSlide(current + 1), 5000);
-  }
+  function startTimer() { timer = setInterval(() => goToSlide(current + 1), 5000); }
   startTimer();
 
-  // Pause on hover
-  hero.addEventListener('mouseenter', () => clearInterval(timer));
-  hero.addEventListener('mouseleave', startTimer);
+  slidesEl.addEventListener('mouseenter', () => clearInterval(timer));
+  slidesEl.addEventListener('mouseleave', startTimer);
 }
 
-// ── Photo grid ───────────────────────────────────────
+// ── Hero amenity pills ────────────────────────────────
+const HERO_PRIORITY = ['Hot tub','Hot Tub','Fire pit','Fire Pit','Wifi','WiFi','Pet friendly','Pet Friendly','Self check-in','Sauna'];
+
+function initHeroPills(amenities) {
+  const pillsEl = document.querySelector('.hero__pills');
+  if (!pillsEl || !amenities?.length) return;
+
+  const normalized = amenities.map(a =>
+    typeof a === 'string' ? a : (a.name || String(a))
+  );
+
+  // Show priority amenities first, then fill up to 5 total
+  const priority = normalized.filter(n => HERO_PRIORITY.some(p => p.toLowerCase() === n.toLowerCase()));
+  const rest      = normalized.filter(n => !HERO_PRIORITY.some(p => p.toLowerCase() === n.toLowerCase()));
+  const picks     = [...priority, ...rest].slice(0, 5);
+
+  picks.forEach(name => {
+    const pill = document.createElement('span');
+    pill.className = 'hero__pill';
+    pill.textContent = `◆ ${name}`;
+    pillsEl.appendChild(pill);
+  });
+}
+
+// ── Photo grid ────────────────────────────────────────
 function initPhotoGrid(photos) {
   const grid = document.querySelector('.photo-grid');
   if (!grid || !photos?.length) return;
@@ -68,8 +91,7 @@ function initPhotoGrid(photos) {
     const item = document.createElement('div');
     item.className = 'photo-grid__item';
     const img = document.createElement('img');
-    img.src = photo.url; img.alt = photo.caption || '';
-    img.loading = 'lazy'; img.decoding = 'async';
+    img.src = photo.url; img.alt = photo.caption || ''; img.loading = 'lazy';
     item.appendChild(img);
     if (i === 4 && photos.length > 5) {
       const more = document.createElement('div');
@@ -83,13 +105,13 @@ function initPhotoGrid(photos) {
 
 // ── Amenities ─────────────────────────────────────────
 const AMENITY_ICONS = {
-  'WiFi': '📶', 'Full kitchen': '🍳', 'Full Kitchen': '🍳', 'Free parking': '🅿️',
+  'Wifi': '📶', 'WiFi': '📶', 'Full kitchen': '🍳', 'Free parking': '🅿️',
   'Hot Tub': '♨️', 'Hot tub': '♨️', 'Fire pit': '🔥', 'Fire Pit': '🔥',
   'Washer/dryer': '👕', 'Air conditioning': '❄️', 'Heating': '🌡️',
   'Smart TV': '📺', 'Outdoor dining area': '🌿', 'BBQ grill': '🍖',
   'Game room': '🎮', 'Fireplace': '🪵', 'Pool': '🏊', 'Sauna': '🧖',
   'Cold Plunge': '🧊', 'EV Charger': '⚡', 'Trail Access': '🥾',
-  'World-Class Climbing Nearby': '🧗',
+  'Pet friendly': '🐾', 'Pet Friendly': '🐾', 'Self check-in': '🔑',
 };
 
 function initAmenities(amenities) {
@@ -97,12 +119,10 @@ function initAmenities(amenities) {
   if (!grid || !amenities?.length) return;
   grid.innerHTML = '';
 
-  // Normalize: support both legacy strings and new {name, category} objects
   const normalized = amenities.map(a =>
     typeof a === 'string' ? { name: a, category: 'Other' } : { name: a.name || String(a), category: a.category || 'Other' }
   );
 
-  // Group by category
   const groups = normalized.reduce((acc, a) => {
     if (!acc[a.category]) acc[a.category] = [];
     acc[a.category].push(a.name);
@@ -112,7 +132,6 @@ function initAmenities(amenities) {
   const hasCategories = Object.keys(groups).length > 1 || !groups['Other'];
 
   if (hasCategories) {
-    // Render category headers + amenity chips
     Object.entries(groups).forEach(([cat, names]) => {
       const header = document.createElement('div');
       header.className = 'amenity-cat-header';
@@ -126,7 +145,6 @@ function initAmenities(amenities) {
       });
     });
   } else {
-    // No categories — flat list
     normalized.forEach(({ name }) => {
       const el = document.createElement('div');
       el.className = 'amenity';
@@ -136,130 +154,79 @@ function initAmenities(amenities) {
   }
 }
 
-// ── Location section ──────────────────────────────────
+// ── Location ──────────────────────────────────────────
 function initLocation(location) {
   if (!location) return;
 
-  // Neighborhood name
   const nameEls = document.querySelectorAll('.location-neighborhood-name');
   if (location.neighborhood) nameEls.forEach(el => el.textContent = location.neighborhood);
 
-  // Map
+  // Eyebrow (location line in hero)
+  const eyebrow = document.querySelector('.hero__eyebrow');
+  if (eyebrow && location.neighborhood) eyebrow.textContent = location.neighborhood;
+
   const mapEl = document.getElementById('location-map');
   if (mapEl) {
     if (location.mapsEmbed) {
-      // Custom embed code
       mapEl.innerHTML = location.mapsEmbed;
     } else if (location.pinLat && location.pinLng) {
       const src = `https://maps.google.com/maps?q=${location.pinLat},${location.pinLng}&z=13&output=embed`;
-      mapEl.innerHTML = `<iframe src="${src}" width="100%" height="100%" style="border:0; border-radius: var(--radius);" loading="lazy" title="Property location"></iframe>`;
+      mapEl.innerHTML = `<iframe src="${src}" width="100%" height="100%" style="border:0;border-radius:12px;" loading="lazy" title="Property location"></iframe>`;
     } else {
       mapEl.innerHTML = `<div class="map-placeholder"><span>📍</span> ${location.neighborhood || 'Location'}</div>`;
     }
   }
 
-  // Neighborhood description
-  const nbhoodCard = document.getElementById('loc-neighborhood');
-  const nbhoodDesc = document.querySelector('.location-neighborhood-desc');
-  if ((location.neighborhoodDescription || location.neighborhoodDesc) && nbhoodCard && nbhoodDesc) {
-    nbhoodDesc.textContent = location.neighborhoodDescription || location.neighborhoodDesc;
-    nbhoodCard.style.display = '';
-  }
+  const show = (id, descEl, text) => {
+    if (!text) return;
+    const card = document.getElementById(id);
+    const el   = document.querySelector(descEl);
+    if (card && el) { el.textContent = text; card.style.display = ''; }
+  };
 
-  // Directions
-  const dirCard = document.getElementById('loc-directions');
-  const dirEl   = document.querySelector('.location-directions');
-  if (location.directions && dirCard && dirEl) {
-    dirEl.textContent = location.directions;
-    dirCard.style.display = '';
-  }
-
-  // Getting around
-  const aroundCard = document.getElementById('loc-around');
-  const aroundEl   = document.querySelector('.location-around');
-  if (location.gettingAround && aroundCard && aroundEl) {
-    aroundEl.textContent = location.gettingAround;
-    aroundCard.style.display = '';
-  }
+  show('loc-neighborhood', '.location-neighborhood-desc', location.neighborhoodDescription || location.neighborhoodDesc);
+  show('loc-directions',   '.location-directions',        location.directions);
+  show('loc-around',       '.location-around',            location.gettingAround);
 }
 
-// ── House Rules Modal ─────────────────────────────────
+// ── House Rules ───────────────────────────────────────
 function initHouseRules(houseRules, cancellationPolicy) {
-  const haRules  = houseRules?.length > 0;
-  const hasCancel= !!cancellationPolicy;
-  if (!haRules && !hasCancel) return;
+  if (!houseRules?.length && !cancellationPolicy) return;
 
-  // Show trigger button
   const summary = document.getElementById('rules-summary');
   if (summary) summary.style.display = '';
 
-  // Populate modal
   const rulesList = document.getElementById('rules-list');
   if (rulesList && houseRules?.length) {
     houseRules.forEach(rule => {
       const li = document.createElement('li');
       li.className = 'rules-list__item';
-      // Normalize: handle string or object {body/rule/text}
       li.textContent = typeof rule === 'string' ? rule : (rule.body || rule.rule || rule.text || rule.name || JSON.stringify(rule));
       rulesList.appendChild(li);
     });
   }
 
-  if (hasCancel) {
-    const cancelSection = document.getElementById('cancellation-section');
-    const cancelText    = document.getElementById('cancellation-text');
-    if (cancelSection && cancelText) {
-      cancelText.textContent = cancellationPolicy;
-      cancelSection.style.display = '';
-    }
+  if (cancellationPolicy) {
+    const sec  = document.getElementById('cancellation-section');
+    const text = document.getElementById('cancellation-text');
+    if (sec && text) { text.textContent = cancellationPolicy; sec.style.display = ''; }
   }
 
-  // Modal open/close
   const modal    = document.getElementById('rules-modal');
   const trigger  = document.getElementById('rules-trigger');
   const closeBtn = document.getElementById('rules-modal-close');
 
-  function openModal() {
-    modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden';
-    closeBtn.focus();
-  }
-  function closeModal() {
-    modal.style.display = 'none';
-    document.body.style.overflow = '';
-    trigger?.focus();
-  }
+  const openModal  = () => { modal.style.display = 'flex'; document.body.style.overflow = 'hidden'; closeBtn?.focus(); };
+  const closeModal = () => { modal.style.display = 'none'; document.body.style.overflow = ''; trigger?.focus(); };
 
   trigger?.addEventListener('click', openModal);
   closeBtn?.addEventListener('click', closeModal);
   modal?.addEventListener('click', e => { if (e.target === modal) closeModal(); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && modal.style.display !== 'none') closeModal(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && modal?.style.display !== 'none') closeModal(); });
 }
 
-// ── Sticky nav ────────────────────────────────────────
-function initNav() {
-  const nav = document.querySelector('.nav');
-  if (!nav) return;
-  window.addEventListener('scroll', () => {
-    nav.classList.toggle('scrolled', window.scrollY > 80);
-  }, { passive: true });
-}
-
-// ── Smooth scroll links ───────────────────────────────
-function initNavLinks() {
-  document.querySelectorAll('a[href^="#"]').forEach(el => {
-    el.addEventListener('click', e => {
-      const target = document.querySelector(el.getAttribute('href'));
-      if (target) {
-        e.preventDefault();
-        target.scrollIntoView({ behavior: 'smooth' });
-      }
-    });
-  });
-}
-
-// ── SEO meta tags ─────────────────────────────────────
-function updateSEO(name, description, propertyType, location) {
+// ── SEO ───────────────────────────────────────────────
+function updateSEO(name, description) {
   if (name) {
     document.title = `${name} — Direct Booking | Altus Retreats`;
     document.querySelector('meta[property="og:title"]')?.setAttribute('content', name);
@@ -278,7 +245,6 @@ async function loadProperty() {
     const p = data.property   || {};
     const c = p.content       || {};
 
-    // Resolve: admin content overrides Hospitable where set
     const name        = c.heroHeadline  || h.name        || p.name        || 'Our Retreat';
     const description = c.heroSubtitle  || h.summary     || h.description || '';
     const aboutTitle  = c.aboutTitle    || '';
@@ -288,22 +254,38 @@ async function loadProperty() {
     const maxGuests   = p.maxGuests     || h.maxGuests   || '—';
     const amenities   = h.amenities     || [];
     const photos      = h.photos        || [];
-    const location    = data.property?.location || null;
+    const location    = p.location      || null;
     const houseRules        = h.houseRules        || [];
     const cancellationPolicy= h.cancellationPolicy || null;
     const heroPhoto   = c.heroPhoto     || null;
 
-    // Apply branding overrides
+    // Hero title fields (admin-manageable)
+    const heroEyebrow    = c.heroEyebrow    || null;
+    const heroTitleLine1 = c.heroTitleLine1 || null;
+    const heroAccentWord = c.heroAccentWord || null;
+    const heroTitleSuffix= c.heroTitleSuffix|| null;
+
+    // Branding
     if (p.branding) {
       const r = document.documentElement.style;
       if (p.branding.primaryColor) r.setProperty('--color-primary', p.branding.primaryColor);
       if (p.branding.accentColor)  r.setProperty('--color-accent',  p.branding.accentColor);
     }
 
-    // Update SEO
-    updateSEO(name, aboutBody, h.propertyType, location);
+    updateSEO(name, aboutBody);
 
-    // Populate content
+    // Hero title
+    const titleMain   = document.querySelector('.hero__title-main');
+    const titleAccent = document.querySelector('.hero__title-accent');
+    const titleDim    = document.querySelector('.hero__title-dim');
+    const eyebrowEl   = document.querySelector('.hero__eyebrow');
+
+    if (titleMain   && heroTitleLine1) titleMain.textContent   = heroTitleLine1;
+    if (titleAccent && heroAccentWord) titleAccent.textContent  = heroAccentWord;
+    if (titleDim    && heroTitleSuffix) titleDim.textContent   = ' ' + heroTitleSuffix;
+    if (eyebrowEl   && heroEyebrow)    eyebrowEl.textContent   = heroEyebrow;
+
+    // Property name in nav logo
     document.querySelectorAll('.property-name').forEach(el => el.textContent = name);
     document.querySelectorAll('.property-description').forEach(el => el.textContent = description);
 
@@ -313,17 +295,16 @@ async function loadProperty() {
     const aboutBodyEl = document.querySelector('.about-body');
     if (aboutBodyEl) aboutBodyEl.textContent = aboutBody;
 
-    // Stats
-    const setMeta = (sel, val) => { document.querySelectorAll(sel).forEach(el => el.textContent = val); };
+    const setMeta = (sel, val) => document.querySelectorAll(sel).forEach(el => el.textContent = val);
     setMeta('.stat-bedrooms',  bedrooms);
     setMeta('.stat-bathrooms', bathrooms);
     setMeta('.stat-guests',    maxGuests);
     setMeta('.stat-type',      h.propertyType || 'Entire home');
 
-    // Hero photo (if admin set one, use as first slide)
     const heroPhotos = heroPhoto ? [{ url: heroPhoto, caption: name }, ...photos] : photos;
 
     initGallery(heroPhotos);
+    initHeroPills(amenities);
     initPhotoGrid(photos);
     initAmenities(amenities);
     initLocation(location);
@@ -335,9 +316,18 @@ async function loadProperty() {
   }
 }
 
+// ── Smooth scroll ─────────────────────────────────────
+function initNavLinks() {
+  document.querySelectorAll('a[href^="#"]').forEach(el => {
+    el.addEventListener('click', e => {
+      const target = document.querySelector(el.getAttribute('href'));
+      if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth' }); }
+    });
+  });
+}
+
 // ── Boot ──────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  initNav();
   initNavLinks();
   loadProperty();
 });

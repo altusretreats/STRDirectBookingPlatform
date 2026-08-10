@@ -113,8 +113,24 @@ aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/*"
 ## Guidebook — place items
 Place items in a recommendations section (`sectionType: 'recommendations'`) render as a card grid grouped by category (Restaurants / Attractions / Activities / Shopping). Clicking a card opens a detail modal with Directions button (uses lat/lng coordinates for reliable Google Maps routing).
 
+## Property site — page structure
+- **`index.html`** — Full-viewport hero landing page. Slides (Hospitable photos) fill the entire background. A decorative `frame-border` (position:absolute, inset:70px, 6.5px white border, border-radius:26px) sits on top as a frame. Nav is 3-column grid (logo | centered links | Book Now). Left-aligned headline with 3 spans (`.hero__title-main`, `.hero__title-accent`, `.hero__title-dim`). Bottom bar: dots | amenity pills | rating. Scrolls to about/amenities/location sections below.
+- **`book.html`** — Booking page. Nav + hero strip (first photo) + 2-column layout: property details left (stats, about, amenities, house rules), Hospitable widget right (sticky). `css/book.css` + `js/book.js`.
+- **`js/app.js`** — Fetches `/properties/{id}`, populates hero slides, pills, title blocks, below-fold sections.
+- **Content fields** (all in `property.content`, admin-editable via ContentEditor):
+  - `heroHeadline` — property name override
+  - `heroSubtitle` — tagline / description override
+  - `heroEyebrow` — eyebrow text above title (e.g. "Daniel Boone National Forest · Kentucky")
+  - `heroTitleLine1` — white title line (e.g. "Your Kentucky")
+  - `heroAccentWord` — gold accent word (e.g. "Escape")
+  - `heroTitleSuffix` — faded suffix (e.g. "Awaits.")
+  - `heroPhoto` — hero image URL override
+  - `aboutShow`, `aboutTitle`, `aboutBody` — about section
+  - `houseRulesOverride`, `houseRules` — rules override
+  - `customSections[]` — extra content sections
+  - `overrides{}` — lock flags to prevent sync from overwriting fields
+
 ## Key pending items
-- Hospitable PAT not yet provided — mock responses until available
-- Logo/branding pending ~2026-08-09
+- Logo/branding pending
 - AI concierge feature (uses `aiContext` fields already being collected)
-- Real booking flow (Hospitable widget integration on property site)
+- Hospitable widget `data-site-uuid` may need updating once Direct channel is fully configured

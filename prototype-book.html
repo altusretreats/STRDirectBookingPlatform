@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book Your Stay — The Overhang</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #F9FAFB;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #111827;
+    }
+
+    /* Nav */
+    nav {
+      background: #2D3A2E;
+      padding: 18px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo .name  { font-size: 15px; font-weight: 600; color: #fff; }
+    .logo .brand { font-size: 10px; color: rgba(255,255,255,0.4); letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+
+    .nav-back {
+      background: none;
+      border: 0.5px solid rgba(255,255,255,0.25);
+      color: rgba(255,255,255,0.7);
+      padding: 8px 16px;
+      border-radius: 100px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: border-color .15s, color .15s;
+    }
+    .nav-back:hover { border-color: rgba(255,255,255,0.5); color: #fff; }
+
+    /* Hero strip */
+    .hero-strip {
+      width: 100%;
+      height: 280px;
+      background-image: url('https://images.unsplash.com/photo-1518780664697-55e3ad937233?w=1600&q=80');
+      background-size: cover;
+      background-position: center 35%;
+      position: relative;
+    }
+
+    .hero-strip::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.45));
+    }
+
+    .hero-strip-text {
+      position: absolute;
+      bottom: 32px;
+      left: 40px;
+      z-index: 2;
+    }
+
+    .hero-strip-text h1 {
+      font-size: 32px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+
+    .hero-strip-text .meta {
+      font-size: 13px;
+      color: rgba(255,255,255,0.65);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .hero-strip-text .meta .star { color: #C9B87A; }
+
+    /* Layout */
+    .page-body {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 48px 40px 80px;
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 48px;
+      align-items: start;
+    }
+
+    /* Left col */
+    .section-label {
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #9CA3AF;
+      margin-bottom: 8px;
+    }
+
+    .section-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #111827;
+      margin-bottom: 16px;
+    }
+
+    .about-text {
+      font-size: 15px;
+      line-height: 1.8;
+      color: #4B5563;
+      margin-bottom: 40px;
+    }
+
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 40px;
+    }
+
+    .detail-card {
+      background: #fff;
+      border: 1px solid #E5E7EB;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .detail-card .icon { font-size: 22px; margin-bottom: 6px; }
+    .detail-card .val  { font-size: 18px; font-weight: 700; color: #111827; }
+    .detail-card .key  { font-size: 11px; color: #9CA3AF; margin-top: 2px; }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #E5E7EB;
+      margin: 32px 0;
+    }
+
+    .amenities-mini {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .amenity-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      color: #374151;
+      padding: 10px 12px;
+      background: #F9FAFB;
+      border-radius: 10px;
+      border: 1px solid #E5E7EB;
+    }
+
+    .amenity-row .icon { font-size: 18px; }
+
+    /* Rules */
+    .rules-list {
+      list-style: none;
+      margin-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .rules-list li {
+      font-size: 14px;
+      color: #4B5563;
+      padding: 10px 14px;
+      background: #fff;
+      border: 1px solid #E5E7EB;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Right col — booking widget placeholder */
+    .booking-card {
+      background: #fff;
+      border: 1px solid #E5E7EB;
+      border-radius: 20px;
+      overflow: hidden;
+      position: sticky;
+      top: 24px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+    }
+
+    .booking-card-header {
+      background: #2D3A2E;
+      padding: 24px;
+      color: #fff;
+    }
+
+    .booking-card-header .price {
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .booking-card-header .price span {
+      font-size: 14px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.6);
+    }
+
+    .booking-card-header .no-fee {
+      font-size: 12px;
+      color: #C9B87A;
+      margin-top: 4px;
+    }
+
+    .widget-area {
+      padding: 24px;
+    }
+
+    .widget-placeholder {
+      background: #F3F4F6;
+      border: 1.5px dashed #D1D5DB;
+      border-radius: 12px;
+      height: 360px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: #9CA3AF;
+      font-size: 13px;
+    }
+
+    .widget-placeholder .wicon { font-size: 28px; margin-bottom: 4px; }
+    .widget-placeholder strong { color: #6B7280; }
+
+    .btn-book-full {
+      width: 100%;
+      background: #C9B87A;
+      color: #1a3520;
+      border: none;
+      padding: 16px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 16px;
+      transition: background .15s;
+    }
+
+    .btn-book-full:hover { background: #d5c68d; }
+
+    .booking-note {
+      font-size: 11px;
+      color: #9CA3AF;
+      text-align: center;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="logo">
+      <div class="name">The Overhang</div>
+      <div class="brand">Altus Retreats</div>
+    </div>
+    <button class="nav-back" onclick="window.location.href='prototype-index.html'">← Back to property</button>
+  </nav>
+
+  <div class="hero-strip">
+    <div class="hero-strip-text">
+      <h1>Book Your Stay</h1>
+      <div class="meta">
+        <span><span class="star">★</span> 4.9 · 120+ reviews</span>
+        <span>Daniel Boone National Forest, KY</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-body">
+
+    <!-- Left: property details -->
+    <div>
+
+      <div class="details-grid">
+        <div class="detail-card">
+          <div class="icon">🛏️</div>
+          <div class="val">3</div>
+          <div class="key">Bedrooms</div>
+        </div>
+        <div class="detail-card">
+          <div class="icon">🚿</div>
+          <div class="val">2</div>
+          <div class="key">Bathrooms</div>
+        </div>
+        <div class="detail-card">
+          <div class="icon">👥</div>
+          <div class="val">8</div>
+          <div class="key">Guests</div>
+        </div>
+        <div class="detail-card">
+          <div class="icon">🔑</div>
+          <div class="val">3pm</div>
+          <div class="key">Check-in</div>
+        </div>
+      </div>
+
+      <div class="section-label">About</div>
+      <div class="section-title">Built for the mountains.</div>
+      <p class="about-text">The Overhang is a modern cabin retreat perched above a creek in the heart of Daniel Boone National Forest. Whether you're here to hike, unwind, or just disappear for a few days — this is the place. Hot tub, fire pit, full kitchen, and nothing but trees as far as you can see.</p>
+
+      <hr class="divider">
+
+      <div class="section-label">Amenities</div>
+      <div class="section-title">What's included</div>
+      <div class="amenities-mini">
+        <div class="amenity-row"><span class="icon">♨️</span> Hot tub</div>
+        <div class="amenity-row"><span class="icon">🔥</span> Fire pit</div>
+        <div class="amenity-row"><span class="icon">📶</span> Wifi</div>
+        <div class="amenity-row"><span class="icon">🍳</span> Full kitchen</div>
+        <div class="amenity-row"><span class="icon">❄️</span> Air conditioning</div>
+        <div class="amenity-row"><span class="icon">🅿️</span> Free parking</div>
+        <div class="amenity-row"><span class="icon">🐾</span> Pet friendly</div>
+        <div class="amenity-row"><span class="icon">🔑</span> Self check-in</div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="section-label">House rules</div>
+      <div class="section-title">Good to know</div>
+      <ul class="rules-list">
+        <li>🐾 Pets allowed</li>
+        <li>🚭 No smoking</li>
+        <li>🎉 No parties or events</li>
+        <li>🕒 Check-in after 3:00 PM · Check-out by 11:00 AM</li>
+      </ul>
+
+    </div>
+
+    <!-- Right: booking widget -->
+    <div class="booking-card">
+      <div class="booking-card-header">
+        <div class="price">$285 <span>/ night</span></div>
+        <div class="no-fee">✦ No booking fees — book direct</div>
+      </div>
+      <div class="widget-area">
+        <div class="widget-placeholder">
+          <div class="wicon">📅</div>
+          <strong>Hospitable Booking Widget</strong>
+          <span>Calendar · dates · payment</span>
+          <span style="font-size:11px;margin-top:8px;text-align:center;max-width:200px;">This will be the embedded Hospitable widget in the live site</span>
+        </div>
+        <button class="btn-book-full">Reserve Now →</button>
+        <p class="booking-note">You won't be charged yet · Powered by Hospitable</p>
+      </div>
+    </div>
+
+  </div>
+
+</body>
+</html>
