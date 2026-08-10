@@ -157,12 +157,12 @@ export default function MarkdownEditor({ value, onChange, placeholder, rows = 5,
 }
 
 const s = {
-  wrapper:        { border: '1px solid #D1D5DB', borderRadius: 8, overflow: 'hidden', background: '#fff' },
+  wrapper:        { border: '1px solid #D1D5DB', borderRadius: 8, background: '#fff' },
   toolbar:        { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 8px', background: '#F9FAFB', borderBottom: '1px solid #E5E7EB', gap: 8 },
   toolGroup:      { display: 'flex', gap: 2 },
   toolBtn:        { background: 'none', border: 'none', borderRadius: 4, padding: '3px 8px', fontSize: 13, cursor: 'pointer', color: '#374151', fontFamily: 'inherit', lineHeight: 1.4 },
   previewBtn:     { background: 'none', border: '1px solid #E5E7EB', borderRadius: 5, padding: '3px 10px', fontSize: 12, cursor: 'pointer', color: '#6B7280', fontFamily: 'inherit', whiteSpace: 'nowrap' },
   previewBtnActive:{ background: '#F3F4F6', color: '#111827' },
-  textarea:       { width: '100%', padding: '10px 12px', border: 'none', outline: 'none', fontSize: 14, fontFamily: 'inherit', color: '#111827', resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box', display: 'block' },
+  textarea:       { width: '100%', padding: '10px 12px', border: 'none', borderTop: '1px solid #E5E7EB', outline: 'none', fontSize: 14, fontFamily: 'inherit', color: '#111827', resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box', display: 'block', userSelect: 'text', pointerEvents: 'auto', cursor: 'text' },
   preview:        { padding: '12px 14px', minHeight: 80, fontSize: 14, lineHeight: 1.6, color: '#111827', background: '#fff' },
 };
