@@ -2,7 +2,7 @@
  * MarkdownEditor — textarea with formatting toolbar and preview toggle.
  * No external dependencies — uses a lightweight inline markdown renderer.
  */
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 // ── Lightweight markdown → HTML ────────────────────────────────────────────────
 function renderMarkdown(text) {
@@ -95,6 +95,13 @@ export default function MarkdownEditor({ value, onChange, placeholder, rows = 5,
   const [preview, setPreview] = useState(false);
   const ref = useRef(null);
 
+  // Sync external value changes without resetting cursor (only when textarea not focused)
+  useEffect(() => {
+    if (ref.current && document.activeElement !== ref.current) {
+      ref.current.value = value ?? '';
+    }
+  }, [value]);
+
   function handleKeyDown(e) {
     if ((e.metaKey || e.ctrlKey) && e.key === 'b') { e.preventDefault(); applyFormat(ref.current, 'bold'); }
     if ((e.metaKey || e.ctrlKey) && e.key === 'i') { e.preventDefault(); applyFormat(ref.current, 'italic'); }
@@ -137,8 +144,8 @@ export default function MarkdownEditor({ value, onChange, placeholder, rows = 5,
         <textarea
           ref={ref}
           style={{ ...s.textarea, opacity: disabled ? 0.6 : 1 }}
-          value={value}
-          onChange={e => onChange(e.target.value)}
+          defaultValue={value}
+          onInput={e => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           rows={rows}

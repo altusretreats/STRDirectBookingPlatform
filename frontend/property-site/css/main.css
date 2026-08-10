@@ -169,15 +169,19 @@ a { text-decoration: none; color: inherit; }
 
 /* ── Hero bottom bar ──────────────────────────────── */
 .hero__bottom {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: end;
-  gap: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
 }
 
-/* On desktop, bottom-row is a transparent pass-through wrapper */
+/* Dots + rating always on one row */
 .hero__bottom-row {
-  display: contents;
+  display: flex;
+  width: 100%;
+  align-items: flex-end;
+  justify-content: space-between;
 }
 
 /* Slide dots */
@@ -226,7 +230,7 @@ a { text-decoration: none; color: inherit; }
 /* Rating */
 .hero__rating { text-align: right; }
 .hero__rating-num  { font-size: 26px; font-weight: 700; color: #fff; }
-.hero__star { color: var(--color-accent); }
+.hero__star { color: #C9B87A; }
 .hero__rating-sub  { font-size: 12px; color: rgba(255,255,255,0.45); margin-top: 3px; }
 
 /* ── Below-fold base ──────────────────────────────── */
@@ -601,31 +605,9 @@ h2 {
 
   .hero__subtitle { display: none; }
 
-  /* Bottom bar: stack pills above dots+rating row */
-  .hero__bottom {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 14px;
-  }
-
-  .hero__pills {
-    order: 1;
-    justify-content: center;
-  }
-
   .hero__pill {
     font-size: 11px;
     padding: 6px 12px;
-  }
-
-  /* Dots + rating side by side on one row */
-  .hero__bottom-row {
-    display: flex;
-    width: 100%;
-    align-items: flex-end;
-    justify-content: space-between;
-    order: 2;
   }
 
   .dots   { order: 1; }
