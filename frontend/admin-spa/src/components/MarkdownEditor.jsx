@@ -1,26 +1,22 @@
 /**
- * MarkdownEditor — uncontrolled textarea that preserves cursor position.
- * Uses imperative DOM management to avoid React's cursor-reset behavior.
+ * MarkdownEditor — uncontrolled textarea with safe cursor preservation.
+ * Only updates the DOM value when content actually differs AND textarea is not focused.
+ * This prevents Windows Chrome from resetting cursor/selection on re-render.
  */
 import { useRef, useLayoutEffect } from 'react';
 
 export default function MarkdownEditor({ value, onChange, placeholder, rows = 5, disabled }) {
   const ref = useRef(null);
 
-  // On mount: set initial value
-  useLayoutEffect(() => {
-    if (ref.current) ref.current.value = value ?? '';
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // When parent changes value externally (e.g. loading saved data),
-  // update the DOM only if the textarea isn't currently focused.
-  // Never touch it while the user is typing — that would reset the cursor.
+  // After every render: sync DOM ← prop only when the content actually changed
+  // AND the textarea is not focused. Never touch the DOM while the user is typing.
   useLayoutEffect(() => {
     if (!ref.current) return;
-    if (document.activeElement !== ref.current) {
-      ref.current.value = value ?? '';
+    const propValue = value ?? '';
+    if (document.activeElement !== ref.current && ref.current.value !== propValue) {
+      ref.current.value = propValue;
     }
-  }, [value]);
+  });
 
   return (
     <textarea
