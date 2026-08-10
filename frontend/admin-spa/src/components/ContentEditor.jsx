@@ -216,7 +216,7 @@ export default function ContentEditor({ property, onSaved }) {
           <MarkdownEditor
             value={heroSubtitle}
             onChange={setHeroSubtitle}
-            placeholder={hospCached.summary ?? 'A short tagline for the hero…'}
+            placeholder="Leave blank to fall back to Hospitable data"
             rows={3}
           />
         </FieldRow>
@@ -355,7 +355,7 @@ export default function ContentEditor({ property, onSaved }) {
           <MarkdownEditor
             value={aboutBody}
             onChange={setAboutBody}
-            placeholder={hospCached.description ?? 'Describe the property in your own words…'}
+            placeholder="Leave blank to fall back to Hospitable data"
             rows={6}
           />
         </FieldRow>
