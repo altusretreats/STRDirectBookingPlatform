@@ -77,7 +77,7 @@ function initHeroPills(landingPills, amenities) {
   picks.forEach(text => {
     const pill = document.createElement('span');
     pill.className = 'hero__pill';
-    pill.textContent = `◆ ${text}`;
+    pill.textContent = text;
     pillsEl.appendChild(pill);
   });
 }
@@ -268,11 +268,14 @@ async function loadProperty() {
     const heroTitleSuffix = c.heroTitleSuffix || null;
     const heroLandingPills = c.heroLandingPills || [];
 
-    // Branding
+    // Branding + per-content accent color override
     if (p.branding) {
       const r = document.documentElement.style;
       if (p.branding.primaryColor) r.setProperty('--color-primary', p.branding.primaryColor);
       if (p.branding.accentColor)  r.setProperty('--color-accent',  p.branding.accentColor);
+    }
+    if (c.heroAccentColor) {
+      document.documentElement.style.setProperty('--color-accent', c.heroAccentColor);
     }
 
     updateSEO(name, aboutBody);
@@ -339,12 +342,33 @@ async function loadProperty() {
   }
 }
 
-// ── Smooth scroll ─────────────────────────────────────
+// ── Smooth scroll (custom easing) ─────────────────────
+function smoothScrollTo(targetEl) {
+  const targetY  = targetEl.getBoundingClientRect().top + window.scrollY;
+  const startY   = window.scrollY;
+  const distance = targetY - startY;
+  const duration = Math.max(400, Math.min(Math.abs(distance) * 0.4, 900));
+  let startTime  = null;
+
+  function easeInOutQuart(t) {
+    return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
+  }
+
+  function step(timestamp) {
+    if (!startTime) startTime = timestamp;
+    const progress = Math.min((timestamp - startTime) / duration, 1);
+    window.scrollTo(0, startY + distance * easeInOutQuart(progress));
+    if (progress < 1) requestAnimationFrame(step);
+  }
+
+  requestAnimationFrame(step);
+}
+
 function initNavLinks() {
   document.querySelectorAll('a[href^="#"]').forEach(el => {
     el.addEventListener('click', e => {
       const target = document.querySelector(el.getAttribute('href'));
-      if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth' }); }
+      if (target) { e.preventDefault(); smoothScrollTo(target); }
     });
   });
 }

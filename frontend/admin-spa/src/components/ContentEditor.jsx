@@ -81,7 +81,11 @@ export default function ContentEditor({ property, onSaved }) {
   const [heroEyebrow,     setHeroEyebrow]     = useState(content.heroEyebrow     ?? '');
   const [heroTitleLine1,  setHeroTitleLine1]  = useState(content.heroTitleLine1  ?? '');
   const [heroAccentWord,  setHeroAccentWord]  = useState(content.heroAccentWord  ?? '');
+  const [heroAccentColor, setHeroAccentColor] = useState(content.heroAccentColor ?? '#C9B87A');
   const [heroTitleSuffix, setHeroTitleSuffix] = useState(content.heroTitleSuffix ?? '');
+  const [heroLandingPills, setHeroLandingPills] = useState(
+    content.heroLandingPills?.length ? content.heroLandingPills : ['', '', '', '', '']
+  );
 
   // About
   const [aboutShow,  setAboutShow]  = useState(content.aboutShow  ?? true);
@@ -129,7 +133,9 @@ export default function ContentEditor({ property, onSaved }) {
           heroEyebrow,
           heroTitleLine1,
           heroAccentWord,
+          heroAccentColor,
           heroTitleSuffix,
+          heroLandingPills: heroLandingPills.filter(Boolean),
           aboutShow,
           aboutTitle,
           aboutBody,
@@ -216,13 +222,29 @@ export default function ContentEditor({ property, onSaved }) {
               onChange={e => setHeroTitleLine1(e.target.value)}
             />
           </FormField>
-          <FormField label="Accent Word" hint='Gold text. e.g. "Escape"'>
+          <FormField label="Accent Word" hint='Gold text. e.g. "Red River Gorge"'>
             <input
               style={s.input}
-              placeholder="Escape"
+              placeholder="Red River Gorge"
               value={heroAccentWord}
               onChange={e => setHeroAccentWord(e.target.value)}
             />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+              <input
+                type="color"
+                value={heroAccentColor}
+                onChange={e => setHeroAccentColor(e.target.value)}
+                style={{ width: 32, height: 32, border: '1px solid #D1D5DB', borderRadius: 6, padding: 2, cursor: 'pointer', background: 'none' }}
+                title="Accent color"
+              />
+              <span style={{ fontSize: 12, color: '#6B7280' }}>Accent color</span>
+              <code style={{ fontSize: 11, color: '#9CA3AF' }}>{heroAccentColor}</code>
+              <button
+                type="button"
+                onClick={() => setHeroAccentColor('#C9B87A')}
+                style={{ fontSize: 11, color: '#6B7280', background: 'none', border: '1px solid #E5E7EB', borderRadius: 4, padding: '2px 7px', cursor: 'pointer', fontFamily: 'inherit' }}
+              >Reset</button>
+            </div>
           </FormField>
           <FormField label="Title Suffix" hint='Faded text. e.g. "Awaits."'>
             <input
@@ -234,9 +256,42 @@ export default function ContentEditor({ property, onSaved }) {
           </FormField>
         </div>
         <div style={{ marginTop: 12, padding: '12px 16px', background: '#F9FAFB', borderRadius: 8, fontSize: 13, color: '#6B7280' }}>
-          Preview: <strong style={{ color: '#111' }}>{heroTitleLine1 || 'Your Kentucky'}</strong>{' '}
-          <strong style={{ color: '#C9B87A' }}>{heroAccentWord || 'Escape'}</strong>{' '}
-          <span style={{ color: '#9CA3AF' }}>{heroTitleSuffix || 'Awaits.'}</span>
+          Preview: <strong style={{ color: '#111' }}>{heroTitleLine1 || 'Your'}</strong>{' '}
+          <strong style={{ color: heroAccentColor }}>{heroAccentWord || 'Red River Gorge'}</strong>{' '}
+          <span style={{ color: '#9CA3AF' }}>{heroTitleSuffix || 'escape awaits.'}</span>
+        </div>
+      </Card>
+
+      {/* ── Landing Page Pills ────────────────────────────────────────────── */}
+      <Card>
+        <CardHeader
+          title="Landing Page Pills"
+          subtitle="Up to 5 feature highlights shown as pills at the bottom of the hero. These are completely independent of your amenities list."
+        />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {heroLandingPills.slice(0, 5).map((pill, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 12, color: '#9CA3AF', width: 20, textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
+              <input
+                style={{ ...s.input, flex: 1 }}
+                placeholder={['Hot Tub', 'Fire Pit', 'Self Check-in', 'Sleeps 8', 'Pet Friendly'][i] || `Pill ${i + 1}`}
+                value={pill}
+                onChange={e => {
+                  const next = [...heroLandingPills];
+                  next[i] = e.target.value;
+                  setHeroLandingPills(next);
+                }}
+              />
+              {pill && (
+                <span style={{ fontSize: 12, background: 'rgba(0,0,0,0.06)', padding: '4px 10px', borderRadius: 100, color: '#374151', whiteSpace: 'nowrap' }}>
+                  {pill}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: 12, fontSize: 12, color: '#9CA3AF' }}>
+          Empty slots are skipped. Drag-to-reorder not yet supported — order is top to bottom.
         </div>
       </Card>
 

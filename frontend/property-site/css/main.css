@@ -171,7 +171,7 @@ a { text-decoration: none; color: inherit; }
 .hero__bottom {
   display: grid;
   grid-template-columns: auto 1fr auto;
-  align-items: flex-end;
+  align-items: end;
   gap: 20px;
 }
 
@@ -208,7 +208,8 @@ a { text-decoration: none; color: inherit; }
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  justify-content: center;
+  justify-content: flex-start;
+  align-items: center;
 }
 
 .hero__pill {
