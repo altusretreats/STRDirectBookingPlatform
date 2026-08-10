@@ -3,8 +3,10 @@ node_modules/
 .aws-sam/
 
 # Env / secrets (never commit)
-.env
-.env.*
+# Note: .env files with VITE_* vars are safe to commit (they're public in the JS bundle anyway)
+# Only .env.local is gitignored (for machine-specific overrides)
+.env.local
+.env.*.local
 *.pem
 
 # Build artifacts
