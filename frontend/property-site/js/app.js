@@ -342,33 +342,15 @@ async function loadProperty() {
   }
 }
 
-// ── Smooth scroll (custom easing) ─────────────────────
-function smoothScrollTo(targetEl) {
-  const targetY  = targetEl.getBoundingClientRect().top + window.scrollY;
-  const startY   = window.scrollY;
-  const distance = targetY - startY;
-  const duration = Math.max(400, Math.min(Math.abs(distance) * 0.4, 900));
-  let startTime  = null;
-
-  function easeInOutQuart(t) {
-    return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
-  }
-
-  function step(timestamp) {
-    if (!startTime) startTime = timestamp;
-    const progress = Math.min((timestamp - startTime) / duration, 1);
-    window.scrollTo(0, startY + distance * easeInOutQuart(progress));
-    if (progress < 1) requestAnimationFrame(step);
-  }
-
-  requestAnimationFrame(step);
-}
-
+// ── Smooth scroll ─────────────────────────────────────
 function initNavLinks() {
   document.querySelectorAll('a[href^="#"]').forEach(el => {
     el.addEventListener('click', e => {
       const target = document.querySelector(el.getAttribute('href'));
-      if (target) { e.preventDefault(); smoothScrollTo(target); }
+      if (target) {
+        e.preventDefault();
+        window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY, behavior: 'smooth' });
+      }
     });
   });
 }
