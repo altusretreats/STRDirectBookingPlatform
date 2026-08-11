@@ -78,11 +78,21 @@ aws s3 cp dist\assets\index-XXXX.js s3://altus-retreats-admin-dev-817760095908/a
 aws cloudfront create-invalidation --distribution-id E6XS2Y3HPS1YG --paths "/*" --profile altus
 
 # Property site / guidebook
+# NOTE: property-site/ contains preview.html (redesign), NOT index.html.
+# The bucket's index.html is the Coming Soon page (from overhang-coming-soon/).
+# --delete will remove index.html unless you re-deploy coming-soon right after (do both):
 aws s3 sync frontend\property-site\ s3://altus-retreats-frontend-dev-817760095908/ --delete --profile altus
+aws s3 cp frontend\overhang-coming-soon\index.html s3://altus-retreats-frontend-dev-817760095908/index.html --content-type "text/html" --metadata-directive REPLACE --profile altus
 aws s3 cp frontend\property-site\guidebook\js\guidebook.js s3://altus-retreats-frontend-dev-817760095908/guidebook/js/guidebook.js --content-type "application/javascript" --metadata-directive REPLACE --profile altus
 aws s3 cp frontend\property-site\guidebook\css\guidebook.css s3://altus-retreats-frontend-dev-817760095908/guidebook/css/guidebook.css --content-type "text/css" --metadata-directive REPLACE --profile altus
 aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/*" --profile altus
 ```
+
+## DNS / domain routing (IMPORTANT — caused confusion before)
+- **`www.staytheoverhang.com`** → CloudFront distribution `EP3TSR36W3F7N` (`d2mbuzsam5af3c.cloudfront.net`) → frontend S3 bucket. **This is the real site.** Use `www` when verifying deploys.
+- **`staytheoverhang.com` (bare root)** → still points to a **GoDaddy Website Builder** page (`76.223.105.230`), NOT CloudFront. Changes to S3/CloudFront do NOT appear at bare root until root DNS is repointed to CloudFront (GoDaddy DNS / Route 53 ALIAS — a manual registrar task).
+- The distribution has aliases for both `staytheoverhang.com` and `www.staytheoverhang.com`, so it's ready — only the root DNS record needs to change.
+- **When testing "why don't I see my change":** (1) test `www.staytheoverhang.com`, not bare root; (2) hard-refresh — assets (`css/main.css`, `js/app.js`) are referenced without cache-busting version strings, so browsers hold stale copies even after a CloudFront invalidation.
 
 ## CloudFront distribution IDs
 - Admin SPA: `E6XS2Y3HPS1YG` (admin.altusretreats.net)
@@ -119,7 +129,9 @@ aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/*" 
 Place items in a recommendations section (`sectionType: 'recommendations'`) render as a card grid grouped by category (Restaurants / Attractions / Activities / Shopping). Clicking a card opens a detail modal with Directions button (uses lat/lng coordinates for reliable Google Maps routing).
 
 ## Property site — page structure
-- **`index.html`** — Full-viewport hero landing page. Background: full-viewport photo slider (Hospitable or `heroSliderPhotos`). A `frame-border` div (position:absolute, inset:70px, white border, border-radius:26px) acts as a decorative frame. Inside: 2-column snap-scroll layout — left (`frame-scroll`) has 4 sections (landing, property, reviews, location, promise), right (`frame-widget-col`) has the sticky Hospitable booking widget. Nav is 3-column grid (logo | centered links | Book Now). Hero headline (eyebrow + 3 title spans + subtitle) fades out as user scrolls into sections. Bottom bar: dots + amenity pills + rating.
+- **`index.html`** — The **public Coming Soon page** (source: `frontend/overhang-coming-soon/index.html`, deployed to the frontend bucket root). This is what visitors see at staytheoverhang.com until launch.
+- **`preview.html`** — The **future home page / redesign** (the file described below). Served at `www.staytheoverhang.com/preview.html`, carries `<meta name="robots" content="noindex,nofollow">` so it stays out of search. **At launch:** rename `preview.html` → `index.html` (overwrites the coming-soon) and it becomes the public site — all internal back-links (book.html, guidebook) already point to `index.html`, so they resolve correctly post-launch with no edits.
+- **`preview.html` (the redesign)** — Full-viewport hero landing page. Background: full-viewport photo slider (Hospitable or `heroSliderPhotos`). A `frame-border` div (position:absolute, inset:70px, white border, border-radius:26px) acts as a decorative frame. Inside: 2-column snap-scroll layout — left (`frame-scroll`) has 4 sections (landing, property, reviews, location, promise), right (`frame-widget-col`) has the sticky Hospitable booking widget. Nav is 3-column grid (logo | centered links | Book Now). Hero headline (eyebrow + 3 title spans + subtitle) fades out as user scrolls into sections. Bottom bar: dots + amenity pills + rating.
 - **Section structure in `frame-scroll`:** Each content section (reviews, location, promise) uses `frame-section > frame-section__wrap > frame-section__inner` (frosted glass panel). The property section uses `frame-section > frame-section__inner--property` (no wrap — full bleed photo grid).
 - **`book.html`** — Booking page. Nav + hero strip (first photo) + 2-column layout: property details left (stats, about, amenities, house rules), Hospitable widget right (sticky). `css/book.css` + `js/book.js`.
 - **`js/app.js`** — Fetches `/properties/{id}`, populates hero slides, pills, title blocks, frame sections (photos, description, amenities, reviews, location, promise).
@@ -143,7 +155,9 @@ Place items in a recommendations section (`sectionType: 'recommendations'`) rend
 
 ## Current state (as of 2026-08-11)
 - Admin panel fully functional at admin.altusretreats.net (PropertySettings, ContentEditor, Guidebook, Sync, Waitlist tabs)
-- Property site redesigned: snap-scroll frame layout with Hospitable booking widget (committed, **not yet deployed to S3**)
+- Property site redesigned: snap-scroll frame layout with Hospitable booking widget. **Deployed to S3 as `preview.html`** (noindex). Public `index.html` = Coming Soon page. Live: `www.staytheoverhang.com/` = coming soon, `www.staytheoverhang.com/preview.html` = redesign.
+- `getReviews` Lambda (`GET /properties/{propertyId}/reviews`) added but **not yet SAM-deployed**.
+- Bare-root `staytheoverhang.com` still on GoDaddy Website Builder — root DNS repoint to CloudFront is pending (see DNS / domain routing section).
 - Guidebook live and data-driven
 - Both coming soon pages live with working waitlist capture
 - Hub site built as hub.html (ready to swap in when The Lazy Palm launches)
