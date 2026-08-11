@@ -287,6 +287,10 @@ function initSiteScroll() {
   const frameBottom = document.getElementById('frame-bottom');
   const triggers    = document.querySelectorAll('[data-section]');
 
+  const sections = ['property', 'reviews', 'location', 'promise']
+    .map(id => document.getElementById('section-' + id))
+    .filter(Boolean);
+
   // Nav links + Book Now → smooth-scroll to the section (scroll-margin-top handles the nav offset)
   function scrollToSection(id) {
     const target = document.getElementById('section-' + id);
@@ -294,6 +298,46 @@ function initSiteScroll() {
   }
   triggers.forEach(btn => btn.addEventListener('click', () => scrollToSection(btn.dataset.section)));
   document.getElementById('btn-book-now')?.addEventListener('click', () => scrollToSection('property'));
+
+  // ── Scroll-settle snap assist ──────────────────────
+  // CSS scroll-snap is left on "proximity" (not "mandatory") on purpose: with
+  // mandatory, a browser re-snaps after almost every scroll tick, which would
+  // trap you at the top of any section taller than the viewport (e.g. "The
+  // Property" with a long amenities list) — you'd never reach the bottom.
+  // Instead: once scrolling settles, if we're already close to a section's
+  // top, ease the rest of the way there. Far from a boundary (mid-tall-section
+  // reading), leave the scroll position alone.
+  function contentClearPx() {
+    const v = getComputedStyle(document.documentElement).getPropertyValue('--content-clear');
+    return parseFloat(v) || 0;
+  }
+  let settleTimer = null;
+  function scheduleSettle() {
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(() => {
+      const y  = window.scrollY;
+      const vh = window.innerHeight || 1;
+      const clear = contentClearPx();
+
+      const targets = [0]; // landing top
+      sections.forEach(el => {
+        targets.push(el.getBoundingClientRect().top + y - clear);
+      });
+
+      let nearest = null, nearestDist = Infinity;
+      targets.forEach(t => {
+        const dist = Math.abs(t - y);
+        if (dist < nearestDist) { nearestDist = dist; nearest = t; }
+      });
+
+      // Only complete the snap if already well on the way there (within ~40%
+      // of a screen) — never yanks someone out of the middle of tall content.
+      if (nearest !== null && nearestDist > 3 && nearestDist < vh * 0.4) {
+        window.scrollTo({ top: Math.max(0, nearest), behavior: 'smooth' });
+      }
+    }, 130);
+  }
+  window.addEventListener('scroll', scheduleSettle, { passive: true });
 
   // Scroll-linked transition (rAF-throttled): bottom border drop, hero fade, nav frost, slider freeze
   let ticking = false;
@@ -332,9 +376,6 @@ function initSiteScroll() {
   onScroll();
 
   // Active nav link — whichever section sits nearest the viewport center
-  const sections = ['property', 'reviews', 'location', 'promise']
-    .map(id => document.getElementById('section-' + id))
-    .filter(Boolean);
   const obs = new IntersectionObserver(entries => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {

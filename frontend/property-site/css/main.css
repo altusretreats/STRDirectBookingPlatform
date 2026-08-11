@@ -1096,19 +1096,21 @@ body { background: #0a1509; }
   will-change: opacity, transform;
 }
 
-/* ── Fixed nav (transparent on landing, frosted when scrolled) ── */
+/* ── Fixed nav (transparent on landing, frosted when scrolled) ──
+   Box spans true viewport edges (not inset to the frame) so that once opaque,
+   nothing can peek through above/beside it as content scrolls underneath.
+   Padding compensates so the visible logo/links sit at the same spot as before. */
 .nav {
   position: fixed;
-  top: var(--frame-inset);
-  left: var(--frame-inset);
-  right: var(--frame-inset);
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 45;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 16px;
-  padding: 22px 40px;
-  border-radius: var(--frame-radius) var(--frame-radius) 0 0;
+  padding: calc(var(--frame-inset) + 22px) calc(var(--frame-inset) + 40px) 22px;
   transition: background .35s ease, backdrop-filter .35s ease, box-shadow .35s ease;
 }
 .nav.is-scrolled {
@@ -1157,13 +1159,16 @@ body { background: #0a1509; }
   padding: 0 clamp(96px, 7vw, 132px) 120px;
 }
 
-/* One shared frosted surface behind both the content column and the widget */
+/* One shared frosted surface behind both the content column and the widget.
+   Floats below the header with a visible gap of hero backdrop (margin-top),
+   crisp edge (tight shadow, not a soft smeared blur). */
 .site__panel {
+  margin-top: 40px;
   background: var(--glass);
   backdrop-filter: blur(22px) saturate(1.4);
   -webkit-backdrop-filter: blur(22px) saturate(1.4);
   border-radius: 20px;
-  box-shadow: 0 18px 50px rgba(0,0,0,0.18);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.16);
   display: grid;
   grid-template-columns: minmax(0, 1fr) 350px;
   align-items: start;
@@ -1229,11 +1234,11 @@ body { background: #0a1509; }
   :root { --frame-inset: 16px; --content-clear: 108px; }
   .frame { border-width: 4px; border-radius: 18px; }
   .frame__bottom { border-width: 4px; border-radius: 0 0 18px 18px; }
-  .nav { padding: 16px 18px; grid-template-columns: 1fr auto; }
+  .nav { padding: calc(var(--frame-inset) + 16px) 18px 16px; grid-template-columns: 1fr auto; }
   .nav__center { display: none; }
   .hero__content { padding: 22vh 22px 26px; }
   .site__body { padding: 0 20px 60px; }
-  .site__panel { grid-template-columns: 1fr; border-radius: 14px; }
+  .site__panel { grid-template-columns: 1fr; border-radius: 14px; margin-top: 20px; }
   .site__content { padding: 30px 20px 34px; }
   .site__content .prop-photos { grid-template-columns: repeat(2, 1fr); grid-template-rows: 150px 150px; }
   .site__widget {
