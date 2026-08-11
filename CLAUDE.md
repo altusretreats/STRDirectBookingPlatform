@@ -119,9 +119,10 @@ aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/*" 
 Place items in a recommendations section (`sectionType: 'recommendations'`) render as a card grid grouped by category (Restaurants / Attractions / Activities / Shopping). Clicking a card opens a detail modal with Directions button (uses lat/lng coordinates for reliable Google Maps routing).
 
 ## Property site — page structure
-- **`index.html`** — Full-viewport hero landing page. Slides (Hospitable photos) fill the entire background. A decorative `frame-border` (position:absolute, inset:70px, 6.5px white border, border-radius:26px) sits on top as a frame. Nav is 3-column grid (logo | centered links | Book Now). Left-aligned headline with 3 spans (`.hero__title-main`, `.hero__title-accent`, `.hero__title-dim`). Bottom bar: dots | amenity pills | rating. Scrolls to about/amenities/location sections below.
+- **`index.html`** — Full-viewport hero landing page. Background: full-viewport photo slider (Hospitable or `heroSliderPhotos`). A `frame-border` div (position:absolute, inset:70px, white border, border-radius:26px) acts as a decorative frame. Inside: 2-column snap-scroll layout — left (`frame-scroll`) has 4 sections (landing, property, reviews, location, promise), right (`frame-widget-col`) has the sticky Hospitable booking widget. Nav is 3-column grid (logo | centered links | Book Now). Hero headline (eyebrow + 3 title spans + subtitle) fades out as user scrolls into sections. Bottom bar: dots + amenity pills + rating.
+- **Section structure in `frame-scroll`:** Each content section (reviews, location, promise) uses `frame-section > frame-section__wrap > frame-section__inner` (frosted glass panel). The property section uses `frame-section > frame-section__inner--property` (no wrap — full bleed photo grid).
 - **`book.html`** — Booking page. Nav + hero strip (first photo) + 2-column layout: property details left (stats, about, amenities, house rules), Hospitable widget right (sticky). `css/book.css` + `js/book.js`.
-- **`js/app.js`** — Fetches `/properties/{id}`, populates hero slides, pills, title blocks, below-fold sections.
+- **`js/app.js`** — Fetches `/properties/{id}`, populates hero slides, pills, title blocks, frame sections (photos, description, amenities, reviews, location, promise).
 - **Content fields** (all in `property.content`, admin-editable via ContentEditor):
   - `heroHeadline` — property name override
   - `heroSubtitle` — tagline / description override
@@ -137,7 +138,20 @@ Place items in a recommendations section (`sectionType: 'recommendations'`) rend
   - `customSections[]` — extra content sections
   - `overrides{}` — lock flags to prevent sync from overwriting fields
 
+## Properties (future)
+- **The Lazy Palm** — Bradenton FL, coastal/tropical, family-friendly, pool. Domain: staythelazypalm.com (registered, no infrastructure yet). Adding a property is a data operation only — no code changes needed.
+
+## Current state (as of 2026-08-11)
+- Admin panel fully functional at admin.altusretreats.net (PropertySettings, ContentEditor, Guidebook, Sync, Waitlist tabs)
+- Property site redesigned: snap-scroll frame layout with Hospitable booking widget (committed, **not yet deployed to S3**)
+- Guidebook live and data-driven
+- Both coming soon pages live with working waitlist capture
+- Hub site built as hub.html (ready to swap in when The Lazy Palm launches)
+- SES verified: support@altusretreats.net
+- Hospitable widget installed on index.html and book.html; `data-site-uuid` may need updating once Direct channel fully configured
+
 ## Key pending items
-- Logo/branding pending
+- Logo/branding for The Overhang (pending)
+- Deploy property site to S3 (local changes not yet synced)
 - AI concierge feature (uses `aiContext` fields already being collected)
-- Hospitable widget `data-site-uuid` may need updating once Direct channel is fully configured
+- The Lazy Palm: full property setup when ready to launch
