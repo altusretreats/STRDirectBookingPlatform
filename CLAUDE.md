@@ -58,6 +58,11 @@ scripts/          Seed scripts (minimal — Hospitable is source of truth for co
 | adminBookings | GET /admin/properties/{id}/bookings | List bookings |
 | waitlist | POST /waitlist, GET /admin/waitlist | Waitlist capture |
 
+## AWS Profile
+All AWS CLI and SAM commands use the named profile `altus` (region: `us-east-1`).
+Set up once with: `aws configure --profile altus`
+SAM profile is set in `samconfig.toml` under `[dev.deploy.parameters] profile = "altus"`.
+
 ## Deploy commands (PowerShell on Windows)
 ```powershell
 # Backend
@@ -67,16 +72,16 @@ sam deploy --config-env dev
 # Admin SPA
 cd frontend\admin-spa
 npm run build
-aws s3 sync dist/ s3://altus-retreats-admin-dev-817760095908/ --delete
+aws s3 sync dist/ s3://altus-retreats-admin-dev-817760095908/ --delete --profile altus
 # Fix MIME types (get exact filename from Get-Item dist\assets\index-*.js first)
-aws s3 cp dist\assets\index-XXXX.js s3://altus-retreats-admin-dev-817760095908/assets/index-XXXX.js --content-type "application/javascript" --metadata-directive REPLACE
-aws cloudfront create-invalidation --distribution-id E6XS2Y3HPS1YG --paths "/*"
+aws s3 cp dist\assets\index-XXXX.js s3://altus-retreats-admin-dev-817760095908/assets/index-XXXX.js --content-type "application/javascript" --metadata-directive REPLACE --profile altus
+aws cloudfront create-invalidation --distribution-id E6XS2Y3HPS1YG --paths "/*" --profile altus
 
 # Property site / guidebook
-aws s3 sync frontend\property-site\ s3://altus-retreats-frontend-dev-817760095908/ --delete
-aws s3 cp frontend\property-site\guidebook\js\guidebook.js s3://altus-retreats-frontend-dev-817760095908/guidebook/js/guidebook.js --content-type "application/javascript" --metadata-directive REPLACE
-aws s3 cp frontend\property-site\guidebook\css\guidebook.css s3://altus-retreats-frontend-dev-817760095908/guidebook/css/guidebook.css --content-type "text/css" --metadata-directive REPLACE
-aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/*"
+aws s3 sync frontend\property-site\ s3://altus-retreats-frontend-dev-817760095908/ --delete --profile altus
+aws s3 cp frontend\property-site\guidebook\js\guidebook.js s3://altus-retreats-frontend-dev-817760095908/guidebook/js/guidebook.js --content-type "application/javascript" --metadata-directive REPLACE --profile altus
+aws s3 cp frontend\property-site\guidebook\css\guidebook.css s3://altus-retreats-frontend-dev-817760095908/guidebook/css/guidebook.css --content-type "text/css" --metadata-directive REPLACE --profile altus
+aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/*" --profile altus
 ```
 
 ## CloudFront distribution IDs

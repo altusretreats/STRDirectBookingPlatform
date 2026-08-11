@@ -150,21 +150,20 @@ function initLightbox() {
 // ── Frame: populate sections ──────────────────────────
 function initFrameSections({ photos, amenities, description, bedrooms, bathrooms, maxGuests, location, propertyName, hospLocation }) {
 
-  // ── Photo grid: large main left + 2×2 sub right ──
+  // ── Photo grid: large main left + 2×2 thumbnails right ──
   const photoGrid = document.getElementById('frame-photo-grid');
   if (photoGrid && photos?.length) {
-    // main photo
-    const mainPhoto = photos[0];
+    // Main photo (left column, spans both rows)
     const mainItem = document.createElement('div');
     mainItem.className = 'prop-photo-item prop-photo-item--main';
     const mainImg = document.createElement('img');
-    mainImg.src = mainPhoto.url;
-    mainImg.alt = mainPhoto.caption || '';
+    mainImg.src = photos[0].url;
+    mainImg.alt = photos[0].caption || '';
     mainItem.appendChild(mainImg);
     mainItem.addEventListener('click', () => openLightbox(photos, 0));
     photoGrid.appendChild(mainItem);
 
-    // sub photos (slots 1-4 in the 2×2)
+    // 4 sub photos in 2×2 right columns (slots 1-4)
     const subPhotos = photos.slice(1, 5);
     subPhotos.forEach((photo, i) => {
       const item = document.createElement('div');
@@ -176,14 +175,13 @@ function initFrameSections({ photos, amenities, description, bedrooms, bathrooms
       img.loading = 'lazy';
       item.appendChild(img);
 
-      // "+N more" overlay on last sub slot if extras exist
+      // "View all X photos" pill on the last visible thumbnail
       const isLast = i === subPhotos.length - 1;
-      const remaining = photos.length - 5;
-      if (isLast && remaining > 0) {
-        const more = document.createElement('div');
-        more.className = 'prop-photo-item__more';
-        more.textContent = `+${remaining} more`;
-        item.appendChild(more);
+      if (isLast && photos.length > 5) {
+        const pill = document.createElement('div');
+        pill.className = 'prop-photo__view-all';
+        pill.textContent = `View all ${photos.length} photos`;
+        item.appendChild(pill);
       }
 
       item.addEventListener('click', () => openLightbox(photos, i + 1));

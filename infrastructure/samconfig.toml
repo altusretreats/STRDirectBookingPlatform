@@ -3,6 +3,7 @@ version = 0.1
 [dev.deploy.parameters]
 stack_name = "altus-retreats-dev"
 region = "us-east-1"
+profile = "altus"
 capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
 parameter_overrides = "Environment=\"dev\" DomainName=\"altusretreats.net\""
 resolve_s3 = true
