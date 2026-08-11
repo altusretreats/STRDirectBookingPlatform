@@ -275,6 +275,29 @@ Resources:
             Auth:
               Authorizer: NONE   # public endpoint
 
+  # ── Lambda: getReviews ────────────────────
+  GetReviewsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub altus-retreats-getReviews-${Environment}
+      CodeUri: ../backend/functions/getReviews
+      Handler: index.handler
+      Description: Returns guest reviews for a property from Hospitable API (public endpoint)
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref MainTable
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref HospitableSecret
+      Events:
+        GetReviews:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /properties/{propertyId}/reviews
+            Method: GET
+            Auth:
+              Authorizer: NONE   # public endpoint
+
   # ── Lambda: adminProperties ───────────────
   AdminPropertiesFunction:
     Type: AWS::Serverless::Function
