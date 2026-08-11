@@ -192,9 +192,27 @@
   </div>
 </div>
 
-<!-- Lightbox -->
+<!-- Gallery grid — "View all X photos" opens this first -->
+<div class="gallery-modal" id="gallery-modal" role="dialog" aria-modal="true" aria-label="All photos" style="display:none">
+  <div class="gallery-modal__header">
+    <button class="gallery-modal__close" id="gallery-modal-close">
+      <span aria-hidden="true">←</span> Close
+    </button>
+    <div class="gallery-modal__title" id="gallery-modal-title"></div>
+    <div class="gallery-modal__spacer" aria-hidden="true"></div>
+  </div>
+  <div class="gallery-modal__grid" id="gallery-modal-grid"></div>
+</div>
+
+<!-- Lightbox — single photo, opened from the grid (or directly from a thumbnail) -->
 <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Photo viewer" style="display:none">
-  <button class="lightbox__close" id="lightbox-close" aria-label="Close">✕</button>
+  <div class="lightbox__header">
+    <button class="lightbox__close" id="lightbox-close">
+      <span aria-hidden="true">←</span> Close
+    </button>
+    <div class="lightbox__count" id="lightbox-count"></div>
+    <div class="lightbox__spacer" aria-hidden="true"></div>
+  </div>
   <button class="lightbox__nav lightbox__nav--prev" id="lightbox-prev" aria-label="Previous photo">‹</button>
   <div class="lightbox__img-wrap">
     <img class="lightbox__img" id="lightbox-img" src="" alt="">

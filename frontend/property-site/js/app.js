@@ -106,7 +106,10 @@ function updateSEO(name, description) {
   }
 }
 
-// ── Lightbox ──────────────────────────────────────────
+// ── Photo viewer: gallery grid ("View all X photos") + single-photo lightbox ──
+// Grid is the base view; the lightbox opens on top of it. Closing the
+// lightbox returns to the grid (if it was open); closing the grid returns
+// to the page.
 let lightboxPhotos = [];
 let lightboxIndex  = 0;
 
@@ -120,16 +123,32 @@ function openLightbox(photos, startIndex = 0) {
 
 function closeLightbox() {
   const lb = document.getElementById('lightbox');
-  if (lb) { lb.style.display = 'none'; document.body.style.overflow = ''; }
+  if (lb) lb.style.display = 'none';
+  const gm = document.getElementById('gallery-modal');
+  // Only restore page scroll if the grid isn't still open underneath
+  if (!gm || gm.style.display === 'none') document.body.style.overflow = '';
 }
 
 function updateLightboxImg() {
   const photo = lightboxPhotos[lightboxIndex];
   if (!photo) return;
-  const img = document.getElementById('lightbox-img');
-  const cap = document.getElementById('lightbox-caption');
+  const img   = document.getElementById('lightbox-img');
+  const cap   = document.getElementById('lightbox-caption');
+  const count = document.getElementById('lightbox-count');
   if (img) img.src = photo.url;
   if (cap) cap.textContent = photo.caption || '';
+  if (count) count.textContent = `${lightboxIndex + 1} / ${lightboxPhotos.length}`;
+}
+
+function openGalleryModal() {
+  const gm = document.getElementById('gallery-modal');
+  if (gm) { gm.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
+}
+
+function closeGalleryModal() {
+  document.getElementById('gallery-modal')?.style.setProperty('display', 'none');
+  closeLightbox();
+  document.body.style.overflow = '';
 }
 
 function initLightbox() {
@@ -142,15 +161,18 @@ function initLightbox() {
     lightboxIndex = (lightboxIndex + 1) % lightboxPhotos.length;
     updateLightboxImg();
   });
-  document.getElementById('lightbox')?.addEventListener('click', e => {
-    if (e.target === e.currentTarget) closeLightbox();
-  });
+
+  document.getElementById('gallery-modal-close')?.addEventListener('click', closeGalleryModal);
+
   document.addEventListener('keydown', e => {
     const lb = document.getElementById('lightbox');
-    if (!lb || lb.style.display === 'none') return;
-    if (e.key === 'Escape') closeLightbox();
-    if (e.key === 'ArrowLeft')  { lightboxIndex = (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length; updateLightboxImg(); }
-    if (e.key === 'ArrowRight') { lightboxIndex = (lightboxIndex + 1) % lightboxPhotos.length; updateLightboxImg(); }
+    const gm = document.getElementById('gallery-modal');
+    const lbOpen = lb && lb.style.display !== 'none';
+    const gmOpen = gm && gm.style.display !== 'none';
+    if (!lbOpen && !gmOpen) return;
+    if (e.key === 'Escape') { if (lbOpen) closeLightbox(); else closeGalleryModal(); }
+    if (lbOpen && e.key === 'ArrowLeft')  { lightboxIndex = (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length; updateLightboxImg(); }
+    if (lbOpen && e.key === 'ArrowRight') { lightboxIndex = (lightboxIndex + 1) % lightboxPhotos.length; updateLightboxImg(); }
   });
 }
 
@@ -167,7 +189,7 @@ function initFrameSections({ photos, amenities, description, bedrooms, bathrooms
     mainImg.src = photos[0].url;
     mainImg.alt = photos[0].caption || '';
     mainItem.appendChild(mainImg);
-    mainItem.addEventListener('click', () => openLightbox(photos, 0));
+    mainItem.addEventListener('click', openGalleryModal);
     photoGrid.appendChild(mainItem);
 
     // 4 sub photos in 2×2 right columns (slots 1-4)
@@ -191,9 +213,29 @@ function initFrameSections({ photos, amenities, description, bedrooms, bathrooms
         item.appendChild(pill);
       }
 
-      item.addEventListener('click', () => openLightbox(photos, i + 1));
+      // Any thumbnail click opens the full grid overview
+      item.addEventListener('click', openGalleryModal);
       photoGrid.appendChild(item);
     });
+
+    // Grid gallery modal — every photo, opened via "View all X photos"
+    const galleryGrid = document.getElementById('gallery-modal-grid');
+    if (galleryGrid) {
+      galleryGrid.innerHTML = '';
+      photos.forEach((photo, i) => {
+        const item = document.createElement('div');
+        item.className = 'gallery-modal__item';
+        const img = document.createElement('img');
+        img.src = photo.url;
+        img.alt = photo.caption || '';
+        img.loading = 'lazy';
+        item.appendChild(img);
+        item.addEventListener('click', () => openLightbox(photos, i));
+        galleryGrid.appendChild(item);
+      });
+    }
+    const galleryTitle = document.getElementById('gallery-modal-title');
+    if (galleryTitle && propertyName) galleryTitle.textContent = propertyName;
   }
 
   // ── Property header ──
