@@ -17,113 +17,141 @@
 </head>
 <body>
 
-<!-- ── HERO (full viewport) ───────────────────────────── -->
-<section class="hero" aria-label="Property hero">
+<!-- ══ FIXED BACKGROUND: hero photo slider — stays put, blurs behind content ══ -->
+<div class="bg" aria-hidden="true">
+  <div class="slides"></div>
+  <div class="hero__overlay"></div>
+</div>
 
-  <!-- Background slides injected by JS -->
-  <div class="slides" aria-hidden="true"></div>
-  <div class="hero__overlay" aria-hidden="true"></div>
+<!-- ══ FIXED FRAME MATTE: top + left + right borders (no bottom) ══ -->
+<div class="frame" aria-hidden="true"></div>
+<!-- Bottom border — drops out smoothly as you scroll into the site -->
+<div class="frame__bottom" id="frame-bottom" aria-hidden="true"></div>
 
-  <!-- Frame: 2-column layout — left snap-scroll sections, right booking widget -->
-  <!-- frame-landing class hides widget until user scrolls into a section -->
-  <div class="frame-border frame-landing" id="frame-border">
+<!-- ══ FIXED NAV — transparent on landing, frosted once scrolled ══ -->
+<nav class="nav" id="site-nav" aria-label="Main navigation">
+  <!-- .nav__logo is a self-contained slot: text now, <img> logo later -->
+  <div class="nav__logo">
+    <div class="nav__logo-name property-name"></div>
+    <div class="nav__logo-brand">Altus Retreats</div>
+  </div>
+  <div class="nav__center">
+    <button class="nav__link" data-section="property">The Property</button>
+    <button class="nav__link" data-section="reviews">What our guests say</button>
+    <button class="nav__link" data-section="location">Location</button>
+    <button class="nav__link" data-section="promise">Our Promise</button>
+  </div>
+  <div class="nav__right">
+    <button class="btn-nav" id="btn-book-now">Book Now</button>
+  </div>
+</nav>
 
-    <!-- Left: snap-scroll content sections -->
-    <div class="frame-scroll" id="frame-scroll">
+<!-- ══ FIXED HERO CONTENT: headline + bottom bar — fades out on scroll ══ -->
+<div class="hero__content" id="hero-content">
+  <div class="hero__headline">
+    <div class="hero__eyebrow"></div>
+    <h1 class="hero__title">
+      <span class="hero__title-main property-tagline"></span>
+      <span class="hero__title-accent"></span>
+      <span class="hero__title-dim"></span>
+    </h1>
+    <p class="hero__subtitle"></p>
+  </div>
 
-      <!-- Section 0: transparent landing — hero headline shows through -->
-      <div class="frame-section frame-section--landing" id="frame-section-landing"></div>
+  <div class="hero__bottom">
+    <div class="hero__pills" aria-label="Key amenities"></div>
+    <div class="hero__bottom-row">
+      <div class="dots" role="tablist" aria-label="Gallery navigation"></div>
+      <div class="hero__rating" aria-label="Guest rating" style="display:none">
+        <div class="hero__rating-num"><span class="hero__star">★</span> <span class="rating-number"></span></div>
+        <div class="hero__rating-sub">from <span class="rating-count"></span> reviews</div>
+      </div>
+    </div>
+  </div>
+</div>
 
-      <!-- Section 1: The Property -->
-      <div class="frame-section" id="frame-section-property">
-        <div class="frame-section__wrap">
-        <div class="frame-section__inner frame-section__inner--property">
-          <!-- Photo grid: large main + 2×2 sub (injected by JS) -->
-          <div class="prop-photos" id="frame-photo-grid"></div>
-          <!-- Property header -->
-          <div class="prop-content">
-            <div class="prop-header">
-              <p class="prop-location" id="frame-prop-location"></p>
-              <h2 class="prop-name" id="frame-prop-name"></h2>
-              <p class="prop-stats-row" id="frame-prop-stats-row"></p>
-            </div>
-            <hr class="prop-divider">
-            <div class="prop-desc-wrap">
-              <p class="prop-desc" id="frame-prop-desc"></p>
-              <button class="prop-read-more" id="frame-read-more" style="display:none">Show more</button>
-            </div>
-            <hr class="prop-divider">
-            <h3 class="prop-amenities-title">What this home offers</h3>
-            <div class="prop-amenities-grid" id="frame-amenities"></div>
+<!-- ══ SCROLLING DOCUMENT ══ -->
+<main class="site" id="site">
+
+  <!-- Landing spacer: hero fills the first screen before content rises up -->
+  <div class="site__landing" aria-hidden="true"></div>
+
+  <!-- Content column (left) + sticky booking widget (right) -->
+  <div class="site__body">
+    <div class="site__content">
+
+      <!-- ── The Property ── -->
+      <section class="site-section" id="section-property">
+        <div class="prop-photos" id="frame-photo-grid"></div>
+        <div class="prop-content">
+          <div class="prop-header">
+            <p class="prop-location" id="frame-prop-location"></p>
+            <h2 class="prop-name" id="frame-prop-name"></h2>
+            <p class="prop-stats-row" id="frame-prop-stats-row"></p>
+          </div>
+          <hr class="prop-divider">
+          <div class="prop-desc-wrap">
+            <p class="prop-desc" id="frame-prop-desc"></p>
+            <button class="prop-read-more" id="frame-read-more" style="display:none">Show more</button>
+          </div>
+          <hr class="prop-divider">
+          <h3 class="prop-amenities-title">What this home offers</h3>
+          <div class="prop-amenities-grid" id="frame-amenities"></div>
+        </div>
+      </section>
+
+      <!-- ── What our guests say ── -->
+      <section class="site-section" id="section-reviews">
+        <div class="frame-section__eyebrow">What our guests say</div>
+        <div class="frame-rating-summary" id="frame-rating-summary" style="display:none">
+          <span class="frame-rating-summary__star">★</span>
+          <span class="frame-rating-summary__num" id="frame-rating-num"></span>
+          <span class="frame-rating-summary__count" id="frame-rating-count"></span>
+        </div>
+        <div class="frame-reviews" id="frame-reviews">
+          <div class="frame-reviews__loading">Loading reviews…</div>
+        </div>
+      </section>
+
+      <!-- ── Location ── -->
+      <section class="site-section" id="section-location">
+        <div class="frame-section__eyebrow">Location</div>
+        <p class="frame-location-neighborhood"></p>
+        <p class="frame-location-desc"></p>
+        <div class="frame-location-map" id="frame-location-map"></div>
+        <p class="frame-location-directions"></p>
+        <a class="frame-map-link" id="frame-map-link" target="_blank" rel="noopener" style="display:none">
+          View on Google Maps →
+        </a>
+      </section>
+
+      <!-- ── Our Promise ── -->
+      <section class="site-section" id="section-promise">
+        <div class="frame-section__eyebrow">Our Promise to You</div>
+        <div class="frame-promise-grid">
+          <div class="frame-promise-card">
+            <div class="frame-promise-card__icon">🤝</div>
+            <h3 class="frame-promise-card__title">Direct Booking Savings</h3>
+            <p class="frame-promise-card__body">Book with us directly and skip OTA fees. What you save stays in your pocket — every time.</p>
+          </div>
+          <div class="frame-promise-card">
+            <div class="frame-promise-card__icon">✨</div>
+            <h3 class="frame-promise-card__title">Curated Experiences</h3>
+            <p class="frame-promise-card__body">Every property is hand-selected and personally managed by our team — not an algorithm.</p>
+          </div>
+          <div class="frame-promise-card">
+            <div class="frame-promise-card__icon">🏡</div>
+            <h3 class="frame-promise-card__title">Always Here for You</h3>
+            <p class="frame-promise-card__body">Real humans, real support. We're available before, during, and after your stay.</p>
           </div>
         </div>
-        </div>
-      </div>
+      </section>
 
-      <!-- Section 2: What our guests say -->
-      <div class="frame-section" id="frame-section-reviews">
-        <div class="frame-section__wrap">
-        <div class="frame-section__inner">
-          <div class="frame-section__eyebrow">What our guests say</div>
-          <div class="frame-rating-summary" id="frame-rating-summary" style="display:none">
-            <span class="frame-rating-summary__star">★</span>
-            <span class="frame-rating-summary__num" id="frame-rating-num"></span>
-            <span class="frame-rating-summary__count" id="frame-rating-count"></span>
-          </div>
-          <div class="frame-reviews" id="frame-reviews">
-            <div class="frame-reviews__loading">Loading reviews…</div>
-          </div>
-        </div>
-        </div>
-      </div>
+    </div><!-- /site__content -->
 
-      <!-- Section 3: Location -->
-      <div class="frame-section" id="frame-section-location">
-        <div class="frame-section__wrap">
-        <div class="frame-section__inner">
-          <div class="frame-section__eyebrow">Location</div>
-          <p class="frame-location-neighborhood"></p>
-          <p class="frame-location-desc"></p>
-          <div class="frame-location-map" id="frame-location-map"></div>
-          <p class="frame-location-directions"></p>
-          <a class="frame-map-link" id="frame-map-link" target="_blank" rel="noopener" style="display:none">
-            View on Google Maps →
-          </a>
-        </div>
-        </div>
-      </div>
-
-      <!-- Section 4: Our Promise -->
-      <div class="frame-section" id="frame-section-promise">
-        <div class="frame-section__wrap">
-        <div class="frame-section__inner frame-section__inner--promise">
-          <div class="frame-section__eyebrow">Our Promise to You</div>
-          <div class="frame-promise-grid">
-            <div class="frame-promise-card">
-              <div class="frame-promise-card__icon">🤝</div>
-              <h3 class="frame-promise-card__title">Direct Booking Savings</h3>
-              <p class="frame-promise-card__body">Book with us directly and skip OTA fees. What you save stays in your pocket — every time.</p>
-            </div>
-            <div class="frame-promise-card">
-              <div class="frame-promise-card__icon">✨</div>
-              <h3 class="frame-promise-card__title">Curated Experiences</h3>
-              <p class="frame-promise-card__body">Every property is hand-selected and personally managed by our team — not an algorithm.</p>
-            </div>
-            <div class="frame-promise-card">
-              <div class="frame-promise-card__icon">🏡</div>
-              <h3 class="frame-promise-card__title">Always Here for You</h3>
-              <p class="frame-promise-card__body">Real humans, real support. We're available before, during, and after your stay.</p>
-            </div>
-          </div>
-        </div>
-        </div>
-      </div>
-
-    </div><!-- /frame-scroll -->
-
-    <!-- Right: Booking widget — always visible across all sections -->
-    <div class="frame-widget-col">
-      <div class="frame-widget-inner">
+    <!-- Sticky booking widget -->
+    <aside class="site__widget">
+      <div class="site__widget-inner">
         <script
           src="https://cdn.hsptb.com/direct-booking-widget/widget-loader.prod.js"
           data-site-uuid="a26e4e5d-0706-4d7f-b76a-9647b8128bd3"
@@ -131,67 +159,18 @@
           data-theme="multi">
         </script>
       </div>
-    </div>
+    </aside>
 
-  </div><!-- /frame-border -->
+  </div><!-- /site__body -->
+</main>
 
-  <!-- Hero content: nav + headline + pills — sits above frame (z:20) -->
-  <div class="hero__content" id="hero-content">
-
-    <!-- Nav -->
-    <nav class="nav" aria-label="Main navigation">
-      <div class="nav__logo">
-        <div class="nav__logo-name property-name"></div>
-        <div class="nav__logo-brand">Altus Retreats</div>
-      </div>
-      <div class="nav__center">
-        <button class="nav__link" data-section="property">The Property</button>
-        <button class="nav__link" data-section="reviews">What our guests say</button>
-        <button class="nav__link" data-section="location">Location</button>
-        <button class="nav__link" data-section="promise">Our Promise</button>
-      </div>
-      <div class="nav__right">
-        <button class="btn-nav" id="btn-book-now">Book Now</button>
-      </div>
-    </nav>
-
-    <!-- Headline (left-aligned, fades when sections scroll in) -->
-    <div class="hero__headline">
-      <div class="hero__eyebrow"></div>
-      <h1 class="hero__title">
-        <span class="hero__title-main property-tagline"></span>
-        <span class="hero__title-accent"></span>
-        <span class="hero__title-dim"></span>
-      </h1>
-      <p class="hero__subtitle"></p>
-    </div>
-
-    <!-- Bottom bar: dots | pills | rating -->
-    <div class="hero__bottom">
-      <div class="hero__pills" aria-label="Key amenities"></div>
-      <div class="hero__bottom-row">
-        <div class="dots" role="tablist" aria-label="Gallery navigation"></div>
-        <div class="hero__rating" aria-label="Guest rating" style="display:none">
-          <div class="hero__rating-num"><span class="hero__star">★</span> <span class="rating-number"></span></div>
-          <div class="hero__rating-sub">from <span class="rating-count"></span> reviews</div>
-        </div>
-      </div>
-    </div>
-
-  </div><!-- /hero__content -->
-</section>
-
-<!-- ── Below-fold sections (hidden — content lives in frame) ── -->
-<section class="section" id="section-about" style="display:none">
-  <div class="container">
-    <div class="about__stats">
-      <div class="about__stat"><div class="about__stat-value stat-bedrooms">—</div><div class="about__stat-label">Bedrooms</div></div>
-      <div class="about__stat"><div class="about__stat-value stat-bathrooms">—</div><div class="about__stat-label">Bathrooms</div></div>
-      <div class="about__stat"><div class="about__stat-value stat-guests">—</div><div class="about__stat-label">Max guests</div></div>
-      <div class="about__stat"><div class="about__stat-value stat-type">Entire home</div><div class="about__stat-label">Property type</div></div>
-    </div>
-  </div>
-</section>
+<!-- Hidden stat holders (used by house-rules modal etc.) -->
+<div style="display:none">
+  <span class="stat-bedrooms">—</span>
+  <span class="stat-bathrooms">—</span>
+  <span class="stat-guests">—</span>
+  <span class="stat-type">Entire home</span>
+</div>
 
 <!-- House Rules Modal -->
 <div class="modal-overlay" id="rules-modal" role="dialog" aria-modal="true" aria-labelledby="rules-modal-title" style="display:none">

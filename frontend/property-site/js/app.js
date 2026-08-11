@@ -50,11 +50,18 @@ function initGallery(photos) {
     dotsEl?.querySelectorAll('.dot')[current]?.classList.add('active');
   }
 
-  function startTimer() { timer = setInterval(() => goToSlide(current + 1), 5000); }
+  let paused = false;
+  function startTimer() { clearInterval(timer); timer = setInterval(() => { if (!paused) goToSlide(current + 1); }, 5000); }
   startTimer();
 
   slidesEl.addEventListener('mouseenter', () => clearInterval(timer));
   slidesEl.addEventListener('mouseleave', startTimer);
+
+  // Expose freeze/resume so the scroll handler can pause cycling in "site" mode
+  window.__heroGallery = {
+    pause()  { paused = true;  },
+    resume() { paused = false; },
+  };
 }
 
 // ── Hero amenity pills ────────────────────────────────
@@ -273,71 +280,70 @@ function initFrameSections({ photos, amenities, description, bedrooms, bathrooms
   }
 }
 
-// ── Snap-scroll nav ────────────────────────────────────
-function initFrameNav() {
-  const frameScroll  = document.getElementById('frame-scroll');
-  const frameBorder  = document.getElementById('frame-border');
-  const heroContent  = document.getElementById('hero-content');
-  if (!frameScroll) return;
+// ── Site scroll: frame→site transition, sticky nav, active link, gallery freeze ──
+function initSiteScroll() {
+  const nav         = document.getElementById('site-nav');
+  const heroContent = document.getElementById('hero-content');
+  const frameBottom = document.getElementById('frame-bottom');
+  const triggers    = document.querySelectorAll('[data-section]');
 
-  const sections = {
-    property: document.getElementById('frame-section-property'),
-    reviews:  document.getElementById('frame-section-reviews'),
-    location: document.getElementById('frame-section-location'),
-    promise:  document.getElementById('frame-section-promise'),
-  };
-
-  const landingSection = document.getElementById('frame-section-landing');
-  const allTriggers    = document.querySelectorAll('[data-section]');
-
-  // Scroll helper: use the frame-scroll container (not window scroll)
+  // Nav links + Book Now → smooth-scroll to the section (scroll-margin-top handles the nav offset)
   function scrollToSection(id) {
-    const target = sections[id];
-    if (!target) return;
-    frameScroll.scrollTo({ top: target.offsetTop, behavior: 'smooth' });
+    const target = document.getElementById('section-' + id);
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
+  triggers.forEach(btn => btn.addEventListener('click', () => scrollToSection(btn.dataset.section)));
+  document.getElementById('btn-book-now')?.addEventListener('click', () => scrollToSection('property'));
 
-  // Nav section buttons
-  allTriggers.forEach(btn => {
-    btn.addEventListener('click', () => scrollToSection(btn.dataset.section));
-  });
+  // Scroll-linked transition (rAF-throttled): bottom border drop, hero fade, nav frost, slider freeze
+  let ticking = false;
+  let frozen  = false;
+  function onScroll() {
+    const y  = window.scrollY;
+    const vh = window.innerHeight || 1;
 
-  // "Book Now" button → scroll to The Property
-  const bookBtn = document.getElementById('btn-book-now');
-  if (bookBtn) {
-    bookBtn.addEventListener('click', () => scrollToSection('property'));
+    // Bottom border drops out over the first ~55% of a screen
+    const dropP = Math.min(1, y / (vh * 0.55));
+    if (frameBottom) {
+      frameBottom.style.opacity   = String(1 - dropP);
+      frameBottom.style.transform = `translateY(${dropP * 34}px)`;
+    }
+
+    // Hero headline + bottom bar fade over the first ~45% of a screen
+    if (heroContent) {
+      const fade = Math.max(0, 1 - y / (vh * 0.45));
+      heroContent.style.opacity = String(fade);
+      heroContent.classList.toggle('is-hidden', fade < 0.02);
+    }
+
+    // Nav gains its frosted background once we're into the site
+    const scrolled = y > vh * 0.5;
+    nav?.classList.toggle('is-scrolled', scrolled);
+
+    // Freeze the hero slider once scrolled in; resume near the top
+    if (scrolled && !frozen)      { window.__heroGallery?.pause();  frozen = true;  }
+    else if (!scrolled && frozen) { window.__heroGallery?.resume(); frozen = false; }
+
+    ticking = false;
   }
+  window.addEventListener('scroll', () => {
+    if (!ticking) { ticking = true; requestAnimationFrame(onScroll); }
+  }, { passive: true });
+  onScroll();
 
-  // IntersectionObserver: when landing section leaves view →
-  //   fade hero headline, reveal widget, mark first section active
-  if (landingSection) {
-    const landingObs = new IntersectionObserver(entries => {
-      const landingVisible = entries[0].isIntersecting;
-      // Fade hero headline/pills
-      heroContent?.classList.toggle('frame-scrolled', !landingVisible);
-      // Show/hide widget column
-      frameBorder?.classList.toggle('frame-landing', landingVisible);
-      // Clear active nav when back on landing
-      if (landingVisible) {
-        allTriggers.forEach(btn => btn.classList.remove('nav__link--active'));
-      }
-    }, { root: frameScroll, threshold: 0.3 });
-    landingObs.observe(landingSection);
-  }
-
-  // IntersectionObserver: update active nav link as content sections scroll
-  const sectionObs = new IntersectionObserver(entries => {
+  // Active nav link — whichever section sits nearest the viewport center
+  const sections = ['property', 'reviews', 'location', 'promise']
+    .map(id => document.getElementById('section-' + id))
+    .filter(Boolean);
+  const obs = new IntersectionObserver(entries => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
-        const id = entry.target.id.replace('frame-section-', '');
-        allTriggers.forEach(btn => {
-          btn.classList.toggle('nav__link--active', btn.dataset.section === id);
-        });
+        const id = entry.target.id.replace('section-', '');
+        triggers.forEach(btn => btn.classList.toggle('nav__link--active', btn.dataset.section === id));
       }
     });
-  }, { root: frameScroll, threshold: 0.5 });
-
-  Object.values(sections).forEach(el => { if (el) sectionObs.observe(el); });
+  }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+  sections.forEach(el => obs.observe(el));
 }
 
 // ── Fetch + render reviews ────────────────────────────
@@ -521,7 +527,7 @@ async function loadProperty() {
 
     // Frame sections
     initFrameSections({ photos, amenities, description, bedrooms, bathrooms, maxGuests, location, propertyName: name });
-    initFrameNav();
+    initSiteScroll();
 
     // Reviews (async, non-blocking) — uses config propertyId via api.getReviews()
     loadReviews();
