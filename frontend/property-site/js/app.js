@@ -281,10 +281,18 @@ function initFrameSections({ photos, amenities, description, bedrooms, bathrooms
 }
 
 // ── Site scroll: frame→site transition, sticky nav, active link, gallery freeze ──
+// Deliberately no scroll-linked math (no per-frame opacity/transform, no
+// programmatic scrollTo while the user is scrolling) — that fought the
+// browser's native scroll and caused jank in Chrome. Landing vs. site mode
+// is one binary state, flipped by an IntersectionObserver on the landing
+// section, with plain CSS transitions doing the fade.
 function initSiteScroll() {
   const nav         = document.getElementById('site-nav');
   const heroContent = document.getElementById('hero-content');
+  const frame       = document.querySelector('.frame');
   const frameBottom = document.getElementById('frame-bottom');
+  const landing     = document.querySelector('.site__landing');
+  const logo        = document.querySelector('.nav__logo');
   const triggers    = document.querySelectorAll('[data-section]');
 
   const sections = ['property', 'reviews', 'location', 'promise']
@@ -299,81 +307,28 @@ function initSiteScroll() {
   triggers.forEach(btn => btn.addEventListener('click', () => scrollToSection(btn.dataset.section)));
   document.getElementById('btn-book-now')?.addEventListener('click', () => scrollToSection('property'));
 
-  // ── Scroll-settle snap assist ──────────────────────
-  // CSS scroll-snap is left on "proximity" (not "mandatory") on purpose: with
-  // mandatory, a browser re-snaps after almost every scroll tick, which would
-  // trap you at the top of any section taller than the viewport (e.g. "The
-  // Property" with a long amenities list) — you'd never reach the bottom.
-  // Instead: once scrolling settles, if we're already close to a section's
-  // top, ease the rest of the way there. Far from a boundary (mid-tall-section
-  // reading), leave the scroll position alone.
-  function contentClearPx() {
-    const v = getComputedStyle(document.documentElement).getPropertyValue('--content-clear');
-    return parseFloat(v) || 0;
+  // Logo → back to the landing page
+  logo?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+  // Landing vs. site mode — frame + headline fade out, nav goes full-width/opaque
+  let inSite = false;
+  function setSiteMode(on) {
+    if (on === inSite) return;
+    inSite = on;
+    nav?.classList.toggle('is-scrolled', on);
+    frame?.classList.toggle('is-hidden', on);
+    frameBottom?.classList.toggle('is-hidden', on);
+    heroContent?.classList.toggle('is-hidden', on);
+    if (on) window.__heroGallery?.pause();
+    else    window.__heroGallery?.resume();
   }
-  let settleTimer = null;
-  function scheduleSettle() {
-    clearTimeout(settleTimer);
-    settleTimer = setTimeout(() => {
-      const y  = window.scrollY;
-      const vh = window.innerHeight || 1;
-      const clear = contentClearPx();
-
-      const targets = [0]; // landing top
-      sections.forEach(el => {
-        targets.push(el.getBoundingClientRect().top + y - clear);
-      });
-
-      let nearest = null, nearestDist = Infinity;
-      targets.forEach(t => {
-        const dist = Math.abs(t - y);
-        if (dist < nearestDist) { nearestDist = dist; nearest = t; }
-      });
-
-      // Only complete the snap if already well on the way there (within ~40%
-      // of a screen) — never yanks someone out of the middle of tall content.
-      if (nearest !== null && nearestDist > 3 && nearestDist < vh * 0.4) {
-        window.scrollTo({ top: Math.max(0, nearest), behavior: 'smooth' });
-      }
-    }, 130);
+  if (landing) {
+    const landingObs = new IntersectionObserver(
+      entries => setSiteMode(!entries[0].isIntersecting),
+      { threshold: 0.5 }
+    );
+    landingObs.observe(landing);
   }
-  window.addEventListener('scroll', scheduleSettle, { passive: true });
-
-  // Scroll-linked transition (rAF-throttled): bottom border drop, hero fade, nav frost, slider freeze
-  let ticking = false;
-  let frozen  = false;
-  function onScroll() {
-    const y  = window.scrollY;
-    const vh = window.innerHeight || 1;
-
-    // Bottom border drops out over the first ~55% of a screen
-    const dropP = Math.min(1, y / (vh * 0.55));
-    if (frameBottom) {
-      frameBottom.style.opacity   = String(1 - dropP);
-      frameBottom.style.transform = `translateY(${dropP * 34}px)`;
-    }
-
-    // Hero headline + bottom bar fade over the first ~45% of a screen
-    if (heroContent) {
-      const fade = Math.max(0, 1 - y / (vh * 0.45));
-      heroContent.style.opacity = String(fade);
-      heroContent.classList.toggle('is-hidden', fade < 0.02);
-    }
-
-    // Nav gains its frosted background once we're into the site
-    const scrolled = y > vh * 0.5;
-    nav?.classList.toggle('is-scrolled', scrolled);
-
-    // Freeze the hero slider once scrolled in; resume near the top
-    if (scrolled && !frozen)      { window.__heroGallery?.pause();  frozen = true;  }
-    else if (!scrolled && frozen) { window.__heroGallery?.resume(); frozen = false; }
-
-    ticking = false;
-  }
-  window.addEventListener('scroll', () => {
-    if (!ticking) { ticking = true; requestAnimationFrame(onScroll); }
-  }, { passive: true });
-  onScroll();
 
   // Active nav link — whichever section sits nearest the viewport center
   const obs = new IntersectionObserver(entries => {
