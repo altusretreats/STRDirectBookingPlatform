@@ -64,10 +64,18 @@ Set up once with: `aws configure --profile altus`
 SAM profile is set in `samconfig.toml` under `[dev.deploy.parameters] profile = "altus"`.
 
 ## Deploy commands (PowerShell on Windows)
+See also [`DEV-COMMANDS.md`](DEV-COMMANDS.md) for the full quick-reference (resource IDs, admin SPA build, secrets, seed scripts).
+
+`sam`/`aws` may not be on PATH in every shell — if `sam` isn't found, the CLI is at `C:\Program Files\Amazon\AWSSAMCLI\bin\sam.cmd` (call that directly, NOT the `runtime\Scripts\sam.exe` — that one fails silently).
+
+**`sam deploy --config-env dev` MUST be run from `infrastructure/`** — that's where `samconfig.toml` lives (stack name, profile, `disable_rollback = true`). Running it from the repo root silently skips that config and falls back to SAM's auto-managed bucket/defaults, which can diverge from the real deployed stack.
+
 ```powershell
 # Backend
 sam build --template infrastructure/template.yaml
+cd infrastructure
 sam deploy --config-env dev
+cd ..
 
 # Admin SPA
 cd frontend\admin-spa
@@ -155,8 +163,9 @@ Place items in a recommendations section (`sectionType: 'recommendations'`) rend
 
 ## Current state (as of 2026-08-11)
 - Admin panel fully functional at admin.altusretreats.net (PropertySettings, ContentEditor, Guidebook, Sync, Waitlist tabs)
-- Property site redesigned: snap-scroll frame layout with Hospitable booking widget. **Deployed to S3 as `preview.html`** (noindex). Public `index.html` = Coming Soon page. Live: `www.staytheoverhang.com/` = coming soon, `www.staytheoverhang.com/preview.html` = redesign.
-- `getReviews` Lambda (`GET /properties/{propertyId}/reviews`) added but **not yet SAM-deployed**.
+- Property site redesigned: landing keeps the full decorative frame + hero photo slider; scrolling (or a nav click) fades the frame out entirely and turns the nav into a full-width opaque header — then it's a normal scrolling page with a frosted content panel and sticky booking widget. Plain native scroll, no scroll-snap. **Deployed to S3 as `preview.html`** (noindex). Public `index.html` = Coming Soon page. Live: `www.staytheoverhang.com/` = coming soon, `www.staytheoverhang.com/preview.html` = redesign.
+- `getReviews` Lambda (`GET /properties/{propertyId}/reviews`) is SAM-deployed and live.
+- MediaBucket allows public `s3:GetObject` on `properties/*` only (added 2026-08-11) — uploaded photos (hero slider, etc.) are embedded as direct S3 URLs in property content and need to be publicly readable. ACLs stay blocked; access is via bucket policy only.
 - Bare-root `staytheoverhang.com` still on GoDaddy Website Builder — root DNS repoint to CloudFront is pending (see DNS / domain routing section).
 - Guidebook live and data-driven
 - Both coming soon pages live with working waitlist capture
@@ -166,6 +175,6 @@ Place items in a recommendations section (`sectionType: 'recommendations'`) rend
 
 ## Key pending items
 - Logo/branding for The Overhang (pending)
-- Deploy property site to S3 (local changes not yet synced)
+- Root domain `staytheoverhang.com` still needs DNS repoint off GoDaddy (see DNS / domain routing section)
 - AI concierge feature (uses `aiContext` fields already being collected)
 - The Lazy Palm: full property setup when ready to launch
