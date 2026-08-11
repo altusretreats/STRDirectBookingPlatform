@@ -1067,34 +1067,22 @@ body { background: #0a1509; }
 .bg .hero__overlay { position: absolute; inset: 0; z-index: 1; }
 
 /* ── Frame matte: top + left + right, NO bottom.
-   Landing only — fades out as one unit (JS toggles .is-hidden) once you
-   leave the landing; no scroll-linked math, just a plain CSS fade. ── */
+   Landing only — a single complete border (all 4 sides, uniform rounded
+   corners), fades out as one piece (JS toggles .is-hidden) once you leave
+   the landing. Previously split into two separate fixed elements (top/sides
+   + a separate bottom piece) to support a scroll-linked "bottom drops out"
+   animation — now that both fade together, the split only caused a visible
+   seam where the two elements' corners didn't perfectly line up. ── */
 .frame {
   position: fixed;
   inset: var(--frame-inset);
   border: var(--frame-border-w) solid var(--frame-color);
-  border-bottom: none;
-  border-radius: var(--frame-radius) var(--frame-radius) 0 0;
+  border-radius: var(--frame-radius);
   z-index: 40;
   pointer-events: none;
   transition: opacity .2s ease;
 }
 .frame.is-hidden { opacity: 0; }
-
-.frame__bottom {
-  position: fixed;
-  left: var(--frame-inset);
-  right: var(--frame-inset);
-  bottom: var(--frame-inset);
-  height: var(--frame-radius);
-  border: var(--frame-border-w) solid var(--frame-color);
-  border-top: none;
-  border-radius: 0 0 var(--frame-radius) var(--frame-radius);
-  z-index: 40;
-  pointer-events: none;
-  transition: opacity .2s ease;
-}
-.frame__bottom.is-hidden { opacity: 0; }
 
 /* ── Fixed nav (transparent on landing, frosted when scrolled) ──
    Box spans true viewport edges (not inset to the frame) so that once opaque,
@@ -1233,7 +1221,6 @@ body { background: #0a1509; }
 @media (max-width: 900px) {
   :root { --frame-inset: 16px; --content-clear: 108px; }
   .frame { border-width: 4px; border-radius: 18px; }
-  .frame__bottom { border-width: 4px; border-radius: 0 0 18px 18px; }
   .nav { padding: calc(var(--frame-inset) + 16px) 18px 16px; grid-template-columns: 1fr auto; }
   .nav__center { display: none; }
   .hero__content { padding: 22vh 22px 26px; }

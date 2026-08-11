@@ -290,7 +290,6 @@ function initSiteScroll() {
   const nav         = document.getElementById('site-nav');
   const heroContent = document.getElementById('hero-content');
   const frame       = document.querySelector('.frame');
-  const frameBottom = document.getElementById('frame-bottom');
   const landing     = document.querySelector('.site__landing');
   const logo        = document.querySelector('.nav__logo');
   const triggers    = document.querySelectorAll('[data-section]');
@@ -317,7 +316,6 @@ function initSiteScroll() {
     inSite = on;
     nav?.classList.toggle('is-scrolled', on);
     frame?.classList.toggle('is-hidden', on);
-    frameBottom?.classList.toggle('is-hidden', on);
     heroContent?.classList.toggle('is-hidden', on);
     if (on) window.__heroGallery?.pause();
     else    window.__heroGallery?.resume();
