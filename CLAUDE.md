@@ -64,7 +64,7 @@ Set up once with: `aws configure --profile altus`
 SAM profile is set in `samconfig.toml` under `[dev.deploy.parameters] profile = "altus"`.
 
 ## Deploy commands (PowerShell on Windows)
-See also [`DEV-COMMANDS.md`](DEV-COMMANDS.md) for the full quick-reference (resource IDs, admin SPA build, secrets, seed scripts).
+See also [`DEV-COMMANDS.md`](DEV-COMMANDS.md) for the full quick-reference (resource IDs, admin SPA build, secrets, seed scripts), or these self-contained step-by-step guides (no AI assistant needed): [`DEPLOY-FRONTEND.md`](DEPLOY-FRONTEND.md) (property site), [`DEPLOY-ADMIN.md`](DEPLOY-ADMIN.md) (admin panel), [`DEPLOY-GUIDEBOOK.md`](DEPLOY-GUIDEBOOK.md) (guest guidebook).
 
 `sam`/`aws` may not be on PATH in every shell — if `sam` isn't found, the CLI is at `C:\Program Files\Amazon\AWSSAMCLI\bin\sam.cmd` (call that directly, NOT the `runtime\Scripts\sam.exe` — that one fails silently).
 
