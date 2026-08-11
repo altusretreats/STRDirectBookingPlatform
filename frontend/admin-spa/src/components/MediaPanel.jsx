@@ -217,7 +217,9 @@ export default function MediaPanel({ property, cached, onSaved }) {
         {sliderSaved && <div style={s.successMsg}>✓ Slider photos saved</div>}
       </Card>
 
-      {/* ── Single Hero Photo Override ─────────────────── */}
+      {/* ── Single Hero Photo Override — only relevant (and shown) when
+           Hero Slider Photos is empty; slider photos take priority ── */}
+      {sliderPhotos.length === 0 && (
       <Card>
         <CardHeader
           title="Hero Photo Override (Legacy)"
@@ -264,6 +266,7 @@ export default function MediaPanel({ property, cached, onSaved }) {
         )}
         {saved && <div style={s.successMsg}>✓ Hero photo saved</div>}
       </Card>
+      )}
 
       {/* ── Hospitable photos ─────────────────────────── */}
       <Card>
@@ -304,7 +307,6 @@ export default function MediaPanel({ property, cached, onSaved }) {
                 {selected && (
                   <div style={{ ...s.heroBadge, background: '#D97706' }}>PENDING</div>
                 )}
-                {photo.caption && <div style={s.photoCaption}>{photo.caption}</div>}
               </div>
             );
           })}
@@ -372,7 +374,6 @@ const s = {
   photoItemActive:   { border: '2px solid #1C2E26' },
   photoItemSelected: { border: '2px solid #D97706' },
   photoImg:          { width: '100%', height: 120, objectFit: 'cover', display: 'block' },
-  photoCaption:      { fontSize: 11, color: '#6B7280', padding: '6px 8px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
   heroBadge:         { position: 'absolute', top: 6, left: 6, background: '#1C2E26', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, letterSpacing: '0.05em' },
   hint:              { fontSize: 12, color: '#9CA3AF', marginTop: 12, margin: 0 },
 };
