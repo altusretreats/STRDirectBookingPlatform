@@ -1,5 +1,7 @@
 # Altus Retreats — Product & Visual Style Guide
 
+Last reviewed: 2026-08-12 after the property-site widget and mobile booking-navigation release.
+
 This is the canonical design reference for Altus Retreats guest-facing products. Update this document when a visual system or interaction rule changes, then update the implementation.
 
 The platform has a shared hospitality voice, but property experiences may use their own visual palette. Do not force every property into the Altus corporate colors.
@@ -178,6 +180,10 @@ Placeholder values such as `REPLACE_ME` must never be printed literally to guest
 - Photography should dominate. Decorative UI must not compete with the property or landscape.
 - Use full-width gallery moments, generous whitespace, and restrained scroll motion.
 - The Hospitable booking widget remains the primary transactional element.
+- Treat Hospitable as an embedded transactional surface: do not alter its internal functionality. Style only the local wrapper and generated iframe boundary.
+- Keep the widget iframe at its native `320px` width when space permits, center it within the booking rail, and retain responsive `max-width: 100%` behavior.
+- The local widget wrapper uses a thin rule and rounded corners without a drop shadow. Mask only Hospitable's empty iframe-edge pixels when needed to prevent clipped-shadow artifacts.
+- Book Now must scroll to the same on-page widget on desktop and mobile, clearing the sticky header and honoring reduced-motion preferences.
 - Reduced-motion preferences must be honored.
 
 ---

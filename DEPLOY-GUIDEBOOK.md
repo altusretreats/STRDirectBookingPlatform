@@ -1,5 +1,7 @@
 # Deploy the Guest Guidebook
 
+Last reviewed: 2026-08-12. The property-site widget release did not change this guidebook deployment workflow.
+
 Step-by-step instructions to publish changes to the digital guidebook (`frontend/property-site/guidebook/`) — no AI assistant required. Run everything in **PowerShell**.
 
 ## What you're deploying

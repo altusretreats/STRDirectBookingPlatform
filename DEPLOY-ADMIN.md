@@ -1,5 +1,7 @@
 # Deploy the Admin Panel
 
+Last reviewed: 2026-08-12. The property-site widget release did not change this admin deployment workflow.
+
 Step-by-step instructions to publish changes to the admin SPA (`frontend/admin-spa/`) — no AI assistant required. Run everything in **PowerShell**.
 
 ## What you're deploying

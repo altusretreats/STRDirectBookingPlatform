@@ -1,5 +1,7 @@
 # DynamoDB Single-Table Design — Altus Retreats
 
+Last reviewed: 2026-08-12. The current property-site widget and navigation release is frontend-only and introduces no table-schema or record-shape changes.
+
 Table name: `altus-retreats-{env}`
 
 ## Key Schema

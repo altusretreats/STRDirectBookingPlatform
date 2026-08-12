@@ -1,5 +1,7 @@
 # Altus Retreats — TODO
 
+Last reviewed: 2026-08-12 after the property-site widget and mobile booking-navigation release.
+
 Shared running list. Add items with priority (🔴 critical / 🟡 soon / 🟢 nice-to-have) and mark done with ✅.
 
 ---
@@ -32,7 +34,7 @@ Shared running list. Add items with priority (🔴 critical / 🟡 soon / 🟢 n
   ```
 - [x] **Fix guidebook AccessDenied** — guidebook is live through CloudFront at `/guidebook/` ✅
 - [x] **Redesign responsive guidebook** — rich desktop overview, intent-first mobile home, focused journey screens, unified outline icons ✅
-- [ ] **Mobile audit — all sites** — test at 375px width; check property site, guidebook, hub site, coming soon pages
+- [ ] **Mobile audit — remaining sites** — property site passed at 390px on 2026-08-12; check guidebook, hub site, and coming-soon pages at 375–390px
 - [ ] **Booking flow end-to-end test** — test the Hospitable Direct widget and confirmation flow
 - [ ] **Verify PropertySettings save** — make sure `PUT /properties/{propertyId}` Lambda is deployed and wired in SAM template
 
@@ -40,7 +42,8 @@ Shared running list. Add items with priority (🔴 critical / 🟡 soon / 🟢 n
 
 ## 🟢 Nice-to-Have / Future
 
-- [ ] **Logo** — final brand logo pending ~Aug 9; replace placeholder on all sites once delivered
+- [x] **The Overhang property logo** — transparent PNG is live in the landing header and property-title lockup ✅
+- [ ] **Remaining logo rollout** — update `book.html` and any other surfaces still using text or placeholder marks
 - [ ] **hub.html → index.html swap** — when The Lazy Palm launches, replace hub coming soon with full hub site
 - [x] **www.staytheoverhang.com** — redesigned property site is live at the CloudFront-backed `www` domain ✅
 - [ ] **The Lazy Palm** — set up DynamoDB property record + S3/CloudFront for staythelazypalm.com

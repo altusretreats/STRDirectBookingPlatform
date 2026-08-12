@@ -1,5 +1,7 @@
 # Altus Retreats — STR Direct Booking Platform
 
+Last reviewed: 2026-08-12 after the live property-site widget and mobile booking-navigation release.
+
 Multi-property direct booking site, digital guidebook, and admin system for Altus Retreats LLC.
 Hub: **altusretreats.net**
 
@@ -264,6 +266,8 @@ Use the maintained, self-contained deployment guides:
 
 The redesigned property page is the live root. Do not re-pin the retired coming-soon page after a property-site sync.
 
+The live root uses versioned `main.css` and `app.js` URLs. The Hospitable iframe is centered at its native 320px width inside a shadow-free local wrapper, and Book Now scrolls to that on-page widget on both desktop and mobile.
+
 ---
 
 ## Payments
@@ -286,7 +290,7 @@ No code changes needed. The architecture is multi-property from day one.
 ## Key pending items
 
 - [ ] Repoint bare-root `staytheoverhang.com` from GoDaddy to CloudFront
-- [ ] Add the AI-readable guidebook context feed and AI-specific inclusion control
+- [x] AI-readable guidebook context feed and independent inclusion control are deployed
 - [ ] Guidebook content — fill in REPLACE_ME values via admin panel
 
 ---

@@ -642,15 +642,17 @@ function initSiteScroll() {
     window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
   });
   document.getElementById('btn-book-now')?.addEventListener('click', () => {
-    // On smaller screens the dedicated booking page avoids forcing guests to
-    // scroll through the full property story before reaching the widget.
-    if (window.matchMedia('(max-width: 900px)').matches) {
-      window.location.href = 'book.html';
+    const widget = document.querySelector('.site__widget');
+    if (!widget) {
+      scrollToSection('overview');
       return;
     }
-    const widget = document.querySelector('.site__widget');
-    if (widget) widget.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    else scrollToSection('overview');
+
+    const nav = document.getElementById('site-nav');
+    const navClearance = (nav?.getBoundingClientRect().height || 0) + 16;
+    const targetTop = window.scrollY + widget.getBoundingClientRect().top - navClearance;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: Math.max(0, targetTop), behavior: reduceMotion ? 'auto' : 'smooth' });
   });
 
   // Logo → back to the landing page

@@ -1,5 +1,7 @@
 # Altus Retreats — Dev Quick Reference
 
+Last reviewed: 2026-08-12 after the property-site widget and mobile navigation deployment.
+
 Current dev environment commands for Windows PowerShell. Use AWS profile `altus` in `us-east-1`.
 
 ## Live resources
@@ -41,8 +43,13 @@ The redesigned property page is the live root. Do not re-pin the retired coming-
 ```powershell
 cd C:\STRProjects\STRDirectBookingPlatform
 aws s3 sync frontend\property-site\ s3://altus-retreats-frontend-dev-817760095908/ --profile altus
+aws s3 cp frontend\property-site\index.html s3://altus-retreats-frontend-dev-817760095908/index.html --content-type "text/html; charset=utf-8" --cache-control "no-cache" --metadata-directive REPLACE --profile altus
+aws s3 cp frontend\property-site\css\main.css s3://altus-retreats-frontend-dev-817760095908/css/main.css --content-type "text/css; charset=utf-8" --cache-control "no-cache" --metadata-directive REPLACE --profile altus
+aws s3 cp frontend\property-site\js\app.js s3://altus-retreats-frontend-dev-817760095908/js/app.js --content-type "application/javascript; charset=utf-8" --cache-control "no-cache" --metadata-directive REPLACE --profile altus
 aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/*" --profile altus
 ```
+
+When `main.css` or `app.js` changes, increment its query-string version in `index.html` before publishing.
 
 See [DEPLOY-FRONTEND.md](DEPLOY-FRONTEND.md) for the complete procedure.
 
@@ -118,4 +125,4 @@ cd C:\STRProjects\STRDirectBookingPlatform
 node scripts\smoke-test.js
 ```
 
-For visual frontend changes, also verify at approximately `390px` and `1280px`, check keyboard operation, and confirm no horizontal overflow.
+For visual frontend changes, also verify at approximately `390px` and `1280px`, check keyboard operation, and confirm no horizontal overflow. For property-site releases, confirm mobile Book Now scrolls to the on-page widget and does not navigate to `book.html`.

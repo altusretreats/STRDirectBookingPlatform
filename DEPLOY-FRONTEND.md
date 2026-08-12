@@ -1,5 +1,7 @@
 # Deploy the Property Site (Front End)
 
+Last verified: 2026-08-12, including the centered Hospitable widget and mobile Book Now scroll behavior.
+
 The redesign is currently served from the root:
 
 - Live URL: `https://www.staytheoverhang.com/`
@@ -32,6 +34,18 @@ aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/" "
 ```
 
 Wait for the invalidation to complete, then hard-refresh `https://www.staytheoverhang.com/`.
+
+`index.html` references `css/main.css` and `js/app.js` with version query strings. Increment both relevant version values when those assets change so returning visitors do not retain stale CSS or JavaScript after a release.
+
+## Widget and mobile release check
+
+After publishing a property-page change, verify at approximately `390px` wide:
+
+- Book Now stays on `index.html` and scrolls to the embedded Hospitable widget.
+- The widget lands below the sticky header and the full booking panel is visible.
+- `#booking-iframe` is 320px wide when space permits and centered within its wrapper.
+- The wrapper has no drop shadow and no iframe-edge artifacts appear at the bottom corners.
+- The same Book Now action still scrolls to the widget on desktop.
 
 ## Roll back to Coming Soon
 

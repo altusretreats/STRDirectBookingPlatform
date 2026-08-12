@@ -1377,7 +1377,19 @@ h2 {
   background: var(--property-white);
   border: 1px solid var(--property-rule);
   border-radius: 18px;
-  box-shadow: 0 22px 54px -34px rgba(29, 53, 87, 0.46);
+  box-shadow: none;
+}
+
+/* Hospitable renders its controls on a 320px canvas. Keep the generated
+   iframe at that native width so its contents sit centrally in our panel. */
+.site__widget-inner #booking-iframe {
+  display: block;
+  width: 320px !important;
+  max-width: 100%;
+  margin-inline: auto;
+  margin-bottom: -6px;
+  border: 0;
+  clip-path: inset(0 0 6px 0 round 12px);
 }
 
 .site-section { scroll-margin-top: var(--content-clear); }
