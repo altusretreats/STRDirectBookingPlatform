@@ -542,9 +542,14 @@ function navigateToSection(sectionId, options = {}) {
 }
 
 function openHelp() {
-  const helpSection = findSection(/emergency|contact|safety|help/);
-  if (helpSection) navigateToSection(helpSection.sectionId);
-  else renderJourney('staying', { mobile: window.matchMedia('(max-width: 760px)').matches, scrollTop: true });
+  $('#help-dialog').hidden = false;
+  document.body.classList.add('dialog-open');
+  requestAnimationFrame(() => $('[data-close-help]').focus());
+}
+
+function closeHelp() {
+  $('#help-dialog').hidden = true;
+  document.body.classList.remove('dialog-open');
 }
 
 function showMobileHome() {
@@ -571,7 +576,9 @@ function installEvents() {
   $$('[data-open-search]').forEach(button => button.addEventListener('click', () => openSearch()));
   $$('[data-open-help]').forEach(button => button.addEventListener('click', openHelp));
   $('[data-close-search]').addEventListener('click', closeSearch);
+  $('[data-close-help]').addEventListener('click', closeHelp);
   $('#search-dialog').addEventListener('click', event => { if (event.target.id === 'search-dialog') closeSearch(); });
+  $('#help-dialog').addEventListener('click', event => { if (event.target.id === 'help-dialog') closeHelp(); });
   $('#guide-search-input').addEventListener('input', event => renderSearchResults(event.target.value));
   $('#guide-search-results').addEventListener('click', event => {
     const button = event.target.closest('[data-search-section]');
@@ -593,6 +600,7 @@ function installEvents() {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); openSearch(); }
     if (event.key === 'Escape') {
       if (!$('#search-dialog').hidden) closeSearch();
+      if (!$('#help-dialog').hidden) closeHelp();
       if ($('.place-dialog')) closePlaceDialog();
     }
   });

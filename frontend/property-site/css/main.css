@@ -1426,12 +1426,15 @@ h2 {
 }
 
 .prop-title-logo {
-  width: 60px;
-  height: 60px;
+  width: 86px;
+  height: 86px;
   flex: 0 0 auto;
-  border-radius: 50%;
-  object-fit: cover;
-  box-shadow: 0 0 0 1px var(--property-rule);
+  border-radius: 0;
+  object-fit: contain;
+  mix-blend-mode: normal;
+  filter: brightness(0) saturate(100%);
+  opacity: 0.88;
+  box-shadow: none;
 }
 
 .prop-name {
@@ -1696,7 +1699,7 @@ h2 {
   .prop-photos { grid-template-columns: 1fr; grid-template-rows: 280px; }
   .prop-photo-item:not(.prop-photo-item--main) { display: none; }
   .prop-title-lockup { align-items: center; gap: 12px; }
-  .prop-title-logo { width: 48px; height: 48px; }
+  .prop-title-logo { width: 64px; height: 64px; }
   .prop-name { font-size: 44px; }
   .prop-facts { gap: 22px 14px; }
   .king-callout { align-items: flex-start; padding: 20px; }
@@ -1829,9 +1832,10 @@ body {
 
 .nav__logo-img {
   display: block;
-  height: 48px;
-  width: 48px;
+  height: 120px;
+  width: 120px;
   object-fit: contain;
+  opacity: 0.7;
 }
 
 /* Nav text — light on landing, dark on the frosted (content) state */
@@ -2144,8 +2148,8 @@ body {
   }
 
   .nav__logo-img {
-    height: 36px;
-    width: 36px;
+    height: 50px;
+    width: 50px;
   }
 
   .hero__content {
@@ -2968,9 +2972,9 @@ body {
 .nav__link--active::after { transform: scaleX(1); }
 
 .nav:not(.is-scrolled) .nav__logo-img {
-  border: 1px solid rgba(255, 255, 255, 0.38);
-  border-radius: 50%;
-  box-shadow: 0 8px 24px -12px rgba(0, 0, 0, 0.82);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .nav:not(.is-scrolled) .btn-nav {
@@ -3048,9 +3052,9 @@ body {
 }
 
 .nav.is-scrolled .nav__logo-img {
-  border: 1px solid rgba(251, 253, 255, 0.3);
-  border-radius: 50%;
-  box-shadow: 0 8px 22px -14px rgba(0, 0, 0, 0.9);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .nav.is-scrolled .btn-nav {
@@ -3127,5 +3131,41 @@ body {
       clamp(210px, min(20vw, 31vh), 300px)
       clamp(210px, min(20vw, 31vh), 300px);
     max-height: 610px;
+  }
+}
+
+/* Keep the landing header optically square within the clear frame: the logo
+   and Book Now button use the same inset from the side as from the top. */
+.nav:not(.is-scrolled) {
+  padding-right: calc(var(--frame-inset) + 22px);
+  padding-left: calc(var(--frame-inset) + 22px);
+}
+
+.nav:not(.is-scrolled) .nav__right {
+  align-self: start;
+}
+
+.nav.is-scrolled {
+  padding-right: calc(var(--frame-inset) + 22px);
+  padding-left: calc(var(--frame-inset) + 22px);
+}
+
+.hero__content {
+  padding-bottom: 32px;
+}
+
+@media (max-width: 900px) {
+  .nav:not(.is-scrolled) {
+    padding-right: calc(var(--frame-inset) + 16px);
+    padding-left: calc(var(--frame-inset) + 16px);
+  }
+
+  .nav.is-scrolled {
+    padding-right: calc(var(--frame-inset) + 16px);
+    padding-left: calc(var(--frame-inset) + 16px);
+  }
+
+  .hero__content {
+    padding-bottom: 26px;
   }
 }

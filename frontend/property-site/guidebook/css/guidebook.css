@@ -543,6 +543,10 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
   background: var(--guide-surface);
   box-shadow: 0 25px 70px rgba(5, 18, 30, 0.32);
 }
+.help-dialog__panel { width: min(520px, 100%); }
+.help-dialog__content { padding: 4px 28px 30px; }
+.help-dialog__content p { margin: 0; color: var(--guide-ink); font-size: 15px; line-height: 1.65; }
+.help-dialog__content p + p { margin-top: 10px; color: var(--guide-muted); font-size: 13px; }
 .search-dialog__header {
   display: flex;
   align-items: flex-start;
@@ -792,6 +796,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
   .search-dialog { align-items: flex-end; padding: 0; }
   .search-dialog__panel { width: 100%; max-height: 88vh; border-radius: 22px 22px 0 0; padding-bottom: env(safe-area-inset-bottom); }
   .search-dialog__header { padding: 20px 18px 14px; }
+  .help-dialog__content { padding: 4px 18px calc(26px + env(safe-area-inset-bottom)); }
   .search-field { margin: 0 18px 12px; }
   .search-result { padding: 10px 18px; }
   .place-dialog { align-items: flex-end; padding: 0; }

@@ -134,8 +134,8 @@
   </main>
 
   <footer class="guide-footer">
-    <div><strong>Need a real person?</strong><span>We’re here if the guide doesn’t have the answer.</span></div>
-    <button type="button" data-open-help><svg><use href="#icon-message"></use></svg>Contact your host</button>
+    <div><strong>Need to contact your host?</strong><span>Reply to the booking message in the app or email you used to reserve your stay.</span></div>
+    <button type="button" data-open-help><svg><use href="#icon-message"></use></svg>Contact instructions</button>
   </footer>
 
   <nav class="mobile-tabs" aria-label="Guide navigation">
@@ -156,6 +156,19 @@
         <input type="search" id="guide-search-input" placeholder="Try “hot tub” or “Wi-Fi”" autocomplete="off">
       </label>
       <div id="guide-search-results" class="search-results"><p>Search check-in details, property instructions and local recommendations.</p></div>
+    </div>
+  </div>
+
+  <div class="search-dialog" id="help-dialog" role="dialog" aria-modal="true" aria-labelledby="help-title" hidden>
+    <div class="search-dialog__panel help-dialog__panel">
+      <div class="search-dialog__header">
+        <div><small>Contact your host</small><h2 id="help-title">Use your booking messages</h2></div>
+        <button type="button" class="dialog-close" data-close-help aria-label="Close contact instructions"><svg><use href="#icon-close"></use></svg></button>
+      </div>
+      <div class="help-dialog__content">
+        <p>To contact your host, reply to the booking message in the app or email you used to reserve your stay.</p>
+        <p>This keeps your conversation connected to your reservation so we can help you quickly.</p>
+      </div>
     </div>
   </div>
 
