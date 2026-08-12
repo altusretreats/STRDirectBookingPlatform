@@ -23,10 +23,10 @@ export default function AdminShell({ routeInfo }) {
   const currentProp = properties.find(p => p.slug === propertyId);
 
   return (
-    <div style={s.shell}>
+    <div className="admin-shell" style={s.shell}>
       {/* ── Sidebar ── */}
-      <aside style={s.sidebar}>
-        <div style={s.logo}>Altus Retreats</div>
+      <aside className="admin-sidebar" style={s.sidebar}>
+        <div style={s.logo}><span style={s.logoMark}>A</span><span>Altus Retreats<small style={s.logoSub}>Host workspace</small></span></div>
 
         {/* Properties section */}
         <div style={s.section}>
@@ -74,7 +74,7 @@ export default function AdminShell({ routeInfo }) {
       </aside>
 
       {/* ── Main ── */}
-      <main style={s.main}>
+      <main className="admin-main" style={s.main}>
         {route === 'properties' && (
           <PropertiesList properties={properties} loading={propsLoading} />
         )}
@@ -107,19 +107,21 @@ function SidebarItem({ label, icon, active, onClick, muted }) {
 }
 
 const s = {
-  shell:       { display:'flex', minHeight:'100vh', fontFamily:'-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' },
-  sidebar:     { width:240, background:'#1C2E26', display:'flex', flexDirection:'column', flexShrink:0, position:'sticky', top:0, height:'100vh', overflowY:'auto' },
-  logo:        { padding:'24px 20px 20px', fontSize:16, fontWeight:700, color:'#fff', borderBottom:'1px solid rgba(255,255,255,0.08)', letterSpacing:'-0.01em' },
+  shell:       { display:'flex', minHeight:'100vh' },
+  sidebar:     { width:252, background:'#1D3557', display:'flex', flexDirection:'column', flexShrink:0, position:'sticky', top:0, height:'100vh', overflowY:'auto' },
+  logo:        { padding:'24px 20px 20px', display:'flex', alignItems:'center', gap:12, fontSize:16, fontWeight:600, color:'#fff', borderBottom:'1px solid rgba(255,255,255,0.1)' },
+  logoMark:    { width:36, height:36, display:'grid', placeItems:'center', border:'1px solid rgba(255,255,255,.35)', borderRadius:12, fontFamily:'Fraunces, Georgia, serif', fontSize:20 },
+  logoSub:     { display:'block', marginTop:2, color:'rgba(255,255,255,.5)', fontSize:10, fontWeight:500, letterSpacing:'.08em', textTransform:'uppercase' },
   section:     { padding:'16px 12px 4px' },
   sectionLabel:{ fontSize:10, fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:'rgba(255,255,255,0.35)', paddingLeft:8, marginBottom:6 },
   item:        { width:'100%', display:'flex', alignItems:'center', gap:8, padding:'8px 12px', borderRadius:7, border:'none', cursor:'pointer', fontSize:13, fontWeight:500, color:'rgba(255,255,255,0.65)', background:'transparent', fontFamily:'inherit', textAlign:'left', marginBottom:1 },
-  itemActive:  { background:'rgba(255,255,255,0.12)', color:'#fff' },
+  itemActive:  { background:'rgba(255,255,255,0.14)', color:'#fff', boxShadow:'inset 3px 0 0 #D1614D' },
   itemMuted:   { color:'rgba(255,255,255,0.35)', fontSize:12 },
   itemIcon:    { fontSize:14, width:18, flexShrink:0 },
   spacer:      { flex:1 },
   footer:      { padding:'16px 20px', borderTop:'1px solid rgba(255,255,255,0.08)' },
   userEmail:   { fontSize:11, color:'rgba(255,255,255,0.4)', marginBottom:8, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' },
   logoutBtn:   { fontSize:12, color:'rgba(255,255,255,0.5)', background:'none', border:'none', cursor:'pointer', padding:0, fontFamily:'inherit' },
-  main:        { flex:1, overflowY:'auto', background:'#F9FAFB' },
+  main:        { flex:1, overflowY:'auto', background:'#F3F6F7' },
   dim:         { fontSize:12, color:'rgba(255,255,255,0.3)', padding:'4px 12px' },
 };

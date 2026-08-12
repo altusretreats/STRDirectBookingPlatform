@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { adminApi } from '../lib/api';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
@@ -26,6 +26,7 @@ const ICON_OPTIONS = [
 ];
 
 const SECTION_TEMPLATES = [
+  { icon: '👋', title: 'Welcome', sectionType: 'welcome' },
   { icon: '🔑', title: 'Check-In' },
   { icon: '🌐', title: 'WiFi & Tech' },
   { icon: '📋', title: 'House Rules' },
@@ -54,12 +55,15 @@ const CATEGORY_COLORS = {
   services:   '#F9FAFB',
 };
 
-export default function GuidebookEditor({ propertyId, propertyName }) {
+export default function GuidebookEditor({ propertyId, propertyName, property, onPropertySaved }) {
   const [sections, setSections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [heroUploading, setHeroUploading] = useState(false);
+  const [heroSaved, setHeroSaved] = useState(false);
+  const heroInputRef = useRef(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -111,6 +115,28 @@ export default function GuidebookEditor({ propertyId, propertyName }) {
     setEditing({ title: tmpl.title, icon: tmpl.icon, sectionType: tmpl.sectionType || 'general', items: [], published: false, aiPublished: false });
   }
 
+  async function updateGuidebookHero(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setHeroUploading(true); setError(''); setHeroSaved(false);
+    try {
+      const { uploadUrl, fileUrl } = await adminApi.signUpload(propertyId, file.name, file.type);
+      await adminApi.uploadFile(uploadUrl, file);
+      await adminApi.updateProperty(propertyId, {
+        content: { ...(property?.content ?? {}), guidebookHeroPhoto: fileUrl },
+      });
+      const updated = await adminApi.getProperty(propertyId);
+      onPropertySaved?.(updated);
+      setHeroSaved(true);
+      setTimeout(() => setHeroSaved(false), 3000);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setHeroUploading(false);
+      event.target.value = '';
+    }
+  }
+
   if (loading) return <div style={{ color: '#6B7280', padding: 40 }}>Loading guidebook…</div>;
 
   return (
@@ -123,6 +149,23 @@ export default function GuidebookEditor({ propertyId, propertyName }) {
         <button style={s.btnPrimary} onClick={() => setEditing({ title: '', icon: '📄', sectionType: 'general', items: [], published: false, aiPublished: false })}>
           + Add Section
         </button>
+      </div>
+
+      <div className="guidebook-hero-settings">
+        <div
+          className="guidebook-hero-preview"
+          role="img"
+          aria-label="Current guidebook hero"
+          style={{ backgroundImage: `linear-gradient(rgba(17,38,61,.18), rgba(17,38,61,.45)), url("${property?.content?.guidebookHeroPhoto || property?.content?.heroSliderPhotos?.[0] || property?.content?.heroPhoto || property?.hospitable?.cached?.photos?.[0]?.url || ''}")` }}
+        />
+        <div>
+          <p style={s.eyebrow}>Guidebook welcome</p>
+          <h2 style={s.heroSettingsTitle}>Hero image</h2>
+          <p style={s.heroSettingsCopy}>Upload a dedicated image for the stay guide. If you leave this unset, the guide continues to use the property hero or first Hospitable photo.</p>
+          <input ref={heroInputRef} type="file" accept="image/*" onChange={updateGuidebookHero} style={{ display: 'none' }} />
+          <button style={s.btnPrimary} onClick={() => heroInputRef.current?.click()} disabled={heroUploading}>{heroUploading ? 'Uploading…' : 'Choose guidebook image'}</button>
+          {heroSaved && <span style={s.savedInline}>✓ Image saved</span>}
+        </div>
       </div>
 
       {error && <div style={s.errorBanner}>{error}</div>}
@@ -252,6 +295,7 @@ function SectionModal({ section, saving, propertyId, onSave, onClose }) {
               <label style={s.label}>Section type</label>
               <select style={s.input} value={data.sectionType || 'general'} onChange={e => set('sectionType', e.target.value)}>
                 <option value="general">General</option>
+                <option value="welcome">Welcome message</option>
                 <option value="recommendations">Local Recommendations</option>
               </select>
             </div>
@@ -674,4 +718,8 @@ const s = {
   iconPickerDropdown: { position: 'absolute', top: '100%', left: 0, zIndex: 20, marginTop: 4, background: '#fff', border: '1px solid #E5E7EB', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', padding: 10, width: 220 },
   iconGrid:           { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 4 },
   iconOption:         { border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 20, padding: 6, lineHeight: 1, fontFamily: 'inherit' },
+  eyebrow:            { margin: '0 0 5px', color: '#BD503E', fontSize: 11, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase' },
+  heroSettingsTitle:  { margin: '0 0 7px', color: '#1D3557', fontFamily: 'Fraunces, Georgia, serif', fontSize: 26, fontWeight: 600 },
+  heroSettingsCopy:   { margin: '0 0 16px', color: '#637180', fontSize: 13, lineHeight: 1.55 },
+  savedInline:        { marginLeft: 12, color: '#2F735D', fontSize: 13, fontWeight: 600 },
 };

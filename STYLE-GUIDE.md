@@ -47,7 +47,7 @@ The small difference between property-page Canyon Red and guidebook Canyon Red i
 - Property page: `frontend/property-site/css/main.css`, especially `--property-*` tokens.
 - Guest guide: `frontend/property-site/guidebook/css/guidebook.css`, using `--guide-*` tokens.
 - Booking page: `frontend/property-site/css/book.css`; this still uses the earlier Altus green/gold system and has not yet been migrated.
-- Admin SPA: inline React styles; clarity and consistency take priority over property theming.
+- Admin SPA: `frontend/admin-spa/src/admin.css` owns the shared workspace tokens and shell. The admin borrows the guidebook's Deep Blue, Canyon Red, Mist, Fraunces, and DM Sans language while keeping forms denser and operationally focused.
 
 Never use a master-brand token merely because it already exists. Choose the token family belonging to the surface being changed.
 
@@ -248,6 +248,9 @@ Visual visibility and AI availability are different concepts.
 ### Admin SPA
 
 - Prioritize legibility, obvious form state, and efficient content editing.
+- Use Deep Blue for navigation and primary controls, Canyon Red for active accents, Mist for the workspace, and white for editing surfaces.
+- Use Fraunces only for page-level editorial headings; use DM Sans for controls, labels, and operational content.
+- Property content editors must preserve existing unedited content fields when saving so media and other tab-owned overrides are never discarded.
 - AI context and host notes must be visibly differentiated from guest-visible content.
 - Do not imply that “Visible to guests” also controls AI availability.
 

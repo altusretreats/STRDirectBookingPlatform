@@ -169,15 +169,19 @@ function applyPropertyPresentation(guideData, propertyData) {
   if (primary) document.documentElement.style.setProperty('--guide-primary', primary);
 
   const customPhotos = property?.content?.heroSliderPhotos || [];
-  const heroPhoto = customPhotos[0]
+  const heroPhoto = property?.content?.guidebookHeroPhoto
+    || customPhotos[0]
     || property?.content?.heroPhoto
     || hospitable?.photos?.[0]?.url;
   if (safeUrl(heroPhoto)) $('#guide-hero-media').style.backgroundImage = `url("${safeUrl(heroPhoto)}")`;
 
-  const welcomeSection = state.sections.find(section => /welcome/.test(normalize(`${section.sectionId} ${section.title}`)));
+  const welcomeSection = state.sections.find(section => section.sectionType === 'welcome')
+    || state.sections.find(section => /welcome/.test(normalize(`${section.sectionId} ${section.title}`)));
   const welcomeText = welcomeSection?.items?.find(item => item.type === 'text' && !isPlaceholder(item.content))?.content;
   if (welcomeText) {
-    const sentence = String(welcomeText).split(/(?<=[.!?])\s/)[0];
+    const sentence = String(welcomeText);
+    // Welcome sections own the full hero message; CSS handles wrapping.
+    queueMicrotask(() => { $('#hero-message').textContent = sentence; });
     $('#hero-message').textContent = sentence.length <= 170 ? sentence : 'Everything you need for an effortless stay—right when you need it.';
   }
 

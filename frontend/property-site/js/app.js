@@ -254,7 +254,7 @@ function initLightbox() {
 }
 
 // ── Frame: populate sections ──────────────────────────
-function initFrameSections({ photos, amenities, description, bedrooms, bathrooms, maxGuests, location, propertyName, hospLocation }) {
+function initFrameSections({ photos, amenities, description, bedrooms, bathrooms, maxGuests, location, propertyName, content = {} }) {
 
   // ── Photo grid: large main left + 2×2 thumbnails right ──
   const photoGrid = document.getElementById('frame-photo-grid');
@@ -332,6 +332,26 @@ function initFrameSections({ photos, amenities, description, bedrooms, bathrooms
   const nameEl = document.getElementById('frame-prop-name');
   if (nameEl && propertyName) nameEl.textContent = propertyName;
 
+  const pageCopy = {
+    'overview-kicker': content.overviewKicker,
+    'overview-title': content.overviewTitle,
+    'amenities-title': content.amenitiesTitle,
+    'experience-kicker': content.experienceKicker,
+    'experience-title': content.experienceTitle,
+    'experience-primary-title': content.experiencePrimaryTitle,
+    'experience-secondary-title': content.experienceSecondaryTitle,
+    'reviews-kicker': content.reviewsKicker,
+    'reviews-title': content.reviewsTitle,
+    'location-kicker': content.locationKicker,
+    'location-title': content.locationTitle,
+    'promise-kicker': content.promiseKicker,
+    'promise-title': content.promiseTitle,
+    'promise-intro': content.promiseIntro,
+  };
+  Object.entries(pageCopy).forEach(([id, value]) => {
+    if (value) document.getElementById(id)?.replaceChildren(document.createTextNode(value));
+  });
+
   // Reuse the active site's logo rather than hardcoding a property-specific
   // asset into the editorial title lockup.
   const titleLogo = document.querySelector('.prop-title-logo');
@@ -390,12 +410,12 @@ function initFrameSections({ photos, amenities, description, bedrooms, bathrooms
   if (amenityNames.some(name => /fire pit/.test(name))) outdoorHighlights.push('fire pit');
   const primaryCopy = document.getElementById('experience-copy-primary');
   if (primaryCopy) {
-    primaryCopy.textContent = outdoorHighlights.length
+    primaryCopy.textContent = content.experiencePrimaryBody || (outdoorHighlights.length
       ? `${outdoorHighlights.slice(0, -1).join(', ')}${outdoorHighlights.length > 1 ? ' and ' : ''}${outdoorHighlights.slice(-1)} — ready when the day winds down.`
-      : 'Thoughtful outdoor spaces made for slow evenings and unhurried mornings.';
+      : 'Thoughtful outdoor spaces made for slow evenings and unhurried mornings.');
   }
   const secondaryCopy = document.getElementById('experience-copy-secondary');
-  if (secondaryCopy) secondaryCopy.textContent = 'Comfortable private bedrooms designed for a restorative night away.';
+  if (secondaryCopy) secondaryCopy.textContent = content.experienceSecondaryBody || 'Comfortable private bedrooms designed for a restorative night away.';
 
   // ── Description with Read more toggle ──
   const descEl = document.getElementById('frame-prop-desc');
@@ -877,7 +897,7 @@ async function loadProperty() {
     initHouseRules(houseRules, cancellationPolicy);
 
     // Frame sections
-    initFrameSections({ photos, amenities, description, bedrooms, bathrooms, maxGuests, location, propertyName: name });
+    initFrameSections({ photos, amenities, description, bedrooms, bathrooms, maxGuests, location, propertyName: name, content: c });
     initEditorialDetails({
       description,
       summary: h.summary,

@@ -94,6 +94,26 @@ export default function ContentEditor({ property, onSaved }) {
   const [aboutTitle, setAboutTitle] = useState(content.aboutTitle ?? '');
   const [aboutBody,  setAboutBody]  = useState(content.aboutBody  ?? '');
 
+  // Editorial homepage sections (admin-owned; Hospitable has no equivalent fields)
+  const [editorial, setEditorial] = useState({
+    overviewKicker: content.overviewKicker ?? '',
+    overviewTitle: content.overviewTitle ?? '',
+    amenitiesTitle: content.amenitiesTitle ?? '',
+    experienceKicker: content.experienceKicker ?? '',
+    experienceTitle: content.experienceTitle ?? '',
+    experiencePrimaryTitle: content.experiencePrimaryTitle ?? '',
+    experiencePrimaryBody: content.experiencePrimaryBody ?? '',
+    experienceSecondaryTitle: content.experienceSecondaryTitle ?? '',
+    experienceSecondaryBody: content.experienceSecondaryBody ?? '',
+    reviewsKicker: content.reviewsKicker ?? '',
+    reviewsTitle: content.reviewsTitle ?? '',
+    locationKicker: content.locationKicker ?? '',
+    locationTitle: content.locationTitle ?? '',
+    promiseKicker: content.promiseKicker ?? '',
+    promiseTitle: content.promiseTitle ?? '',
+    promiseIntro: content.promiseIntro ?? '',
+  });
+
   // House rules
   const [rulesOverride, setRulesOverride] = useState(content.houseRulesOverride ?? false);
   const [rulesCustom,   setRulesCustom]   = useState(
@@ -130,6 +150,7 @@ export default function ContentEditor({ property, onSaved }) {
     try {
       await adminApi.updateProperty(property.slug, {
         content: {
+          ...content,
           heroHeadline,
           heroSubtitle,
           heroEyebrow,
@@ -143,6 +164,7 @@ export default function ContentEditor({ property, onSaved }) {
           aboutShow,
           aboutTitle,
           aboutBody,
+          ...editorial,
           houseRulesOverride: rulesOverride,
           houseRules: rulesOverride ? rulesCustom : undefined,
           customSections,
@@ -161,9 +183,17 @@ export default function ContentEditor({ property, onSaved }) {
   }
 
   const hospRules = hospCached.houseRules ?? [];
+  const setEditorialField = (key, value) => setEditorial(prev => ({ ...prev, [key]: value }));
 
   return (
     <div>
+      <div className="admin-editor-intro">
+        <div>
+          <h2>Property story</h2>
+          <p>Shape the guest-facing page while keeping synced listing details intact.</p>
+        </div>
+        <div className="admin-source-note"><strong>Hospitable stays in control.</strong> Blank override fields continue to use synced listing content. Fields marked as page copy are Altus-owned and are not replaced during sync.</div>
+      </div>
 
       {/* ── Hero Section ──────────────────────────────────────────────────── */}
       <Card>
@@ -220,6 +250,49 @@ export default function ContentEditor({ property, onSaved }) {
             rows={3}
           />
         </FieldRow>
+      </Card>
+
+      <Card>
+        <CardHeader
+          title="Editorial Overview & Amenities"
+          subtitle="Headings introduced in the new homepage design. Leave any field blank to keep the current wording."
+        />
+        <div style={s.twoColumn}>
+          <FormField label="Overview Eyebrow"><input style={s.input} value={editorial.overviewKicker} onChange={e => setEditorialField('overviewKicker', e.target.value)} placeholder="Your private escape" /></FormField>
+          <FormField label="Overview Heading"><input style={s.input} value={editorial.overviewTitle} onChange={e => setEditorialField('overviewTitle', e.target.value)} placeholder="Adventure outside. Restoration within." /></FormField>
+        </div>
+        <FormField label="Amenities Heading"><input style={s.input} value={editorial.amenitiesTitle} onChange={e => setEditorialField('amenitiesTitle', e.target.value)} placeholder="What this home offers" /></FormField>
+      </Card>
+
+      <Card>
+        <CardHeader
+          title="Experience Highlights"
+          subtitle="Control the introduction and the copy layered over the two editorial photos. Photos continue to come from the property gallery."
+        />
+        <div style={s.twoColumn}>
+          <FormField label="Section Eyebrow"><input style={s.input} value={editorial.experienceKicker} onChange={e => setEditorialField('experienceKicker', e.target.value)} placeholder="Designed around the way you stay" /></FormField>
+          <FormField label="Section Heading"><input style={s.input} value={editorial.experienceTitle} onChange={e => setEditorialField('experienceTitle', e.target.value)} placeholder="The best parts aren't extras." /></FormField>
+          <FormField label="First Card Title"><input style={s.input} value={editorial.experiencePrimaryTitle} onChange={e => setEditorialField('experiencePrimaryTitle', e.target.value)} placeholder="Slow evenings outside" /></FormField>
+          <FormField label="First Card Copy"><textarea style={{ ...s.input, minHeight: 88, resize: 'vertical' }} value={editorial.experiencePrimaryBody} onChange={e => setEditorialField('experiencePrimaryBody', e.target.value)} placeholder="Leave blank for an amenities-based description" /></FormField>
+          <FormField label="Second Card Title"><input style={s.input} value={editorial.experienceSecondaryTitle} onChange={e => setEditorialField('experienceSecondaryTitle', e.target.value)} placeholder="Rest deeply" /></FormField>
+          <FormField label="Second Card Copy"><textarea style={{ ...s.input, minHeight: 88, resize: 'vertical' }} value={editorial.experienceSecondaryBody} onChange={e => setEditorialField('experienceSecondaryBody', e.target.value)} placeholder="Comfortable private bedrooms designed for a restorative night away." /></FormField>
+        </div>
+      </Card>
+
+      <Card>
+        <CardHeader
+          title="Reviews, Location & Altus Standard"
+          subtitle="Edit the supporting copy around live guest reviews, location details, and the direct-booking promise."
+        />
+        <div style={s.twoColumn}>
+          <FormField label="Reviews Eyebrow"><input style={s.input} value={editorial.reviewsKicker} onChange={e => setEditorialField('reviewsKicker', e.target.value)} placeholder="What our guests are saying" /></FormField>
+          <FormField label="Reviews Heading"><input style={s.input} value={editorial.reviewsTitle} onChange={e => setEditorialField('reviewsTitle', e.target.value)} placeholder="Trusted by travelers like you." /></FormField>
+          <FormField label="Location Eyebrow"><input style={s.input} value={editorial.locationKicker} onChange={e => setEditorialField('locationKicker', e.target.value)} placeholder="Find your way" /></FormField>
+          <FormField label="Location Heading"><input style={s.input} value={editorial.locationTitle} onChange={e => setEditorialField('locationTitle', e.target.value)} placeholder="In the heart of it all." /></FormField>
+          <FormField label="Promise Eyebrow"><input style={s.input} value={editorial.promiseKicker} onChange={e => setEditorialField('promiseKicker', e.target.value)} placeholder="The Altus standard" /></FormField>
+          <FormField label="Promise Heading"><input style={s.input} value={editorial.promiseTitle} onChange={e => setEditorialField('promiseTitle', e.target.value)} placeholder="A stay that lives up to the photos." /></FormField>
+        </div>
+        <FormField label="Promise Introduction"><textarea style={{ ...s.input, minHeight: 96, resize: 'vertical' }} value={editorial.promiseIntro} onChange={e => setEditorialField('promiseIntro', e.target.value)} placeholder="Booking directly should feel simpler, clearer, and more personal…" /></FormField>
       </Card>
 
       {/* ── Hero Title Block ───────────────────────────────────────────────── */}
@@ -488,4 +561,5 @@ const s = {
   saveBtn:       { background: '#1C2E26', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 24px', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
   successMsg:    { fontSize: 13, color: '#16A34A', fontWeight: 500 },
   errorMsg:      { fontSize: 13, color: '#DC2626', flex: 1 },
+  twoColumn:     { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0 18px' },
 };

@@ -52,9 +52,9 @@ export default function PropertyDetail({ propertyId, tab, property: propFromPare
   const cached = property.hospitable?.cached ?? {};
 
   return (
-    <div style={s.page}>
+    <div className="admin-property-page" style={s.page}>
       {/* Page header */}
-      <div style={s.header}>
+      <div className="admin-property-header" style={s.header}>
         <div>
           <div style={s.breadcrumb}>
             <button style={s.crumbBtn} onClick={() => navigate('/properties')}>Properties</button>
@@ -79,7 +79,7 @@ export default function PropertyDetail({ propertyId, tab, property: propFromPare
       </div>
 
       {/* Tabs */}
-      <div style={s.tabs}>
+      <div className="admin-property-tabs" style={s.tabs}>
         {TABS.map(t => (
           <button
             key={t.id}
@@ -92,14 +92,14 @@ export default function PropertyDetail({ propertyId, tab, property: propFromPare
       </div>
 
       {/* Tab content */}
-      <div style={s.content}>
+      <div className="admin-content" style={s.content}>
         {activeTab === 'overview'  && <OverviewTab property={property} cached={cached} propertyId={propertyId} />}
         {activeTab === 'content'   && <ContentEditor property={property} onSaved={handlePropertyUpdate} />}
         {activeTab === 'media'     && <MediaPanel property={property} cached={cached} onSaved={handlePropertyUpdate} />}
         {activeTab === 'amenities' && <AmenitiesPanel property={property} onSaved={handlePropertyUpdate} />}
         {activeTab === 'location'  && <LocationEditor property={property} cached={cached} onSaved={handlePropertyUpdate} />}
         {activeTab === 'sync'      && <SyncPanel property={property} onSynced={handlePropertyUpdate} />}
-        {activeTab === 'guidebook' && <GuidebookEditor propertyId={propertyId} propertyName={property.name} />}
+        {activeTab === 'guidebook' && <GuidebookEditor propertyId={propertyId} propertyName={property.name} property={property} onPropertySaved={handlePropertyUpdate} />}
         {activeTab === 'bookings'  && <BookingsList propertyId={propertyId} />}
       </div>
     </div>
@@ -190,7 +190,7 @@ const s = {
   crumbBtn:       { background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: '#6B7280', fontSize: 13, fontFamily: 'inherit', textDecoration: 'underline' },
   crumbSep:       { color: '#D1D5DB' },
   crumbCurrent:   { color: '#374151' },
-  title:          { fontSize: 26, fontWeight: 700, color: '#111827', margin: 0, marginBottom: 4 },
+  title:          { fontSize: 32, fontWeight: 600, fontFamily:'Fraunces, Georgia, serif', color: '#fff', margin: 0, marginBottom: 4 },
   domain:         { fontSize: 13, color: '#6B7280', textDecoration: 'none', borderBottom: '1px solid #E5E7EB' },
   headerMeta:     { display: 'flex', alignItems: 'center', gap: 10, paddingTop: 28, flexShrink: 0 },
   syncBadge:      { fontSize: 12, color: '#6B7280', background: '#F3F4F6', padding: '4px 10px', borderRadius: 20 },
@@ -199,7 +199,7 @@ const s = {
   statusInactive: { background: '#FEE2E2', color: '#DC2626' },
   tabs:           { display: 'flex', gap: 0, padding: '24px 40px 0', borderBottom: '1px solid #E5E7EB', background: '#F9FAFB', overflowX: 'auto' },
   tab:            { display: 'flex', alignItems: 'center', gap: 6, padding: '10px 14px', border: 'none', borderBottom: '2px solid transparent', background: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500, color: '#6B7280', fontFamily: 'inherit', whiteSpace: 'nowrap', marginBottom: -1, outline: 'none' },
-  tabActive:      { color: '#111827', borderBottomColor: '#2D3A2E', fontWeight: 600 },
+  tabActive:      { color: '#1D3557', borderBottomColor: '#BD503E', fontWeight: 600 },
   tabIcon:        { fontSize: 14 },
   content:        { padding: '32px 40px', overflowY: 'auto', flex: 1 },
   statsGrid:      { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 16, marginBottom: 32 },
