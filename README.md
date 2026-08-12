@@ -15,6 +15,7 @@ Design tokens and guest-experience rules: [STYLE-GUIDE.md](STYLE-GUIDE.md)
 | Hub (full future site preview) | https://www.altusretreats.net/hub.html | `E1X6NMJ8MCF7HR` | same bucket |
 | The Overhang — Property site | https://www.staytheoverhang.com | `EP3TSR36W3F7N` | `altus-retreats-frontend-dev-817760095908` |
 | The Overhang — Guidebook | https://www.staytheoverhang.com/guidebook/ | `EP3TSR36W3F7N` | same bucket |
+| The Overhang — AI guide context (pending backend deploy) | https://teh1cl4b6a.execute-api.us-east-1.amazonaws.com/dev/properties/kentucky/guidebook/agent-context | API Gateway | public Markdown feed |
 | Admin panel | https://admin.altusretreats.net | `E6XS2Y3HPS1YG` | `altus-retreats-admin-dev-817760095908` |
 | API | https://teh1cl4b6a.execute-api.us-east-1.amazonaws.com/dev | — | — |
 

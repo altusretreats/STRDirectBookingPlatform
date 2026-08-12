@@ -47,7 +47,8 @@ Shared running list. Add items with priority (🔴 critical / 🟡 soon / 🟢 n
 - [ ] **Guidebook content** — add actual house manual sections for The Overhang via admin → Guidebook Editor
 - [ ] **Guest confirmation email** — verify template renders correctly for a real booking
 - [ ] **Pre-arrival email** — verify EventBridge Scheduler fires correctly 48h before check-in
-- [ ] **AI guidebook context feed** — create a separate agent-readable endpoint/page containing guest content plus explicitly included `aiContext`; exclude `hostNotes` and add an AI-specific inclusion control in admin
+- [x] **AI guidebook context feed** — public Markdown endpoint contains agent-enabled guest content plus `aiContext`, excludes `hostNotes`, and has an independent admin inclusion control
+- [ ] **Deploy AI guidebook context feed** — requires explicit approval that agent-enabled guidebook and `aiContext` content will be publicly accessible to anyone with the URL
 - [ ] **Booking calendar** — test blocked-date display once real Hospitable listing ID is connected
 - [ ] **SEO** — add og:image, structured data, sitemap.xml for staytheoverhang.com once it goes live
 - [ ] **Analytics** — add simple event tracking (page views, waitlist signups, booking starts, booking completions)

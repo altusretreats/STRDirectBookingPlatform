@@ -274,6 +274,14 @@ Resources:
             Method: GET
             Auth:
               Authorizer: NONE   # public endpoint
+        GetGuidebookAgentContext:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /properties/{propertyId}/guidebook/agent-context
+            Method: GET
+            Auth:
+              Authorizer: NONE   # public, explicitly curated agent context
 
   # ── Lambda: getReviews ────────────────────
   GetReviewsFunction:

@@ -49,7 +49,8 @@ scripts/          Seed scripts (minimal — Hospitable is source of truth for co
 |---|---|---|
 | getProperty | GET /properties/{id} | Public. Reads METADATA record, merges admin overrides over hospitable.cached |
 | getAvailability | GET /properties/{id}/availability | Public. Proxies Hospitable calendar |
-| getGuidebook | GET /properties/{id}/guidebook | Public. Returns guidebook sections |
+| getGuidebook | GET /properties/{id}/guidebook | Public. Returns sanitized guest guidebook sections |
+| getGuidebook | GET /properties/{id}/guidebook/agent-context | Public Markdown feed. Returns explicitly agent-available guest content + `aiContext`; never `hostNotes` |
 | adminProperties | GET+POST+PUT /admin/properties | CRUD for property records |
 | syncProperty | POST /admin/properties/{id}/sync | Fetches Hospitable listing → stores in hospitable.cached on METADATA |
 | adminGuidebook | GET+PUT+DELETE /admin/properties/{id}/guidebook/{sectionId} | Guidebook section CRUD |
@@ -130,7 +131,7 @@ aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/*" 
 - **Hospitable is source of truth** for all listing content (name, photos, amenities, house rules, description, location). Admin overrides are merged on top via `stripEmpty()` so blank fields never clobber Hospitable data.
 - **Seed script is minimal** — only creates the structural record with slug, name, domain, Hospitable property ID, and empty content/location. Never seed content.
 - **syncProperty** stores the full Hospitable listing under `property.hospitable.cached` and `lastSyncedAt`. Run from admin → Sync tab or daily at 2am EST via EventBridge.
-- **Guidebook place items** (`type: 'place'`) store Google Places v2 data under `item.place`. `aiContext` and `hostNotes` fields on every item/section are hidden from guests and reserved for future AI concierge.
+- **Guidebook place items** (`type: 'place'`) store Google Places v2 data under `item.place`. `aiContext` is hidden from guests and available only through the curated agent feed; `hostNotes` remains admin-only.
 
 ## Guidebook — place items
 Place items in a recommendations section (`sectionType: 'recommendations'`) render as a card grid grouped by category (Restaurants / Attractions / Activities / Shopping). Clicking a card opens a detail modal with Directions button (uses lat/lng coordinates for reliable Google Maps routing).
@@ -140,8 +141,9 @@ Place items in a recommendations section (`sectionType: 'recommendations'`) rend
 - Sections are grouped client-side into Arriving / At the house / Explore / Checking out, so adding a property remains a data operation. Existing text, image, video, map, link, copyable code, search, and Google Place item types remain supported.
 - Guest-facing navigation, section, search, and place-fallback icons use one restrained deep-blue outline system; admin-authored emoji icons are intentionally mapped to semantic outline icons in the guest UI for visual consistency.
 - `GET /properties/{id}/guidebook` is guest-facing and must never return `aiContext`, `hostNotes`, DynamoDB keys, or other internal fields. It returns a sanitized guest projection of published sections only.
-- `aiContext` is intended for a separate future agent-readable context endpoint/page. `hostNotes` is private admin-only content and must never be returned to guests or AI agents.
-- Admin guidebook saves preserve section-level `sectionType` and `aiContext`, as well as item-level fields. "Visible to guests" (`published`) controls only the guest guide; a future AI feed should have its own explicit inclusion control rather than reuse guest visibility.
+- `GET /properties/{id}/guidebook/agent-context` is a public, machine-readable Markdown feed containing sections enabled by `aiPublished`, their guest content, place facts, and section/item `aiContext`. It never includes `hostNotes` or DynamoDB metadata.
+- Admin guidebook saves preserve section-level `sectionType`, `aiContext`, and `aiPublished`, as well as item-level fields. "Visible to guests" (`published`) and "Available to AI agents" (`aiPublished`) are independent controls. During migration, records without `aiPublished` inherit `published` until explicitly saved.
+- The guest search uses a lightweight synonym layer for common intent terms (for example, food/eat/dining/restaurants, Wi-Fi/internet, and check-in/arrival) while searching the same guidebook content.
 
 ## Property site — page structure
 - **`index.html`** — The live property home page at `www.staytheoverhang.com/`. It currently retains `<meta name="robots" content="noindex,nofollow">` while the root deployment is being tested with the Hospitable widget.
@@ -178,6 +180,7 @@ Place items in a recommendations section (`sectionType: 'recommendations'`) rend
 - The Overhang logo is live at `frontend/property-site/img/logo-the-overhang.jpg`, wired into `index.html`'s nav (`.nav__logo-img`). `book.html` still uses the old text-based logo — not yet updated to match.
 - Bare-root `staytheoverhang.com` still on GoDaddy Website Builder — root DNS repoint to CloudFront is pending (see DNS / domain routing section).
 - Guidebook live and data-driven
+- Public AI guidebook context feed and independent per-section AI availability control are implemented and build successfully, but cloud deployment is awaiting explicit approval of the public-access model. The feed is public by design, so private access details must not be enabled for it, and `hostNotes` are excluded by construction.
 - Guidebook guest frontend redesigned as a responsive stay companion: desktop/tablet provides a rich journey overview and quick-essential rail, while mobile uses an intent-first home with focused drill-down screens. The public API strips AI/private fields, and admin saves now retain section-level AI context and section type.
 - The hub Coming Soon page remains live; The Overhang Coming Soon page is retained as a rollback source but is not currently the public root.
 - Hub site built as hub.html (ready to swap in when The Lazy Palm launches)
@@ -186,7 +189,7 @@ Place items in a recommendations section (`sectionType: 'recommendations'`) rend
 
 ## Key pending items
 - Root domain `staytheoverhang.com` still needs DNS repoint off GoDaddy (see DNS / domain routing section)
-- AI concierge feature (uses `aiContext` fields already being collected)
+- AI concierge chat/agent integration (the public Markdown context feed and inclusion controls are complete)
 - The Lazy Palm: full property setup when ready to launch
 
 ## Imported Claude Cowork project instructions

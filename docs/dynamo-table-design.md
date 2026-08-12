@@ -146,6 +146,7 @@ One record per section (e.g. Check-In, WiFi, House Rules, Local Recommendations)
   "icon": "key",
   "sectionType": "general",
   "published": true,
+  "aiPublished": true,
   "aiContext": "Use this section for arrival and entry questions.",
   "items": [
     {
@@ -176,9 +177,11 @@ One record per section (e.g. Check-In, WiFi, House Rules, Local Recommendations)
 
 **Visibility and projection rules:**
 - `published: true` controls guest visibility only.
+- `aiPublished: true` independently includes the section in the public agent Markdown feed. Legacy records without this attribute inherit `published` until their next explicit admin save.
 - The public `GET /properties/{propertyId}/guidebook` handler filters to published sections and returns a guest-safe projection.
+- `GET /properties/{propertyId}/guidebook/agent-context` returns agent-enabled guest content, place facts, and `aiContext` as Markdown.
 - The guest projection excludes `aiContext`, `hostNotes`, `PK`, `SK`, `published`, and internal entity metadata.
-- `aiContext` is reserved for a separate future agent-readable feed.
+- `aiContext` is returned only by the agent-readable feed when its section is enabled for AI agents.
 - `hostNotes` is admin-only and must never be included in a guest or AI response.
 - `sectionType: "recommendations"` identifies recommendation sections; `general` is the default.
 - Stored `icon` values remain editable metadata. The current guest renderer maps section meaning to its own consistent outline icon system instead of rendering stored emoji.

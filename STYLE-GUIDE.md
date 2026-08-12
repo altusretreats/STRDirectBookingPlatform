@@ -216,10 +216,12 @@ Placeholder values such as `REPLACE_ME` must never be printed literally to guest
 Visual visibility and AI availability are different concepts.
 
 - `published` means the section is visible in the guest stay guide.
-- `aiContext` is hidden from guests and reserved for a separate agent-readable context feed.
+- `aiContext` is hidden from guests and included only when its section is available in the agent-readable context feed.
 - `hostNotes` is private admin-only content and must never appear in either the guest guide or an AI feed.
 - The public guest API must return a sanitized projection without AI context, host notes, DynamoDB keys, or internal metadata.
-- A future AI feed must have an explicit AI-inclusion control; do not reuse guest visibility.
+- `aiPublished` ("Available to AI agents") controls the public Markdown feed independently from `published` ("Visible to guests"). Existing records without `aiPublished` temporarily inherit `published` for migration compatibility.
+- Because the agent feed is publicly reachable, never enable sections containing reservation-specific codes, private guest information, or operational secrets. Keep private material in `hostNotes`.
+- Guest search should resolve common intent synonyms (such as food/eat/restaurants) without requiring duplicate content or tags from the host.
 
 ---
 

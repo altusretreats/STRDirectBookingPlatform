@@ -108,7 +108,7 @@ export default function GuidebookEditor({ propertyId, propertyName }) {
   }
 
   function addFromTemplate(tmpl) {
-    setEditing({ title: tmpl.title, icon: tmpl.icon, sectionType: tmpl.sectionType || 'general', items: [], published: false });
+    setEditing({ title: tmpl.title, icon: tmpl.icon, sectionType: tmpl.sectionType || 'general', items: [], published: false, aiPublished: false });
   }
 
   if (loading) return <div style={{ color: '#6B7280', padding: 40 }}>Loading guidebook…</div>;
@@ -120,7 +120,7 @@ export default function GuidebookEditor({ propertyId, propertyName }) {
           <h1 style={s.title}>Guidebook</h1>
           <p style={s.sub}>{propertyName} — drag to reorder sections</p>
         </div>
-        <button style={s.btnPrimary} onClick={() => setEditing({ title: '', icon: '📄', sectionType: 'general', items: [], published: false })}>
+        <button style={s.btnPrimary} onClick={() => setEditing({ title: '', icon: '📄', sectionType: 'general', items: [], published: false, aiPublished: false })}>
           + Add Section
         </button>
       </div>
@@ -152,7 +152,7 @@ export default function GuidebookEditor({ propertyId, propertyName }) {
       </DndContext>
 
       {sections.length > 0 && (
-        <button style={s.addMoreBtn} onClick={() => setEditing({ title: '', icon: '📄', sectionType: 'general', items: [], published: false })}>
+        <button style={s.addMoreBtn} onClick={() => setEditing({ title: '', icon: '📄', sectionType: 'general', items: [], published: false, aiPublished: false })}>
           + Add another section
         </button>
       )}
@@ -188,7 +188,8 @@ function SortableSection({ section, onEdit, onDelete }) {
         </div>
         <div style={s.sectionMeta}>
           {section.items?.length || 0} items · {section.published ? '✓ Published' : '○ Draft'}
-          {section.aiContext && ' · 🤖 AI context'}
+          {(section.aiPublished ?? section.published) && ' · 🤖 Available to AI'}
+          {section.aiContext && ' · AI context added'}
         </div>
       </div>
       <div style={s.sectionActions}>
@@ -260,6 +261,13 @@ function SectionModal({ section, saving, propertyId, onSave, onClose }) {
                 <input type="checkbox" checked={data.published} onChange={e => set('published', e.target.checked)} style={{ width: 16, height: 16 }} />
                 <span style={{ fontSize: 14, color: '#374151' }}>Visible to guests</span>
               </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginTop: 10 }}>
+                <input type="checkbox" checked={data.aiPublished ?? data.published ?? false} onChange={e => set('aiPublished', e.target.checked)} style={{ width: 16, height: 16 }} />
+                <span style={{ fontSize: 14, color: '#374151' }}>Available to AI agents</span>
+              </label>
+              <div style={{ fontSize: 12, color: '#6B7280', marginTop: 6, lineHeight: 1.4 }}>
+                Public agent feed. Do not include private access details or host-only notes.
+              </div>
             </div>
           </div>
 

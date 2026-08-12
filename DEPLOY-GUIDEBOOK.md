@@ -63,6 +63,8 @@ aws cloudfront get-invalidation --distribution-id EP3TSR36W3F7N --id <paste-the-
 
 If a change also touches `backend/functions/getGuidebook/` or `backend/functions/adminGuidebook/`, deploy the SAM stack before publishing the frontend:
 
+The public guest endpoint is `/properties/{propertyId}/guidebook`. The separate public AI endpoint is `/properties/{propertyId}/guidebook/agent-context` and returns Markdown. Section inclusion is managed with **Available to AI agents** in the admin Guidebook editor; do not put private access details in agent-enabled sections, and keep operational notes in `hostNotes`.
+
 ```powershell
 cd C:\STRProjects\STRDirectBookingPlatform
 sam build --template infrastructure/template.yaml

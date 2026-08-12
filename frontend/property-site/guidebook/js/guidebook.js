@@ -106,6 +106,20 @@ function normalize(value = '') {
   return String(value).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
+const SEARCH_SYNONYM_GROUPS = [
+  ['food', 'eat', 'eating', 'dining', 'restaurant', 'restaurants', 'cafe', 'coffee', 'breakfast', 'lunch', 'dinner', 'takeout'],
+  ['wifi', 'wi fi', 'internet', 'network'],
+  ['arrival', 'arrive', 'checkin', 'check in', 'entry', 'access'],
+  ['departure', 'leave', 'leaving', 'checkout', 'check out'],
+  ['trash', 'garbage', 'rubbish'],
+  ['shop', 'shopping', 'store', 'stores', 'grocery', 'groceries'],
+];
+
+function searchAlternatives(term) {
+  const group = SEARCH_SYNONYM_GROUPS.find(words => words.includes(term));
+  return group || [term];
+}
+
 function sectionJourney(section) {
   const items = section.items || [];
   const text = normalize(`${section.sectionId} ${section.title} ${section.sectionType}`);
@@ -491,9 +505,9 @@ function renderSearchResults(query) {
     results.innerHTML = '<p>Search check-in details, property instructions and local recommendations.</p>';
     return;
   }
-  const terms = normalizedQuery.split(' ');
+  const termGroups = normalizedQuery.split(' ').map(searchAlternatives);
   const matches = state.searchIndex
-    .filter(entry => terms.every(term => entry.haystack.includes(term)))
+    .filter(entry => termGroups.every(alternatives => alternatives.some(term => entry.haystack.includes(term))))
     .slice(0, 10);
   if (!matches.length) {
     results.innerHTML = `<p>No guidebook answers found for “${escapeHtml(query)}”. Try a shorter phrase or contact your host.</p>`;

@@ -28,7 +28,7 @@ exports.handler = async (event) => {
 
     // PUT — upsert section
     if (method === 'PUT' && sectionId) {
-      const { title, icon, order, items, published, sectionType, aiContext } = body;
+      const { title, icon, order, items, published, aiPublished, sectionType, aiContext } = body;
       if (!title || order == null) return badRequest('title and order are required');
 
       const orderPadded = String(order).padStart(3, '0');
@@ -47,6 +47,9 @@ exports.handler = async (event) => {
         aiContext: aiContext ?? '',
         items: items ?? [],
         published: published ?? false,
+        // Preserve the migration default shown in admin: existing guest-visible
+        // sections are agent-visible until explicitly opted out.
+        aiPublished: aiPublished ?? published ?? false,
         updatedAt: now,
       });
       return ok({ propertyId, sectionId, updated: true });
