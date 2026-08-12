@@ -32,10 +32,10 @@
     <img class="nav__logo-img" src="img/logo-the-overhang.jpg" alt="The Overhang">
   </div>
   <div class="nav__center">
-    <button class="nav__link" data-section="property">The Property</button>
-    <button class="nav__link" data-section="reviews">What our guests say</button>
+    <button class="nav__link" data-section="overview">Overview</button>
+    <button class="nav__link" data-section="amenities">Amenities</button>
+    <button class="nav__link" data-section="reviews">Reviews</button>
     <button class="nav__link" data-section="location">Location</button>
-    <button class="nav__link" data-section="promise">Our Promise</button>
   </div>
   <div class="nav__right">
     <button class="btn-nav" id="btn-book-now">Book Now</button>
@@ -55,7 +55,18 @@
   </div>
 
   <div class="hero__bottom">
-    <div class="hero__pills" aria-label="Key amenities"></div>
+    <p class="hero__statement"></p>
+    <!-- Alternate landing statements retained for future testing:
+      Modern comfort, natural beauty, and space to truly disconnect.
+      Where elevated comfort meets the untamed beauty of Kentucky.
+      A private Kentucky retreat created for comfort, connection, and escape.
+      Two king suites, peaceful surroundings, and every comfort you need to unwind.
+      Luxury without formality. Nature without compromise.
+      Come for the scenery. Stay for the comfort. Leave completely restored.
+      Your private retreat for quiet moments, shared adventures, and unforgettable stays.
+      Surrounded by nature. Designed around comfort. Made for getting away.
+      A refined retreat in the heart of Kentucky's natural beauty.
+    -->
     <div class="hero__bottom-row">
       <div class="dots" role="tablist" aria-label="Gallery navigation"></div>
       <div class="hero__rating" aria-label="Guest rating" style="display:none">
@@ -64,6 +75,11 @@
       </div>
     </div>
   </div>
+
+  <button class="scroll-down" type="button" aria-label="Scroll down to explore the property">
+    <span class="scroll-down__label">Explore</span>
+    <span class="scroll-down__track" aria-hidden="true"><span class="scroll-down__drop"></span></span>
+  </button>
 </div>
 
 <!-- ══ SCROLLING DOCUMENT ══ -->
@@ -75,32 +91,121 @@
   <!-- Content column (left) + sticky booking widget (right) — one shared frosted panel -->
   <div class="site__body">
     <div class="site__panel">
+    <!-- Resize knob: max-width/centering lives here so the photo banner and
+         the content+widget grid below always resize/recenter together -->
+    <div class="site__wide">
+    <div class="prop-photos" id="frame-photo-grid"></div>
     <div class="site__inner">
     <div class="site__content">
 
       <!-- ── The Property ── -->
-      <section class="site-section" id="section-property">
-        <div class="prop-photos" id="frame-photo-grid"></div>
+      <section class="site-section reveal-on-scroll" id="section-property">
         <div class="prop-content">
           <div class="prop-header">
             <p class="prop-location" id="frame-prop-location"></p>
-            <h2 class="prop-name" id="frame-prop-name"></h2>
+            <div class="prop-title-lockup">
+              <img class="prop-title-logo" src="" alt="" aria-hidden="true" hidden>
+              <h2 class="prop-name" id="frame-prop-name"></h2>
+            </div>
             <p class="prop-stats-row" id="frame-prop-stats-row"></p>
+          </div>
+          <div class="prop-facts" aria-label="Property overview">
+            <div class="prop-fact">
+              <svg class="prop-fact__icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+              <strong id="prop-fact-guests">— guests</strong>
+              <span>Entire retreat</span>
+            </div>
+            <div class="prop-fact">
+              <svg class="prop-fact__icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M2 4v16"></path>
+                <path d="M2 8h18a2 2 0 0 1 2 2v10"></path>
+                <path d="M2 17h20"></path>
+                <path d="M6 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              <strong id="prop-fact-bedrooms">— bedrooms</strong>
+              <span id="prop-fact-beds">Private bedrooms</span>
+            </div>
+            <div class="prop-fact">
+              <svg class="prop-fact__icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9 6 6.5 3.5a2.12 2.12 0 0 0-3 3L5 8"></path>
+                <path d="M3 12h18"></path>
+                <path d="M5 12v2a5 5 0 0 0 5 5h4a5 5 0 0 0 5-5v-2"></path>
+                <path d="M7 19v2"></path>
+                <path d="M17 19v2"></path>
+              </svg>
+              <strong id="prop-fact-bathrooms">— bathrooms</strong>
+              <span>Room to refresh</span>
+            </div>
+            <div class="prop-fact" id="prop-fact-pets" hidden>
+              <svg class="prop-fact__icon" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="4" r="2"></circle>
+                <circle cx="18" cy="8" r="2"></circle>
+                <circle cx="20" cy="16" r="2"></circle>
+                <path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-7 0V15a5 5 0 0 1 2-4"></path>
+                <circle cx="4" cy="13" r="2"></circle>
+              </svg>
+              <strong>Pet friendly</strong>
+              <span>Bring them along</span>
+            </div>
+          </div>
+          <div class="king-callout" id="king-bed-callout" hidden>
+            <svg class="king-callout__icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M2 4v16"></path>
+              <path d="M2 8h18a2 2 0 0 1 2 2v10"></path>
+              <path d="M2 17h20"></path>
+              <path d="M6 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            <div>
+              <strong>King-size comfort in both bedrooms.</strong>
+              <span>No one in your group gets the smaller room.</span>
+            </div>
           </div>
           <hr class="prop-divider">
           <div class="prop-desc-wrap">
+            <p class="section-kicker">Your private escape</p>
+            <h3 class="editorial-heading">Adventure outside.<br>Restoration within.</h3>
             <p class="prop-desc" id="frame-prop-desc"></p>
             <button class="prop-read-more" id="frame-read-more" style="display:none">Show more</button>
           </div>
           <hr class="prop-divider">
-          <h3 class="prop-amenities-title">What this home offers</h3>
-          <div class="prop-amenities-grid" id="frame-amenities"></div>
+          <div class="amenities-section-anchor" id="section-amenities">
+            <h3 class="prop-amenities-title">What this home offers</h3>
+            <div class="prop-amenities-grid" id="frame-amenities"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Experience highlights (content and photos populated dynamically) ── -->
+      <section class="site-section experience-section reveal-on-scroll" id="section-experience">
+        <p class="section-kicker">Designed around the way you stay</p>
+        <h2 class="editorial-heading">The best parts aren't extras.</h2>
+        <div class="experience-grid">
+          <article class="experience-card">
+            <img id="experience-photo-primary" src="" alt="" loading="lazy">
+            <div class="experience-card__overlay">
+              <h3>Slow evenings outside</h3>
+              <p id="experience-copy-primary"></p>
+            </div>
+          </article>
+          <article class="experience-card">
+            <img id="experience-photo-secondary" src="" alt="" loading="lazy">
+            <div class="experience-card__overlay">
+              <h3>Rest deeply</h3>
+              <p id="experience-copy-secondary"></p>
+            </div>
+          </article>
         </div>
       </section>
 
       <!-- ── What our guests say ── -->
-      <section class="site-section" id="section-reviews">
-        <div class="frame-section__eyebrow">What our guests say</div>
+      <section class="site-section reviews-section reveal-on-scroll" id="section-reviews">
+        <p class="section-kicker">What our guests are saying</p>
+        <h2 class="editorial-heading">Trusted by travelers like you.</h2>
         <div class="frame-rating-summary" id="frame-rating-summary" style="display:none">
           <span class="frame-rating-summary__star">★</span>
           <span class="frame-rating-summary__num" id="frame-rating-num"></span>
@@ -112,8 +217,9 @@
       </section>
 
       <!-- ── Location ── -->
-      <section class="site-section" id="section-location">
-        <div class="frame-section__eyebrow">Location</div>
+      <section class="site-section location-section reveal-on-scroll" id="section-location">
+        <p class="section-kicker">Find your way</p>
+        <h2 class="editorial-heading">In the heart of it all.</h2>
         <p class="frame-location-neighborhood"></p>
         <p class="frame-location-desc"></p>
         <div class="frame-location-map" id="frame-location-map"></div>
@@ -124,25 +230,40 @@
       </section>
 
       <!-- ── Our Promise ── -->
-      <section class="site-section" id="section-promise">
-        <div class="frame-section__eyebrow">Our Promise to You</div>
-        <div class="frame-promise-grid">
-          <div class="frame-promise-card">
-            <div class="frame-promise-card__icon">🤝</div>
-            <h3 class="frame-promise-card__title">Direct Booking Savings</h3>
-            <p class="frame-promise-card__body">Book with us directly and skip OTA fees. What you save stays in your pocket — every time.</p>
-          </div>
-          <div class="frame-promise-card">
-            <div class="frame-promise-card__icon">✨</div>
-            <h3 class="frame-promise-card__title">Curated Experiences</h3>
-            <p class="frame-promise-card__body">Every property is hand-selected and personally managed by our team — not an algorithm.</p>
-          </div>
-          <div class="frame-promise-card">
-            <div class="frame-promise-card__icon">🏡</div>
-            <h3 class="frame-promise-card__title">Always Here for You</h3>
-            <p class="frame-promise-card__body">Real humans, real support. We're available before, during, and after your stay.</p>
-          </div>
-        </div>
+      <section class="site-section promise-section reveal-on-scroll" id="section-promise">
+        <p class="section-kicker">The Altus standard</p>
+        <h2 class="editorial-heading">A stay that lives up to the photos.</h2>
+        <p class="promise-section__intro">Booking directly should feel simpler, clearer, and more personal. These are the standards we hold ourselves to from your first question through checkout.</p>
+        <ol class="frame-promise-grid">
+          <li class="frame-promise-card">
+            <span class="frame-promise-card__number">01</span>
+            <div>
+              <h3 class="frame-promise-card__title">Honest from the start</h3>
+              <p class="frame-promise-card__body">Current photos, clear amenity details, and straightforward expectations—so the home you arrive at is the home you chose.</p>
+            </div>
+          </li>
+          <li class="frame-promise-card">
+            <span class="frame-promise-card__number">02</span>
+            <div>
+              <h3 class="frame-promise-card__title">Prepared with care</h3>
+              <p class="frame-promise-card__body">The home is cleaned, reset, and checked before every arrival, with the details handled so you can settle in immediately.</p>
+            </div>
+          </li>
+          <li class="frame-promise-card">
+            <span class="frame-promise-card__number">03</span>
+            <div>
+              <h3 class="frame-promise-card__title">Real help when you need it</h3>
+              <p class="frame-promise-card__body">When you reach out, you connect with people who know the property and can help before, during, and after your stay.</p>
+            </div>
+          </li>
+          <li class="frame-promise-card">
+            <span class="frame-promise-card__number">04</span>
+            <div>
+              <h3 class="frame-promise-card__title">Better value, booked direct</h3>
+              <p class="frame-promise-card__body">Skip third-party service fees and book through the people responsible for your stay—with a direct line from reservation to arrival.</p>
+            </div>
+          </li>
+        </ol>
       </section>
 
     </div><!-- /site__content -->
@@ -153,12 +274,13 @@
         <script
           src="https://cdn.hsptb.com/direct-booking-widget/widget-loader.prod.js"
           data-site-uuid="a26e4e5d-0706-4d7f-b76a-9647b8128bd3"
-          data-property-id="c62c4391-eca2-48c2-8bfe-d0193f6890dc"
-          data-theme="multi">
+          data-property-id="2331834"
+          data-theme="camp">
         </script>
       </div>
     </aside>
     </div><!-- /site__inner -->
+    </div><!-- /site__wide -->
     </div><!-- /site__panel -->
 
   </div><!-- /site__body -->
@@ -193,12 +315,37 @@
 </div>
 
 <!-- Gallery grid — "View all X photos" opens this first -->
+<!-- Categorized amenities modal -->
+<div class="modal-overlay" id="amenities-modal" role="dialog" aria-modal="true" aria-labelledby="amenities-modal-title" style="display:none">
+  <div class="modal amenities-modal">
+    <div class="modal__header amenities-modal__header">
+      <div>
+        <p class="section-kicker">Everything included</p>
+        <h2 class="modal__title" id="amenities-modal-title">All amenities</h2>
+        <label class="amenities-search" for="amenities-search-input">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="11" cy="11" r="6.5"></circle>
+            <path d="m16 16 4 4"></path>
+          </svg>
+          <input id="amenities-search-input" type="search" placeholder="Search amenities" autocomplete="off">
+        </label>
+      </div>
+      <button class="modal__close" id="amenities-modal-close" aria-label="Close amenities">&times;</button>
+    </div>
+    <div class="modal__body amenities-modal__body" id="amenities-modal-groups"></div>
+    <p class="amenities-search__empty" id="amenities-search-empty" role="status" hidden>No amenities match that search.</p>
+  </div>
+</div>
+
 <div class="gallery-modal" id="gallery-modal" role="dialog" aria-modal="true" aria-label="All photos" style="display:none">
   <div class="gallery-modal__header">
     <button class="gallery-modal__close" id="gallery-modal-close">
       <span aria-hidden="true">←</span> Close
     </button>
-    <div class="gallery-modal__title" id="gallery-modal-title"></div>
+    <div class="gallery-modal__identity">
+      <div class="gallery-modal__title" id="gallery-modal-title"></div>
+      <div class="gallery-modal__subtitle" id="gallery-modal-subtitle"></div>
+    </div>
     <div class="gallery-modal__spacer" aria-hidden="true"></div>
   </div>
   <div class="gallery-modal__grid" id="gallery-modal-grid"></div>
@@ -218,8 +365,15 @@
     <img class="lightbox__img" id="lightbox-img" src="" alt="">
     <p class="lightbox__caption" id="lightbox-caption"></p>
   </div>
+  <div class="lightbox__thumbs" id="lightbox-thumbs" aria-label="Choose a photo"></div>
   <button class="lightbox__nav lightbox__nav--next" id="lightbox-next" aria-label="Next photo">›</button>
 </div>
+
+<button class="back-to-top" id="back-to-top" type="button" aria-label="Back to the landing page">
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M12 19V5M6.5 10.5 12 5l5.5 5.5" />
+  </svg>
+</button>
 
 <div id="toast-container" class="toast-container" role="log" aria-live="polite"></div>
 

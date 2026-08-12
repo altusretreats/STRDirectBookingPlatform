@@ -64,20 +64,11 @@ function initGallery(photos) {
   };
 }
 
-// ── Hero amenity pills ────────────────────────────────
-function initHeroPills(landingPills) {
-  const pillsEl = document.querySelector('.hero__pills');
-  if (!pillsEl) return;
-
-  const picks = (landingPills || []).filter(Boolean).slice(0, 6);
-  if (!picks.length) return;
-
-  picks.forEach(text => {
-    const pill = document.createElement('span');
-    pill.className = 'hero__pill';
-    pill.textContent = text;
-    pillsEl.appendChild(pill);
-  });
+// ── Hero editorial statement ───────────────────────────
+function initHeroStatement(statement) {
+  const statementEl = document.querySelector('.hero__statement');
+  if (!statementEl) return;
+  statementEl.textContent = statement;
 }
 
 // ── Amenity icon map ──────────────────────────────────
@@ -95,6 +86,41 @@ const AMENITY_ICONS = {
 };
 
 // ── SEO ───────────────────────────────────────────────
+const AMENITY_GROUPS = [
+  { key: 'standout', title: 'Standout features', pattern: /hot tub|fire pit|outdoor|patio|balcony|deck|grill|bbq|view|pool|sauna|plunge|trail|waterfront|lake/i },
+  { key: 'comfort', title: 'Sleep & comfort', pattern: /bed|bedroom|linen|pillow|blanket|air conditioning|heating|fan|fireplace|blackout/i },
+  { key: 'kitchen', title: 'Kitchen & dining', pattern: /kitchen|refrigerator|freezer|microwave|oven|stove|dishwasher|coffee|toaster|dining|dishes|cook|wine glass|kettle/i },
+  { key: 'bath', title: 'Bath & essentials', pattern: /bath|shower|shampoo|conditioner|soap|hot water|towel|hair dryer|toilet|body wash/i },
+  { key: 'connected', title: 'Entertainment & connectivity', pattern: /wifi|wi-fi|internet|tv|television|game|sound|speaker|workspace|ethernet|books/i },
+  { key: 'safety', title: 'Family & safety', pattern: /smoke|carbon|extinguisher|first aid|security|alarm|safe|children|crib|high chair|baby|pet/i },
+  { key: 'access', title: 'Parking & access', pattern: /parking|entrance|check-in|keypad|lockbox|wheelchair|stairs|single level|ev charger/i },
+  { key: 'essentials', title: 'Home essentials', pattern: /.*/i },
+];
+
+function amenityGroupIcon(key) {
+  const paths = {
+    standout: '<path d="m12 3 2.2 4.7 5.1.7-3.7 3.6.9 5.1-4.5-2.4-4.5 2.4.9-5.1-3.7-3.6 5.1-.7L12 3Z"/>',
+    comfort: '<path d="M4 12V7.5M20 12V9.5A2.5 2.5 0 0 0 17.5 7H12v5M4 12h16v5H4v-5Zm2-5h4a2 2 0 0 1 2 2v3H4V9a2 2 0 0 1 2-2Z"/>',
+    kitchen: '<path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10M16 3v18M16 3c3 1 4 3.5 4 7h-4"/>',
+    bath: '<path d="M12 3s5 5.4 5 10a5 5 0 0 1-10 0c0-4.6 5-10 5-10Z"/>',
+    connected: '<path d="M5 9a10 10 0 0 1 14 0M8 12a6 6 0 0 1 8 0M11 15a2 2 0 0 1 2 0M12 19h.01"/>',
+    safety: '<path d="M12 3 5 6v5c0 4.8 2.9 8 7 10 4.1-2 7-5.2 7-10V6l-7-3Z"/><path d="m9 12 2 2 4-4"/>',
+    access: '<path d="M4 15h16l-1.5-5h-13L4 15Zm2-5 2-4h8l2 4M7 15v3M17 15v3M7.5 13h.01M16.5 13h.01"/>',
+    essentials: '<path d="m4 11 8-7 8 7v9h-6v-6h-4v6H4v-9Z"/>',
+  };
+  return `<svg viewBox="0 0 24 24" aria-hidden="true">${paths[key] || paths.essentials}</svg>`;
+}
+
+function groupAmenities(amenities) {
+  const grouped = AMENITY_GROUPS.map(group => ({ ...group, items: [] }));
+  amenities.forEach(amenity => {
+    const name = typeof amenity === 'string' ? amenity : (amenity.name || String(amenity));
+    const group = grouped.find(item => item.pattern.test(name)) || grouped[grouped.length - 1];
+    group.items.push(name);
+  });
+  return grouped.filter(group => group.items.length);
+}
+
 function updateSEO(name, description) {
   if (name) {
     document.title = `${name} — Direct Booking | Altus Retreats`;
@@ -116,9 +142,33 @@ let lightboxIndex  = 0;
 function openLightbox(photos, startIndex = 0) {
   lightboxPhotos = photos;
   lightboxIndex  = startIndex;
+  const thumbs = document.getElementById('lightbox-thumbs');
+  if (thumbs) {
+    thumbs.innerHTML = '';
+    photos.forEach((photo, index) => {
+      const button = document.createElement('button');
+      button.className = 'lightbox__thumb';
+      button.type = 'button';
+      button.setAttribute('aria-label', `View photo ${index + 1}`);
+      const image = document.createElement('img');
+      image.src = photo.url;
+      image.alt = '';
+      image.loading = 'lazy';
+      button.appendChild(image);
+      button.addEventListener('click', () => {
+        lightboxIndex = index;
+        updateLightboxImg();
+      });
+      thumbs.appendChild(button);
+    });
+  }
   updateLightboxImg();
   const lb = document.getElementById('lightbox');
-  if (lb) { lb.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
+  if (lb) {
+    lb.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    document.getElementById('lightbox-close')?.focus();
+  }
 }
 
 function closeLightbox() {
@@ -135,14 +185,27 @@ function updateLightboxImg() {
   const img   = document.getElementById('lightbox-img');
   const cap   = document.getElementById('lightbox-caption');
   const count = document.getElementById('lightbox-count');
-  if (img) img.src = photo.url;
+  if (img) {
+    img.src = photo.url;
+    img.alt = photo.caption || `Property photo ${lightboxIndex + 1}`;
+  }
   if (cap) cap.textContent = photo.caption || '';
   if (count) count.textContent = `${lightboxIndex + 1} / ${lightboxPhotos.length}`;
+  document.querySelectorAll('.lightbox__thumb').forEach((thumb, index) => {
+    const active = index === lightboxIndex;
+    thumb.classList.toggle('is-active', active);
+    thumb.setAttribute('aria-current', active ? 'true' : 'false');
+    if (active) thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  });
 }
 
 function openGalleryModal() {
   const gm = document.getElementById('gallery-modal');
-  if (gm) { gm.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
+  if (gm) {
+    gm.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    document.getElementById('gallery-modal-close')?.focus();
+  }
 }
 
 function closeGalleryModal() {
@@ -164,6 +227,20 @@ function initLightbox() {
 
   document.getElementById('gallery-modal-close')?.addEventListener('click', closeGalleryModal);
 
+  const lightboxImage = document.getElementById('lightbox-img');
+  let touchStartX = 0;
+  lightboxImage?.addEventListener('touchstart', event => {
+    touchStartX = event.changedTouches[0]?.clientX || 0;
+  }, { passive: true });
+  lightboxImage?.addEventListener('touchend', event => {
+    const distance = (event.changedTouches[0]?.clientX || 0) - touchStartX;
+    if (Math.abs(distance) < 45 || lightboxPhotos.length < 2) return;
+    lightboxIndex = distance > 0
+      ? (lightboxIndex - 1 + lightboxPhotos.length) % lightboxPhotos.length
+      : (lightboxIndex + 1) % lightboxPhotos.length;
+    updateLightboxImg();
+  }, { passive: true });
+
   document.addEventListener('keydown', e => {
     const lb = document.getElementById('lightbox');
     const gm = document.getElementById('gallery-modal');
@@ -183,20 +260,32 @@ function initFrameSections({ photos, amenities, description, bedrooms, bathrooms
   const photoGrid = document.getElementById('frame-photo-grid');
   if (photoGrid && photos?.length) {
     // Main photo (left column, spans both rows)
-    const mainItem = document.createElement('div');
+    const mainItem = document.createElement('button');
     mainItem.className = 'prop-photo-item prop-photo-item--main';
+    mainItem.type = 'button';
+    mainItem.setAttribute('aria-label', 'Open the first property photo');
     const mainImg = document.createElement('img');
     mainImg.src = photos[0].url;
     mainImg.alt = photos[0].caption || '';
     mainItem.appendChild(mainImg);
-    mainItem.addEventListener('click', openGalleryModal);
+    const galleryTrigger = document.createElement('span');
+    galleryTrigger.className = 'prop-photo__view-all prop-photo__view-all--main';
+    galleryTrigger.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4V4Zm10 0h6v6h-6V4ZM4 14h6v6H4v-6Zm10 0h6v6h-6v-6Z"/></svg> View all ${photos.length} photos`;
+    galleryTrigger.addEventListener('click', event => {
+      event.stopPropagation();
+      openGalleryModal();
+    });
+    mainItem.appendChild(galleryTrigger);
+    mainItem.addEventListener('click', () => openLightbox(photos, 0));
     photoGrid.appendChild(mainItem);
 
     // 4 sub photos in 2×2 right columns (slots 1-4)
     const subPhotos = photos.slice(1, 5);
     subPhotos.forEach((photo, i) => {
-      const item = document.createElement('div');
+      const item = document.createElement('button');
       item.className = 'prop-photo-item';
+      item.type = 'button';
+      item.setAttribute('aria-label', `Open property photo ${i + 2}`);
 
       const img = document.createElement('img');
       img.src = photo.url;
@@ -204,17 +293,7 @@ function initFrameSections({ photos, amenities, description, bedrooms, bathrooms
       img.loading = 'lazy';
       item.appendChild(img);
 
-      // "View all X photos" pill on the last visible thumbnail
-      const isLast = i === subPhotos.length - 1;
-      if (isLast && photos.length > 5) {
-        const pill = document.createElement('div');
-        pill.className = 'prop-photo__view-all';
-        pill.textContent = `View all ${photos.length} photos`;
-        item.appendChild(pill);
-      }
-
-      // Any thumbnail click opens the full grid overview
-      item.addEventListener('click', openGalleryModal);
+      item.addEventListener('click', () => openLightbox(photos, i + 1));
       photoGrid.appendChild(item);
     });
 
@@ -223,19 +302,27 @@ function initFrameSections({ photos, amenities, description, bedrooms, bathrooms
     if (galleryGrid) {
       galleryGrid.innerHTML = '';
       photos.forEach((photo, i) => {
-        const item = document.createElement('div');
+        const item = document.createElement('button');
         item.className = 'gallery-modal__item';
+        item.type = 'button';
+        item.setAttribute('aria-label', `Open photo ${i + 1} of ${photos.length}`);
         const img = document.createElement('img');
         img.src = photo.url;
         img.alt = photo.caption || '';
         img.loading = 'lazy';
         item.appendChild(img);
+        const number = document.createElement('span');
+        number.className = 'gallery-modal__number';
+        number.textContent = String(i + 1).padStart(2, '0');
+        item.appendChild(number);
         item.addEventListener('click', () => openLightbox(photos, i));
         galleryGrid.appendChild(item);
       });
     }
     const galleryTitle = document.getElementById('gallery-modal-title');
     if (galleryTitle && propertyName) galleryTitle.textContent = propertyName;
+    const gallerySubtitle = document.getElementById('gallery-modal-subtitle');
+    if (gallerySubtitle) gallerySubtitle.textContent = `${photos.length} photos · Select one to view full screen`;
   }
 
   // ── Property header ──
@@ -244,6 +331,15 @@ function initFrameSections({ photos, amenities, description, bedrooms, bathrooms
 
   const nameEl = document.getElementById('frame-prop-name');
   if (nameEl && propertyName) nameEl.textContent = propertyName;
+
+  // Reuse the active site's logo rather than hardcoding a property-specific
+  // asset into the editorial title lockup.
+  const titleLogo = document.querySelector('.prop-title-logo');
+  const navLogo = document.querySelector('.nav__logo-img');
+  if (titleLogo && navLogo?.getAttribute('src')) {
+    titleLogo.src = navLogo.getAttribute('src');
+    titleLogo.hidden = false;
+  }
 
   // Stats row: "2 bedrooms · 2 bathrooms · 4 guests"
   const statsEl = document.getElementById('frame-prop-stats-row');
@@ -256,6 +352,50 @@ function initFrameSections({ photos, amenities, description, bedrooms, bathrooms
       i === 0 ? p : `<span class="sep"></span>${p}`
     ).join('');
   }
+
+  // Editorial facts — mirrors the same dynamic property data used above.
+  const guestFact = document.getElementById('prop-fact-guests');
+  const bedroomFact = document.getElementById('prop-fact-bedrooms');
+  const bathroomFact = document.getElementById('prop-fact-bathrooms');
+  if (guestFact) guestFact.textContent = maxGuests && maxGuests !== '—'
+    ? `${maxGuests} guest${Number(maxGuests) === 1 ? '' : 's'}`
+    : 'Private retreat';
+  if (bedroomFact) bedroomFact.textContent = bedrooms && bedrooms !== '—'
+    ? `${bedrooms} bedroom${Number(bedrooms) === 1 ? '' : 's'}`
+    : 'Private bedrooms';
+  if (bathroomFact) bathroomFact.textContent = bathrooms && bathrooms !== '—'
+    ? `${bathrooms} bathroom${Number(bathrooms) === 1 ? '' : 's'}`
+    : 'Private bathrooms';
+
+  // Experience photography remains property-driven and falls back gracefully.
+  const experiencePrimary = document.getElementById('experience-photo-primary');
+  const experienceSecondary = document.getElementById('experience-photo-secondary');
+  if (experiencePrimary && photos?.length) {
+    const photo = photos[Math.min(2, photos.length - 1)];
+    experiencePrimary.src = photo.url;
+    experiencePrimary.alt = photo.caption || `${propertyName || 'Property'} experience`;
+  }
+  if (experienceSecondary && photos?.length) {
+    const photo = photos[Math.min(4, photos.length - 1)];
+    experienceSecondary.src = photo.url;
+    experienceSecondary.alt = photo.caption || `${propertyName || 'Property'} interior`;
+  }
+
+  const amenityNames = (amenities || []).map(a =>
+    String(typeof a === 'string' ? a : (a.name || '')).toLowerCase()
+  );
+  const outdoorHighlights = [];
+  if (amenityNames.some(name => /jacuzzi|hot tub/.test(name))) outdoorHighlights.push('hot tub');
+  if (amenityNames.some(name => /sauna/.test(name))) outdoorHighlights.push('sauna');
+  if (amenityNames.some(name => /fire pit/.test(name))) outdoorHighlights.push('fire pit');
+  const primaryCopy = document.getElementById('experience-copy-primary');
+  if (primaryCopy) {
+    primaryCopy.textContent = outdoorHighlights.length
+      ? `${outdoorHighlights.slice(0, -1).join(', ')}${outdoorHighlights.length > 1 ? ' and ' : ''}${outdoorHighlights.slice(-1)} — ready when the day winds down.`
+      : 'Thoughtful outdoor spaces made for slow evenings and unhurried mornings.';
+  }
+  const secondaryCopy = document.getElementById('experience-copy-secondary');
+  if (secondaryCopy) secondaryCopy.textContent = 'Comfortable private bedrooms designed for a restorative night away.';
 
   // ── Description with Read more toggle ──
   const descEl = document.getElementById('frame-prop-desc');
@@ -279,13 +419,78 @@ function initFrameSections({ photos, amenities, description, bedrooms, bathrooms
   // ── Amenities: 2-column grid with icons ──
   const amenEl = document.getElementById('frame-amenities');
   if (amenEl && amenities?.length) {
-    amenities.forEach(a => {
-      const name = typeof a === 'string' ? a : (a.name || String(a));
-      const item = document.createElement('div');
-      item.className = 'prop-amenity-item';
-      const icon = AMENITY_ICONS[name] || '✓';
-      item.innerHTML = `<span class="prop-amenity-icon">${icon}</span><span>${escapeHtml(name)}</span>`;
-      amenEl.appendChild(item);
+    const groups = groupAmenities(amenities);
+    groups.slice(0, 6).forEach(group => {
+      const card = document.createElement('section');
+      card.className = 'amenity-group-card';
+      card.innerHTML = `
+        <div class="amenity-group-card__heading">
+          <span class="amenity-group-card__icon">${amenityGroupIcon(group.key)}</span>
+          <h4>${escapeHtml(group.title)}</h4>
+        </div>
+        <ul>${group.items.slice(0, 3).map(name => `<li>${escapeHtml(name)}</li>`).join('')}</ul>
+        ${group.items.length > 3 ? `<span class="amenity-group-card__more">+${group.items.length - 3} more</span>` : ''}
+      `;
+      amenEl.appendChild(card);
+    });
+
+    const modal = document.getElementById('amenities-modal');
+    const modalGroups = document.getElementById('amenities-modal-groups');
+    const amenitySearch = document.getElementById('amenities-search-input');
+    const amenitySearchEmpty = document.getElementById('amenities-search-empty');
+    if (modalGroups) {
+      modalGroups.innerHTML = groups.map(group => `
+        <section class="amenities-modal-group">
+          <div class="amenity-group-card__heading">
+            <span class="amenity-group-card__icon">${amenityGroupIcon(group.key)}</span>
+            <h3>${escapeHtml(group.title)}</h3>
+          </div>
+          <ul>${group.items.map(name => `<li>${escapeHtml(name)}</li>`).join('')}</ul>
+        </section>
+      `).join('');
+    }
+
+    const toggle = document.createElement('button');
+    toggle.className = 'amenities-toggle amenities-toggle--button';
+    toggle.type = 'button';
+    toggle.textContent = `Show all ${amenities.length} amenities`;
+    amenEl.insertAdjacentElement('afterend', toggle);
+
+    const closeModal = () => {
+      if (!modal) return;
+      modal.style.display = 'none';
+      document.body.style.overflow = '';
+      if (amenitySearch) {
+        amenitySearch.value = '';
+        amenitySearch.dispatchEvent(new Event('input'));
+      }
+      toggle.focus();
+    };
+    toggle.addEventListener('click', () => {
+      if (!modal) return;
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+      amenitySearch?.focus();
+    });
+    amenitySearch?.addEventListener('input', () => {
+      const query = amenitySearch.value.trim().toLocaleLowerCase();
+      let visibleCount = 0;
+      modalGroups?.querySelectorAll('.amenities-modal-group').forEach(group => {
+        let groupMatches = 0;
+        group.querySelectorAll('li').forEach(item => {
+          const matches = !query || item.textContent.toLocaleLowerCase().includes(query);
+          item.hidden = !matches;
+          if (matches) groupMatches += 1;
+        });
+        group.hidden = groupMatches === 0;
+        visibleCount += groupMatches;
+      });
+      if (amenitySearchEmpty) amenitySearchEmpty.hidden = visibleCount !== 0;
+    });
+    document.getElementById('amenities-modal-close')?.addEventListener('click', closeModal);
+    modal?.addEventListener('click', event => { if (event.target === modal) closeModal(); });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && modal?.style.display !== 'none') closeModal();
     });
   }
 
@@ -322,6 +527,56 @@ function initFrameSections({ photos, amenities, description, bedrooms, bathrooms
   }
 }
 
+function initEditorialDetails({ description, summary, bedrooms, maxGuests, houseRules }) {
+  const sourceText = `${description || ''} ${summary || ''}`;
+  const inferredGuests = maxGuests && maxGuests !== '—'
+    ? maxGuests
+    : (sourceText.match(/sleeps?\s+(\d+)/i)?.[1] || '—');
+
+  const guestFact = document.getElementById('prop-fact-guests');
+  if (guestFact && inferredGuests !== '—') {
+    guestFact.textContent = `${inferredGuests} guest${Number(inferredGuests) === 1 ? '' : 's'}`;
+  }
+
+  const rulesText = (houseRules || []).map(rule =>
+    typeof rule === 'string' ? rule : (rule.body || rule.rule || rule.text || rule.name || '')
+  ).join(' ');
+  const petFriendly = /pets? allowed|pet friendly/i.test(`${rulesText} ${sourceText}`);
+  const petFact = document.getElementById('prop-fact-pets');
+  if (petFact) petFact.hidden = !petFriendly;
+
+  const bothKing = Number(bedrooms) === 2 && (
+    /two\s+king\s+(?:beds?|bedrooms?)/i.test(sourceText) ||
+    /2\s+bedrooms?\s*\(king beds?\)/i.test(sourceText) ||
+    /both\s+(?:rooms?|bedrooms?)\s+(?:have|feature|include).*king/i.test(sourceText)
+  );
+  const kingCallout = document.getElementById('king-bed-callout');
+  const bedFact = document.getElementById('prop-fact-beds');
+  if (kingCallout) kingCallout.hidden = !bothKing;
+  if (bedFact && bothKing) bedFact.textContent = 'King bed in each';
+  const secondaryCopy = document.getElementById('experience-copy-secondary');
+  if (secondaryCopy && bothKing) {
+    secondaryCopy.textContent = 'Two private king bedrooms make recovery feel as good as the adventure.';
+  }
+}
+
+function initScrollReveals() {
+  const items = document.querySelectorAll('.reveal-on-scroll, .experience-card, .frame-review-card, .prop-photo-item');
+  if (!items.length) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    items.forEach(item => item.classList.add('is-visible'));
+    return;
+  }
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add('is-visible');
+      observer.unobserve(entry.target);
+    });
+  }, { threshold: 0.08 });
+  items.forEach(item => observer.observe(item));
+}
+
 // ── Site scroll: frame→site transition, sticky nav, active link, gallery freeze ──
 // Deliberately no scroll-linked math (no per-frame opacity/transform, no
 // programmatic scrollTo while the user is scrolling) — that fought the
@@ -331,27 +586,58 @@ function initFrameSections({ photos, amenities, description, bedrooms, bathrooms
 function initSiteScroll() {
   const nav         = document.getElementById('site-nav');
   const heroContent = document.getElementById('hero-content');
+  const heroBg      = document.querySelector('.bg');
   const frame       = document.querySelector('.frame');
   const landing     = document.querySelector('.site__landing');
   const logo        = document.querySelector('.nav__logo');
+  const scrollCue   = document.querySelector('.scroll-down');
+  const backToTop   = document.getElementById('back-to-top');
+  const photoGrid   = document.getElementById('frame-photo-grid');
   const triggers    = document.querySelectorAll('[data-section]');
 
-  const sections = ['property', 'reviews', 'location', 'promise']
-    .map(id => document.getElementById('section-' + id))
-    .filter(Boolean);
+  const navSections = [
+    { key: 'overview', target: document.getElementById('frame-photo-grid') },
+    { key: 'amenities', target: document.getElementById('section-amenities') },
+    { key: 'reviews', target: document.getElementById('section-reviews') },
+    { key: 'location', target: document.getElementById('section-location') },
+  ].filter(section => section.target);
 
-  // Nav links + Book Now → smooth-scroll to the section (scroll-margin-top handles the nav offset)
+  // Nav links → smooth-scroll to a precise point below the compact header.
   function scrollToSection(id) {
-    const target = document.getElementById('section-' + id);
-    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // The overview begins with the photo story; the other links land on their
+    // corresponding content heading below the compact header.
+    const target = id === 'overview'
+      ? document.getElementById('frame-photo-grid')
+      : document.getElementById('section-' + id);
+    if (target) {
+      const headerClearance = window.matchMedia('(max-width: 900px)').matches ? 64 : 84;
+      const targetTop = target.getBoundingClientRect().top + window.scrollY - headerClearance;
+      window.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
+    }
   }
   triggers.forEach(btn => btn.addEventListener('click', () => scrollToSection(btn.dataset.section)));
-  document.getElementById('btn-book-now')?.addEventListener('click', () => scrollToSection('property'));
+  scrollCue?.addEventListener('click', () => scrollToSection('property'));
+  backToTop?.addEventListener('click', () => {
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+  });
+  document.getElementById('btn-book-now')?.addEventListener('click', () => {
+    // On smaller screens the dedicated booking page avoids forcing guests to
+    // scroll through the full property story before reaching the widget.
+    if (window.matchMedia('(max-width: 900px)').matches) {
+      window.location.href = 'book.html';
+      return;
+    }
+    const widget = document.querySelector('.site__widget');
+    if (widget) widget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    else scrollToSection('overview');
+  });
 
   // Logo → back to the landing page
   logo?.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 
-  // Landing vs. site mode — frame + headline fade out, nav goes full-width/opaque
+  // Landing vs. site mode — the background drifts subtly while the landing
+  // elements ease away, then the compact property header takes over.
   let inSite = false;
   function setSiteMode(on) {
     if (on === inSite) return;
@@ -363,23 +649,49 @@ function initSiteScroll() {
     else    window.__heroGallery?.resume();
   }
   if (landing) {
-    const landingObs = new IntersectionObserver(
-      entries => setSiteMode(!entries[0].isIntersecting),
-      { threshold: 0.5 }
-    );
-    landingObs.observe(landing);
+    let scrollTicking = false;
+    const updateLandingTransition = () => {
+      const landingHeight = Math.max(landing.offsetHeight, window.innerHeight, 1);
+      const progress = Math.min(1, Math.max(0, window.scrollY / landingHeight));
+      document.documentElement.style.setProperty('--hero-progress', progress.toFixed(3));
+      heroBg?.classList.toggle('is-transitioning', progress > 0 && progress < 1);
+      const galleryHasPassed = photoGrid && photoGrid.getBoundingClientRect().bottom <= 84;
+      backToTop?.classList.toggle('is-visible', Boolean(galleryHasPassed));
+      setSiteMode(progress >= 0.78);
+      scrollTicking = false;
+    };
+    const requestLandingUpdate = () => {
+      if (scrollTicking) return;
+      scrollTicking = true;
+      window.requestAnimationFrame(updateLandingTransition);
+    };
+    window.addEventListener('scroll', requestLandingUpdate, { passive: true });
+    window.addEventListener('resize', requestLandingUpdate);
+    updateLandingTransition();
   }
 
-  // Active nav link — whichever section sits nearest the viewport center
-  const obs = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        const id = entry.target.id.replace('section-', '');
-        triggers.forEach(btn => btn.classList.toggle('nav__link--active', btn.dataset.section === id));
-      }
+  // Active nav link — use ordered anchors so nested sections update correctly
+  // in both scroll directions (the previous observer could leave Amenities active).
+  let activeNavTicking = false;
+  const updateActiveNav = () => {
+    const activationLine = window.matchMedia('(max-width: 900px)').matches ? 86 : 112;
+    let activeKey = null;
+    navSections.forEach(section => {
+      if (section.target.getBoundingClientRect().top <= activationLine) activeKey = section.key;
     });
-  }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
-  sections.forEach(el => obs.observe(el));
+    triggers.forEach(button => {
+      button.classList.toggle('nav__link--active', button.dataset.section === activeKey);
+    });
+    activeNavTicking = false;
+  };
+  const requestActiveNavUpdate = () => {
+    if (activeNavTicking) return;
+    activeNavTicking = true;
+    window.requestAnimationFrame(updateActiveNav);
+  };
+  window.addEventListener('scroll', requestActiveNavUpdate, { passive: true });
+  window.addEventListener('resize', requestActiveNavUpdate);
+  updateActiveNav();
 }
 
 // ── Fetch + render reviews ────────────────────────────
@@ -428,6 +740,8 @@ async function loadReviews() {
       `;
       container.appendChild(card);
     });
+
+    initScrollReveals();
 
   } catch (err) {
     console.warn('Reviews not available:', err.message);
@@ -506,7 +820,8 @@ async function loadProperty() {
     const heroTitleLine1  = c.heroTitleLine1  || null;
     const heroAccentWord  = c.heroAccentWord  || null;
     const heroTitleSuffix = c.heroTitleSuffix || null;
-    const heroLandingPills = c.heroLandingPills || [];
+    const heroLandingStatement = c.heroLandingStatement
+      || 'Thoughtfully designed for slow mornings, memorable nights, and everything in between.';
 
     // Branding
     if (p.branding) {
@@ -558,12 +873,20 @@ async function loadProperty() {
     }
 
     initGallery(heroPhotos);
-    initHeroPills(heroLandingPills);
+    initHeroStatement(heroLandingStatement);
     initHouseRules(houseRules, cancellationPolicy);
 
     // Frame sections
     initFrameSections({ photos, amenities, description, bedrooms, bathrooms, maxGuests, location, propertyName: name });
+    initEditorialDetails({
+      description,
+      summary: h.summary,
+      bedrooms,
+      maxGuests,
+      houseRules
+    });
     initSiteScroll();
+    initScrollReveals();
 
     // Reviews (async, non-blocking) — uses config propertyId via api.getReviews()
     loadReviews();
