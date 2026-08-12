@@ -60,6 +60,8 @@ aws cloudfront get-invalidation --distribution-id EP3TSR36W3F7N --id <paste-the-
 - The guidebook is data-driven — most content changes (place recommendations, sections, house rules) are made through the **admin panel** (Guidebook tab), not by editing these files. Only edit these files for actual code/design changes.
 - The desktop overview and mobile intent-first experience are two responsive layouts of the same guidebook. Do not create a separate mobile page or a second content source.
 - Guest section icons are mapped to the outline icon system in `guidebook.js`; emoji saved by the admin are not rendered directly to guests.
+- Contact controls do not send messages from the guidebook. The desktop footer shows the instruction directly, and desktop/mobile Help controls open a dialog directing guests back to the original booking message in their booking app or email. Keep this wording channel-neutral so it works for Airbnb, Vrbo, and direct reservations.
+- Do not add Wi-Fi credentials, door codes, personal contact information, or reservation-specific data to the public guide. Wi-Fi is supplied inside the property/secure portal; door access is delivered through the reservation channel.
 
 ## When backend guidebook fields change
 
@@ -84,3 +86,5 @@ if ($json -match 'aiContext|hostNotes|PROPERTY#|GUIDEBOOK#SECTION') {
   throw "Public guidebook API contains private or internal fields"
 }
 ```
+
+After frontend contact-flow changes, verify both layouts: at desktop width the footer must show the booking-message instruction, and at mobile width the **Help** tab must open the same contact-instructions dialog. Confirm that the page does not display a host phone number, email address, door code, or Wi-Fi password.

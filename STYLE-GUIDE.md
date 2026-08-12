@@ -142,6 +142,7 @@ The guide is a stay companion, not a digital binder. Desktop and mobile use the 
 - Do not display full topic content until the guest chooses a journey.
 - Journey detail screens show focused, collapsible topics with a clear back action.
 - Keep Home, Search, Explore, and Help available in the bottom navigation.
+- Help opens a focused contact-instructions dialog telling guests to reply to the original booking message in their booking app or email. Do not imply that the guidebook itself sends a message.
 - Avoid horizontal card carousels and dense two-column content on phones.
 
 ### Information hierarchy
@@ -156,7 +157,7 @@ Search or guest intent
 ### Supported content
 
 - Text and highlighted text
-- Copyable short values such as Wi-Fi passwords
+- Copyable non-sensitive short values; never expose Wi-Fi credentials, door codes, or reservation-specific access details in the public guide
 - Images and video
 - Maps and external links
 - Google Place recommendation cards and detail dialogs
@@ -200,7 +201,7 @@ Placeholder values such as `REPLACE_ME` must never be printed literally to guest
 
 - Use rounded rectangles for ordinary actions and pills only where the control is intentionally compact.
 - Use circular buttons only for familiar icon actions with an accessible label, such as close.
-- Use explicit guest language: “Get directions,” “Contact your host,” or “Back to guide.”
+- Use explicit guest language: “Get directions,” “Contact instructions,” or “Back to guide.” Contact guidance should say: “Reply to the booking message in the app or email you used to reserve your stay.”
 - Provide visible hover and focus states; never remove the browser focus indicator without a replacement.
 - Touch targets should be at least `44px` in either dimension.
 
