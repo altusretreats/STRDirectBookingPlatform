@@ -17,6 +17,10 @@ Parameters:
     Type: String
     Default: altusretreats.net
     Description: Root domain (Route 53 hosted zone must exist)
+  PropertySitePropertyId:
+    Type: String
+    Default: kentucky
+    Description: Property record served by the current property-site CloudFront distribution
 
 # ─────────────────────────────────────────────
 # Globals
@@ -697,6 +701,23 @@ Resources:
           return request;
         }
 
+  # Branded AI context path keeps the public URL on the property domain while
+  # the content remains a live, data-driven response from API Gateway.
+  AgentContextRewriteFunction:
+    Type: AWS::CloudFront::Function
+    Properties:
+      Name: !Sub altus-agent-context-rewrite-${Environment}
+      AutoPublish: true
+      FunctionConfig:
+        Comment: Rewrite branded AI context Markdown path to the API route
+        Runtime: cloudfront-js-2.0
+      FunctionCode: |
+        function handler(event) {
+          var request = event.request;
+          request.uri = '/guidebook/agent-context';
+          return request;
+        }
+
   # ── CloudFront OAC (Origin Access Control) ──
   FrontendOAC:
     Type: AWS::CloudFront::OriginAccessControl
@@ -792,6 +813,12 @@ Resources:
             DomainName: !GetAtt FrontendBucket.RegionalDomainName
             OriginAccessControlId: !GetAtt FrontendOAC.Id
             S3OriginConfig: {}
+          - Id: GuidebookApi
+            DomainName: !Sub ${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com
+            OriginPath: !Sub /${Environment}/properties/${PropertySitePropertyId}
+            CustomOriginConfig:
+              OriginProtocolPolicy: https-only
+              OriginSSLProtocols: [TLSv1.2]
         DefaultCacheBehavior:
           TargetOriginId: S3Frontend
           ViewerProtocolPolicy: redirect-to-https
@@ -802,6 +829,17 @@ Resources:
           FunctionAssociations:
             - EventType: viewer-request
               FunctionARN: !GetAtt DirectoryIndexFunction.FunctionMetadata.FunctionARN
+        CacheBehaviors:
+          - PathPattern: guidebook/agent-context.md
+            TargetOriginId: GuidebookApi
+            ViewerProtocolPolicy: redirect-to-https
+            CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad
+            AllowedMethods: [GET, HEAD, OPTIONS]
+            CachedMethods: [GET, HEAD]
+            Compress: true
+            FunctionAssociations:
+              - EventType: viewer-request
+                FunctionARN: !GetAtt AgentContextRewriteFunction.FunctionMetadata.FunctionARN
         CustomErrorResponses:
           - ErrorCode: 403
             ResponseCode: 200

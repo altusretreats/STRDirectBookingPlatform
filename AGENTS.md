@@ -117,6 +117,7 @@ aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/*" 
 
 ## API Gateway
 - Dev endpoint: `https://teh1cl4b6a.execute-api.us-east-1.amazonaws.com/dev`
+- Branded AI guide context: `https://www.staytheoverhang.com/guidebook/agent-context.md` routes through the property CloudFront distribution to the live API with caching disabled. `PropertySitePropertyId` scopes that distribution's API origin.
 
 ## Secrets Manager convention
 - Hospitable PAT: `altus-retreats/{env}/hospitable` → `{ "default": "<PAT>", "kentucky": "<PAT>" }`
@@ -192,6 +193,7 @@ Place items in a recommendations section (`sectionType: 'recommendations'`) rend
 - Bare-root `staytheoverhang.com` still on GoDaddy Website Builder — root DNS repoint to CloudFront is pending (see DNS / domain routing section).
 - Guidebook live and data-driven
 - Public AI guidebook context feed and independent per-section AI availability control are deployed and live. The feed is public by design, so private access details must not be enabled for it, and `hostNotes` are excluded by construction.
+- The branded agent-feed URL is `https://www.staytheoverhang.com/guidebook/agent-context.md`; CloudFront proxies it dynamically to API Gateway, so admin content changes require no frontend deployment.
 - Guidebook guest frontend redesigned as a responsive stay companion: desktop/tablet provides a rich journey overview and quick-essential rail, while mobile uses an intent-first home with focused drill-down screens. The public API strips AI/private fields, and admin saves now retain section-level AI context and section type.
 - The hub Coming Soon page remains live; The Overhang Coming Soon page is retained as a rollback source but is not currently the public root.
 - Hub site built as hub.html (ready to swap in when The Lazy Palm launches)
