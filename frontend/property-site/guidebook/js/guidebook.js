@@ -179,10 +179,9 @@ function applyPropertyPresentation(guideData, propertyData) {
     || state.sections.find(section => /welcome/.test(normalize(`${section.sectionId} ${section.title}`)));
   const welcomeText = welcomeSection?.items?.find(item => item.type === 'text' && !isPlaceholder(item.content))?.content;
   if (welcomeText) {
-    const sentence = String(welcomeText);
     // Welcome sections own the full hero message; CSS handles wrapping.
-    queueMicrotask(() => { $('#hero-message').textContent = sentence; });
-    $('#hero-message').textContent = sentence.length <= 170 ? sentence : 'Everything you need for an effortless stay—right when you need it.';
+    const sentence = String(welcomeText);
+    $('#hero-message').textContent = sentence;
   }
 
   const checkIn = findSection(/checkin|check in|arrival/);

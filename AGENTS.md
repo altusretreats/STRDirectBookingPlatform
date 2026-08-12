@@ -143,7 +143,7 @@ Place items in a recommendations section (`sectionType: 'recommendations'`) rend
 - `GET /properties/{id}/guidebook` is guest-facing and must never return `aiContext`, `hostNotes`, DynamoDB keys, or other internal fields. It returns a sanitized guest projection of published sections only.
 - `GET /properties/{id}/guidebook/agent-context` is a public, machine-readable Markdown feed containing sections enabled by `aiPublished`, their guest content, place facts, and section/item `aiContext`. It never includes `hostNotes` or DynamoDB metadata.
 - Admin guidebook saves preserve section-level `sectionType`, `aiContext`, and `aiPublished`, as well as item-level fields. "Visible to guests" (`published`) and "Available to AI agents" (`aiPublished`) are independent controls. During migration, records without `aiPublished` inherit `published` until explicitly saved.
-- Guidebook sections support a first-class `welcome` section type. The first published guest text item in that section supplies the guide hero message. `property.content.guidebookHeroPhoto` is the dedicated guide hero image override, falling back to property hero media and then Hospitable photos.
+- Guidebook sections support a first-class `welcome` section type with a dedicated, label-free Welcome Message editor. The first published guest text item in that section supplies the complete guide hero message. `property.content.guidebookHeroPhoto` is the dedicated guide hero image override, falling back to property hero media and then Hospitable photos.
 - The guest search uses a lightweight synonym layer for common intent terms (for example, food/eat/dining/restaurants, Wi-Fi/internet, and check-in/arrival) while searching the same guidebook content.
 
 ## Property site — page structure

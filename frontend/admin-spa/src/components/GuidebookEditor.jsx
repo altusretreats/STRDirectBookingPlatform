@@ -250,6 +250,7 @@ function SectionModal({ section, saving, propertyId, onSave, onClose }) {
   const [showAiFields, setShowAiFields] = useState(false);
 
   const isRecs = data.sectionType === 'recommendations';
+  const isWelcome = data.sectionType === 'welcome';
 
   const set   = (k, v) => setData(d => ({ ...d, [k]: v }));
   const setNI = (k, v) => setNewItem(i => ({ ...i, [k]: v }));
@@ -267,6 +268,25 @@ function SectionModal({ section, saving, propertyId, onSave, onClose }) {
 
   function updateItem(itemId, updates) {
     set('items', data.items.map(i => i.itemId === itemId ? { ...i, ...updates } : i));
+  }
+
+  function updateWelcomeMessage(content) {
+    const items = [...(data.items || [])];
+    const textIndex = items.findIndex(item => item.type === 'text');
+    if (textIndex >= 0) {
+      items[textIndex] = { ...items[textIndex], label: items[textIndex].label || 'Welcome message', content };
+    } else {
+      items.unshift({
+        itemId: `item-${Date.now()}`,
+        type: 'text',
+        label: 'Welcome message',
+        content,
+        aiContext: '',
+        hostNotes: '',
+        order: 10,
+      });
+    }
+    set('items', items);
   }
 
   return (
@@ -332,8 +352,22 @@ function SectionModal({ section, saving, propertyId, onSave, onClose }) {
             )}
           </div>
 
+          {/* Welcome message */}
+          {isWelcome && (
+            <div style={s.welcomeBox}>
+              <label style={s.label}>Welcome message</label>
+              <p style={s.welcomeHint}>This text appears directly beneath the “Welcome to” title in the guidebook hero.</p>
+              <textarea
+                style={{ ...s.input, minHeight: 110, resize: 'vertical' }}
+                value={(data.items || []).find(item => item.type === 'text')?.content || ''}
+                onChange={e => updateWelcomeMessage(e.target.value)}
+                placeholder="We're so glad you're here."
+              />
+            </div>
+          )}
+
           {/* Items */}
-          <div style={{ marginTop: 24 }}>
+          {!isWelcome && <div style={{ marginTop: 24 }}>
             <label style={s.label}>
               {isRecs ? 'Places' : 'Content items'}
             </label>
@@ -353,7 +387,7 @@ function SectionModal({ section, saving, propertyId, onSave, onClose }) {
             ) : (
               <GenericAddForm newItem={newItem} setNI={setNI} onAdd={addItem} />
             )}
-          </div>
+          </div>}
         </div>
 
         <div style={s.modalFooter}>
@@ -381,6 +415,14 @@ function GenericItemRow({ item, onRemove, onUpdate }) {
       <button style={s.btnDangerSm} onClick={onRemove}>✕</button>
       {expanded && (
         <div style={{ width: '100%', marginTop: 8, paddingTop: 8, borderTop: '1px solid #E5E7EB' }}>
+          <label style={s.labelSm}>Guest-facing label</label>
+          <input style={{ ...s.input, marginTop: 4, marginBottom: 8, fontSize: 13 }}
+            value={item.label || ''} onChange={e => onUpdate({ label: e.target.value })}
+            placeholder="Item label" />
+          <label style={s.labelSm}>Guest-facing content</label>
+          <textarea style={{ ...s.input, height: 82, resize: 'vertical', marginTop: 4, marginBottom: 8, fontSize: 13 }}
+            value={item.content || ''} onChange={e => onUpdate({ content: e.target.value })}
+            placeholder="What guests should see…" />
           <label style={s.labelSm}>🤖 AI context (hidden from guests)</label>
           <textarea style={{ ...s.input, height: 60, resize: 'vertical', marginTop: 4, fontSize: 13 }}
             value={item.aiContext || ''} onChange={e => onUpdate({ aiContext: e.target.value })}
@@ -722,4 +764,6 @@ const s = {
   heroSettingsTitle:  { margin: '0 0 7px', color: '#1D3557', fontFamily: 'Fraunces, Georgia, serif', fontSize: 26, fontWeight: 600 },
   heroSettingsCopy:   { margin: '0 0 16px', color: '#637180', fontSize: 13, lineHeight: 1.55 },
   savedInline:        { marginLeft: 12, color: '#2F735D', fontSize: 13, fontWeight: 600 },
+  welcomeBox:         { marginTop: 24, padding: 18, border: '1px solid #DCE3E7', borderRadius: 12, background: '#F3F6F7' },
+  welcomeHint:        { margin: '-1px 0 10px', color: '#637180', fontSize: 12, lineHeight: 1.5 },
 };
