@@ -46,12 +46,12 @@ const CATEGORY_LABELS = {
   shop: 'Shopping',
   services: 'Services',
 };
-const CATEGORY_ICONS = {
-  restaurant: '🍽️',
-  attraction: '🏞️',
-  activity: '🧗',
-  shop: '🛒',
-  services: '⛽',
+const CATEGORY_ICON_NAMES = {
+  restaurant: 'utensils',
+  attraction: 'landmark',
+  activity: 'compass',
+  shop: 'shopping-bag',
+  services: 'fuel',
 };
 
 const state = {
@@ -118,12 +118,14 @@ function sectionJourney(section) {
 
 function sectionIconName(section) {
   const text = normalize(`${section.sectionId} ${section.title}`);
+  if (/welcome|hello/.test(text)) return 'heart-home';
   if (/wifi|tech|internet/.test(text)) return 'wifi';
   if (/hot tub|pool|sauna|water/.test(text)) return 'waves';
   if (/fire|grill/.test(text)) return 'flame';
-  if (/emergency|safety|contact/.test(text)) return 'shield';
+  if (/emergency|safety|contact/.test(text)) return 'shield-alert';
   if (/checkin|check in|entry|access/.test(text)) return 'key';
-  if (/checkout|check out|departure/.test(text)) return 'luggage';
+  if (/checkout|check out|departure/.test(text)) return 'door';
+  if (/rule|instruction|before you go/.test(text)) return 'clipboard';
   if (/local|recommend|explore|restaurant|activity/.test(text)) return 'map';
   return 'home';
 }
@@ -225,7 +227,7 @@ function renderSection(section, index, requestedSectionId) {
   const panelId = `topic-panel-${section.sectionId}`;
   article.innerHTML = `
     <button type="button" class="topic-toggle" aria-expanded="${expanded}" aria-controls="${escapeHtml(panelId)}">
-      <span class="topic-icon">${escapeHtml(section.icon || '⌂')}</span>
+      <span class="topic-icon">${icon(sectionIconName(section))}</span>
       <span><strong>${escapeHtml(section.title)}</strong><small>${escapeHtml(sectionSummary(section))}</small></span>
       ${icon('down', 'topic-chevron')}
     </button>
@@ -333,7 +335,7 @@ function renderPlaceCard(item) {
   button.innerHTML = `
     <div class="place-card__photo">${photo
       ? `<img src="${escapeHtml(photo)}" alt="${escapeHtml(place.name || item.label || '')}" loading="lazy">`
-      : `<div class="place-card__placeholder">${CATEGORY_ICONS[place.category] || '📍'}</div>`}</div>
+      : `<div class="place-card__placeholder">${icon(CATEGORY_ICON_NAMES[place.category] || 'pin')}</div>`}</div>
     <div class="place-card__body">
       <small>${escapeHtml(CATEGORY_LABELS[place.category] || 'Local favorite')}</small>
       <strong>${escapeHtml(place.name || item.label || 'Local place')}</strong>
@@ -443,7 +445,7 @@ function buildSearchIndex() {
     state.searchIndex.push({
       sectionId: section.sectionId,
       journey,
-      icon: section.icon || '⌂',
+      iconName: sectionIconName(section),
       title: section.title,
       subtitle: sectionSummary(section),
       haystack: normalize(`${section.title} ${section.sectionId}`),
@@ -456,7 +458,9 @@ function buildSearchIndex() {
       state.searchIndex.push({
         sectionId: section.sectionId,
         journey,
-        icon: section.icon || CATEGORY_ICONS[place.category] || '⌂',
+        iconName: item.type === 'place'
+          ? (CATEGORY_ICON_NAMES[place.category] || 'pin')
+          : sectionIconName(section),
         title,
         subtitle: section.title,
         haystack: normalize(searchable),
@@ -497,7 +501,7 @@ function renderSearchResults(query) {
   }
   results.innerHTML = matches.map(match => `
     <button type="button" class="search-result" data-search-section="${escapeHtml(match.sectionId)}">
-      <span class="search-result__icon">${escapeHtml(match.icon)}</span>
+      <span class="search-result__icon">${icon(match.iconName)}</span>
       <span><strong>${escapeHtml(match.title)}</strong><small>${escapeHtml(match.subtitle)}</small></span>
       ${icon('chevron')}
     </button>`).join('');

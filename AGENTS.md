@@ -137,6 +137,7 @@ Place items in a recommendations section (`sectionType: 'recommendations'`) rend
 ## Guidebook — guest UI and AI context boundary
 - The guest guide at `frontend/property-site/guidebook/` is one responsive application with two information hierarchies: a rich journey overview on desktop/tablet and a calm intent-first home on mobile. Both use the same published section data.
 - Sections are grouped client-side into Arriving / At the house / Explore / Checking out, so adding a property remains a data operation. Existing text, image, video, map, link, copyable code, search, and Google Place item types remain supported.
+- Guest-facing navigation, section, search, and place-fallback icons use one restrained deep-blue outline system; admin-authored emoji icons are intentionally mapped to semantic outline icons in the guest UI for visual consistency.
 - `GET /properties/{id}/guidebook` is guest-facing and must never return `aiContext`, `hostNotes`, DynamoDB keys, or other internal fields. It returns a sanitized guest projection of published sections only.
 - `aiContext` is intended for a separate future agent-readable context endpoint/page. `hostNotes` is private admin-only content and must never be returned to guests or AI agents.
 - Admin guidebook saves preserve section-level `sectionType` and `aiContext`, as well as item-level fields. "Visible to guests" (`published`) controls only the guest guide; a future AI feed should have its own explicit inclusion control rather than reuse guest visibility.
