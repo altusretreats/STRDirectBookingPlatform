@@ -222,6 +222,7 @@ Visual visibility and AI availability are different concepts.
 - `aiPublished` ("Available to AI agents") controls the public Markdown feed independently from `published` ("Visible to guests"). Existing records without `aiPublished` temporarily inherit `published` for migration compatibility.
 - Because the agent feed is publicly reachable, never enable sections containing reservation-specific codes, private guest information, or operational secrets. Keep private material in `hostNotes`.
 - Guest search should resolve common intent synonyms (such as food/eat/restaurants) without requiring duplicate content or tags from the host.
+- The guest guide must remain booking-neutral: no “Book again,” “Book direct,” pricing, discount, review-solicitation, or links back to the direct-booking experience. Property identity and stay-support content are allowed; reservation commerce belongs to the booking channel.
 
 ---
 

@@ -1,5 +1,5 @@
 /**
- * Altus Retreats — responsive guest stay guide.
+ * Responsive guest stay guide.
  * The guest UI consumes only published, guest-safe guidebook content.
  */
 
@@ -8,7 +8,6 @@ const GUIDE_CONFIG = {
   apiBase: window.location.hostname === 'localhost'
     ? 'http://localhost:3001'
     : 'https://teh1cl4b6a.execute-api.us-east-1.amazonaws.com/dev',
-  bookingUrl: '../index.html',
 };
 
 const JOURNEYS = {

@@ -84,8 +84,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
   white-space: nowrap;
 }
 .guide-header__actions { display: flex; align-items: center; gap: 10px; }
-.header-action,
-.header-book {
+.header-action {
   min-height: 42px;
   display: inline-flex;
   align-items: center;
@@ -102,9 +101,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
   text-decoration: none;
   transition: border-color 160ms ease, transform 160ms ease, background 160ms ease;
 }
-.header-action:hover,
-.header-book:hover { border-color: var(--guide-accent); transform: translateY(-1px); }
-.header-book { border-color: var(--guide-accent); background: var(--guide-accent); color: #fff; }
+.header-action:hover { border-color: var(--guide-accent); transform: translateY(-1px); }
 
 .guide-hero {
   position: relative;
@@ -669,8 +666,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
   .guide-brand__mark { width: 36px; height: 36px; }
   .guide-brand__copy small { font-size: 8px; }
   .guide-brand__copy strong { font-size: 16px; }
-  .header-action,
-  .header-book { display: none; }
+  .header-action { display: none; }
   .header-action--help { width: 38px; min-height: 38px; display: grid; padding: 0; border-radius: 50%; }
   .header-action--help span { display: none; }
 

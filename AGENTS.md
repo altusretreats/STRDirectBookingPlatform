@@ -150,6 +150,7 @@ Place items in a recommendations section (`sectionType: 'recommendations'`) rend
 - Admin guidebook saves preserve section-level `sectionType`, `aiContext`, and `aiPublished`, as well as item-level fields. "Visible to guests" (`published`) and "Available to AI agents" (`aiPublished`) are independent controls. During migration, records without `aiPublished` inherit `published` until explicitly saved.
 - Guidebook sections support a first-class `welcome` section type with a dedicated, label-free Welcome Message editor. The first published guest text item in that section supplies the complete guide hero message. `property.content.guidebookHeroPhoto` is the dedicated guide hero image override, falling back to property hero media and then Hospitable photos.
 - The guest search uses a lightweight synonym layer for common intent terms (for example, food/eat/dining/restaurants, Wi-Fi/internet, and check-in/arrival) while searching the same guidebook content.
+- The guest guide is a public, non-sensitive house manual and deliberately contains no booking CTA, return-to-property-site link, direct-booking promotion, discount, or review solicitation. This reduces OTA off-platform risk but does not make the `staytheoverhang.com` URL itself risk-free when shared through Airbnb or Vrbo messaging.
 
 ## Property site — page structure
 - **`index.html`** — The live property home page at `www.staytheoverhang.com/`. It currently retains `<meta name="robots" content="noindex,nofollow">` while the root deployment is being tested with the Hospitable widget.
