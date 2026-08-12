@@ -11,7 +11,7 @@ Step-by-step instructions to publish changes to the digital guidebook (`frontend
 | CloudFront distribution ID | `EP3TSR36W3F7N` (same as the property site) |
 | Source folder | `C:\STRProjects\STRDirectBookingPlatform\frontend\property-site\guidebook\` |
 
-The guidebook is plain HTML/CSS/JS — no build step needed.
+The guidebook is plain HTML/CSS/JS — no frontend build step is needed. Its desktop and mobile layouts are one responsive application backed by the public guidebook API.
 
 ## Prerequisites (one-time setup)
 
@@ -29,10 +29,11 @@ cd C:\STRProjects\STRDirectBookingPlatform
 aws s3 sync frontend\property-site\guidebook\ s3://altus-retreats-frontend-dev-817760095908/guidebook/ --delete --profile altus
 ```
 
-**3. Fix content-types for the JS and CSS files** (S3 sometimes guesses these wrong, which can break styling or scripts in the browser):
+**3. Set content types and disable stale browser caching** (S3 sometimes guesses these incorrectly, and the guidebook filenames are not versioned):
 ```powershell
-aws s3 cp frontend\property-site\guidebook\js\guidebook.js s3://altus-retreats-frontend-dev-817760095908/guidebook/js/guidebook.js --content-type "application/javascript" --metadata-directive REPLACE --profile altus
-aws s3 cp frontend\property-site\guidebook\css\guidebook.css s3://altus-retreats-frontend-dev-817760095908/guidebook/css/guidebook.css --content-type "text/css" --metadata-directive REPLACE --profile altus
+aws s3 cp frontend\property-site\guidebook\index.html s3://altus-retreats-frontend-dev-817760095908/guidebook/index.html --content-type "text/html" --cache-control "no-cache" --metadata-directive REPLACE --profile altus
+aws s3 cp frontend\property-site\guidebook\js\guidebook.js s3://altus-retreats-frontend-dev-817760095908/guidebook/js/guidebook.js --content-type "application/javascript" --cache-control "no-cache" --metadata-directive REPLACE --profile altus
+aws s3 cp frontend\property-site\guidebook\css\guidebook.css s3://altus-retreats-frontend-dev-817760095908/guidebook/css/guidebook.css --content-type "text/css" --cache-control "no-cache" --metadata-directive REPLACE --profile altus
 ```
 
 **4. Clear CloudFront's cache:**
@@ -55,3 +56,27 @@ aws cloudfront get-invalidation --distribution-id EP3TSR36W3F7N --id <paste-the-
   aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/guidebook/*" --profile altus
   ```
 - The guidebook is data-driven — most content changes (place recommendations, sections, house rules) are made through the **admin panel** (Guidebook tab), not by editing these files. Only edit these files for actual code/design changes.
+- The desktop overview and mobile intent-first experience are two responsive layouts of the same guidebook. Do not create a separate mobile page or a second content source.
+- Guest section icons are mapped to the outline icon system in `guidebook.js`; emoji saved by the admin are not rendered directly to guests.
+
+## When backend guidebook fields change
+
+If a change also touches `backend/functions/getGuidebook/` or `backend/functions/adminGuidebook/`, deploy the SAM stack before publishing the frontend:
+
+```powershell
+cd C:\STRProjects\STRDirectBookingPlatform
+sam build --template infrastructure/template.yaml
+cd infrastructure
+sam deploy --config-env dev --no-confirm-changeset
+cd ..
+```
+
+The public endpoint is guest-facing and must not contain `aiContext`, `hostNotes`, DynamoDB keys, or internal metadata. After a backend deployment, verify the boundary:
+
+```powershell
+$response = Invoke-RestMethod -Uri "https://teh1cl4b6a.execute-api.us-east-1.amazonaws.com/dev/properties/kentucky/guidebook"
+$json = $response | ConvertTo-Json -Depth 20 -Compress
+if ($json -match 'aiContext|hostNotes|PROPERTY#|GUIDEBOOK#SECTION') {
+  throw "Public guidebook API contains private or internal fields"
+}
+```

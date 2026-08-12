@@ -7,6 +7,7 @@ This file is the primary context source when starting a new session on any machi
 ## Project
 Multi-property STR direct booking platform + digital guidebook for Altus Retreats LLC.
 Hub domain: altusretreats.net
+Visual system: [`STYLE-GUIDE.md`](STYLE-GUIDE.md)
 
 ## You have full autonomy on this project
 Run any bash command needed. Install packages. Deploy. Don't ask for permission on individual steps — complete the full task and report back when done.
@@ -136,6 +137,14 @@ aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/*" 
 ## Guidebook — place items
 Place items in a recommendations section (`sectionType: 'recommendations'`) render as a card grid grouped by category (Restaurants / Attractions / Activities / Shopping). Clicking a card opens a detail modal with Directions button (uses lat/lng coordinates for reliable Google Maps routing).
 
+## Guidebook — guest UI and AI context boundary
+- The guest guide at `frontend/property-site/guidebook/` is one responsive application with two information hierarchies: a rich journey overview on desktop/tablet and a calm intent-first home on mobile. Both use the same published section data.
+- Sections are grouped client-side into Arriving / At the house / Explore / Checking out. Existing text, image, video, map, link, copyable code, search, and Google Place item types remain supported.
+- Guest-facing navigation, section, search, and place-fallback icons use one restrained deep-blue outline system; admin-authored emoji are mapped to semantic outline icons in the guest UI.
+- `GET /properties/{id}/guidebook` must never return `aiContext`, `hostNotes`, DynamoDB keys, or internal fields. It returns a sanitized guest projection of published sections only.
+- `aiContext` is intended for a separate future agent-readable context endpoint/page. `hostNotes` is private admin-only content and must never be returned to guests or AI agents.
+- Admin guidebook saves preserve section-level `sectionType` and `aiContext`. "Visible to guests" (`published`) controls only the guest guide; a future AI feed needs its own inclusion control.
+
 ## Property site — page structure
 - **`index.html`** — The **public Coming Soon page** (source: `frontend/overhang-coming-soon/index.html`, deployed to the frontend bucket root). This is what visitors see at staytheoverhang.com until launch.
 - **`preview.html`** — The **future home page / redesign** (the file described below). Served at `www.staytheoverhang.com/preview.html`, carries `<meta name="robots" content="noindex,nofollow">` so it stays out of search. **At launch:** rename `preview.html` → `index.html` (overwrites the coming-soon) and it becomes the public site — all internal back-links (book.html, guidebook) already point to `index.html`, so they resolve correctly post-launch with no edits.
@@ -161,15 +170,15 @@ Place items in a recommendations section (`sectionType: 'recommendations'`) rend
 ## Properties (future)
 - **The Lazy Palm** — Bradenton FL, coastal/tropical, family-friendly, pool. Domain: staythelazypalm.com (registered, no infrastructure yet). Adding a property is a data operation only — no code changes needed.
 
-## Current state (as of 2026-08-11)
+## Current state (as of 2026-08-12)
 - Admin panel fully functional at admin.altusretreats.net (PropertySettings, ContentEditor, Guidebook, Sync, Waitlist tabs)
-- Property site redesigned: landing keeps the full decorative frame + hero photo slider; scrolling (or a nav click) fades the frame out entirely and turns the nav into a full-width opaque header — then it's a normal scrolling page with a frosted content panel and sticky booking widget. Plain native scroll, no scroll-snap. **Deployed to S3 as `preview.html`** (noindex). Public `index.html` = Coming Soon page. Live: `www.staytheoverhang.com/` = coming soon, `www.staytheoverhang.com/preview.html` = redesign.
+- Property site redesign is deployed as the live root at `www.staytheoverhang.com/`. The page remains noindex while the Hospitable widget is being tested.
 - `getReviews` Lambda (`GET /properties/{propertyId}/reviews`) is SAM-deployed and live.
 - MediaBucket allows public `s3:GetObject` on `properties/*` only (added 2026-08-11) — uploaded photos (hero slider, etc.) are embedded as direct S3 URLs in property content and need to be publicly readable. ACLs stay blocked; access is via bucket policy only.
-- The Overhang logo is live at `frontend/property-site/img/logo-the-overhang.jpg`, wired into `preview.html`'s nav (`.nav__logo-img`). `book.html` still uses the old text-based logo — not yet updated to match.
+- The Overhang logo is live at `frontend/property-site/img/logo-the-overhang.jpg`, wired into `index.html`'s nav (`.nav__logo-img`). `book.html` still uses the old text-based logo — not yet updated to match.
 - Bare-root `staytheoverhang.com` still on GoDaddy Website Builder — root DNS repoint to CloudFront is pending (see DNS / domain routing section).
-- Guidebook live and data-driven
-- Both coming soon pages live with working waitlist capture
+- Guidebook guest frontend is live as a responsive stay companion: rich desktop overview, intent-first mobile home, focused journey screens, and a unified outline icon system. The public API strips AI/private fields, and admin saves retain section AI context and section type.
+- The property-site coming-soon page remains as a rollback source; the hub coming-soon page remains live.
 - Hub site built as hub.html (ready to swap in when The Lazy Palm launches)
 - SES verified: support@altusretreats.net
 - Hospitable widget installed on index.html and book.html; `data-site-uuid` may need updating once Direct channel fully configured

@@ -78,7 +78,7 @@ Resources:
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
-        # GSI2: look up bookings by Stripe payment intent (for webhook resolution)
+        # GSI2: retained legacy payment lookup; active checkout is Hospitable Direct
         - IndexName: GSI2
           KeySchema:
             - AttributeName: GSI2PK
@@ -531,7 +531,7 @@ Resources:
       FunctionName: !Sub altus-retreats-sendConfirmationEmail-${Environment}
       CodeUri: ../backend/functions/sendConfirmationEmail
       Handler: index.handler
-      Description: Sends booking confirmation email via SES after payment confirmed. Invoked async from stripeWebhook.
+      Description: Legacy booking confirmation email sender. Active checkout is handled by Hospitable Direct.
       Environment:
         Variables:
           FROM_EMAIL: !Sub "Altus Retreats <support@${DomainName}>"
@@ -542,7 +542,7 @@ Resources:
                 - ses:SendEmail
                 - ses:SendRawEmail
               Resource: "*"
-      # No API event — invoked directly from stripeWebhook
+      # No API event; retained for compatibility with legacy booking records.
 
   # ── Lambda: sendPreArrivalEmail ───────────
   SendPreArrivalEmailFunction:

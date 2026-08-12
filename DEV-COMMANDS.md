@@ -1,105 +1,121 @@
-# Dev Environment — Quick Reference
+# Altus Retreats — Dev Quick Reference
 
-## Smoke Tests (run after every deploy)
-```powershell
-cd C:\STRProjects\STRDirectBookingPlatform
-node scripts/smoke-test.js        # dev
-node scripts/smoke-test.js prod   # prod
-```
-Tests: all site URLs return 200, API returns property data, availability works, waitlist accepts email, no stale hello@ or old brand colors.
+Current dev environment commands for Windows PowerShell. Use AWS profile `altus` in `us-east-1`.
 
----
-
-## AWS Resources (dev)
+## Live resources
 
 | Resource | Value |
-|----------|-------|
-| API URL | `https://teh1cl4b6a.execute-api.us-east-1.amazonaws.com/dev` |
-| DynamoDB Table | `altus-retreats-dev` |
-| Hub Bucket | `altus-retreats-hub-dev-817760095908` |
-| Hub CloudFront | `E1X6NMJ8MCF7HR` → https://www.altusretreats.net |
-| Property Bucket | `altus-retreats-frontend-dev-817760095908` |
-| Property CloudFront | `EP3TSR36W3F7N` → https://www.staytheoverhang.com |
-| Admin Bucket | `altus-retreats-admin-dev-817760095908` |
-| Admin CloudFront | `E6XS2Y3HPS1YG` → https://admin.altusretreats.net |
-| Media Bucket | `altus-retreats-media-dev-817760095908` |
-| Cognito User Pool | `us-east-1_eMVB4AFGD` |
-| Cognito Client ID | `3l3km5lsgnqcitv295ltb5bq86` |
+|---|---|
+| API | `https://teh1cl4b6a.execute-api.us-east-1.amazonaws.com/dev` |
+| DynamoDB | `altus-retreats-dev` |
+| Property site | `https://www.staytheoverhang.com/` |
+| Guest guide | `https://www.staytheoverhang.com/guidebook/` |
+| Admin | `https://admin.altusretreats.net/` |
+| Hub | `https://www.altusretreats.net/` |
+| Property bucket | `altus-retreats-frontend-dev-817760095908` |
+| Property CloudFront | `EP3TSR36W3F7N` |
+| Admin bucket | `altus-retreats-admin-dev-817760095908` |
+| Admin CloudFront | `E6XS2Y3HPS1YG` |
+| Hub bucket | `altus-retreats-hub-dev-817760095908` |
+| Hub CloudFront | `E1X6NMJ8MCF7HR` |
+| Media bucket | `altus-retreats-media-dev-817760095908` |
 
----
+The bare root `staytheoverhang.com` still points to GoDaddy. Verify property-site deployments at the `www` URL.
 
-## Deploy Commands
+## Backend
 
-### Full deploy (backend + frontend)
+Build from the repository root, then deploy from `infrastructure/` so SAM loads `samconfig.toml`:
+
 ```powershell
 cd C:\STRProjects\STRDirectBookingPlatform
-sam build --template infrastructure/template.yaml
+& "C:\Program Files\Amazon\AWSSAMCLI\bin\sam.cmd" build --template infrastructure/template.yaml
 cd infrastructure
-sam deploy --config-env dev
+& "C:\Program Files\Amazon\AWSSAMCLI\bin\sam.cmd" deploy --config-env dev --no-confirm-changeset
+cd ..
 ```
 
-### Sync property site to S3
+## Property site
+
+The redesigned property page is the live root. Do not re-pin the retired coming-soon page. Avoid `--delete` so the S3 rollback backup under `backups/` remains intact.
+
 ```powershell
-# Sync all property site files
-aws s3 sync C:\STRProjects\STRDirectBookingPlatform\frontend\property-site s3://altus-retreats-frontend-dev-817760095908 --delete --region us-east-1
-
-# Re-pin coming soon as the root (sync overwrites it with the booking site)
-aws s3 cp C:\STRProjects\STRDirectBookingPlatform\frontend\overhang-coming-soon\index.html s3://altus-retreats-frontend-dev-817760095908/index.html --region us-east-1
-
-# Keep a preview URL so you can bypass the coming soon
-aws s3 cp C:\STRProjects\STRDirectBookingPlatform\frontend\property-site\index.html s3://altus-retreats-frontend-dev-817760095908/preview.html --region us-east-1
-
-aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/*" --region us-east-1
+cd C:\STRProjects\STRDirectBookingPlatform
+aws s3 sync frontend\property-site\ s3://altus-retreats-frontend-dev-817760095908/ --profile altus
+aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/*" --profile altus
 ```
 
-Preview URLs (bypass coming soon):
-- Booking site: https://www.staytheoverhang.com/preview.html
-- Guidebook:    https://www.staytheoverhang.com/guidebook/
-- Hub full site: https://www.altusretreats.net/hub.html
+See [DEPLOY-FRONTEND.md](DEPLOY-FRONTEND.md) for the complete procedure.
 
-### Build + deploy admin SPA
+## Guest guide only
+
+```powershell
+cd C:\STRProjects\STRDirectBookingPlatform
+aws s3 sync frontend\property-site\guidebook\ s3://altus-retreats-frontend-dev-817760095908/guidebook/ --delete --profile altus
+aws s3 cp frontend\property-site\guidebook\index.html s3://altus-retreats-frontend-dev-817760095908/guidebook/index.html --content-type "text/html" --cache-control "no-cache" --metadata-directive REPLACE --profile altus
+aws s3 cp frontend\property-site\guidebook\css\guidebook.css s3://altus-retreats-frontend-dev-817760095908/guidebook/css/guidebook.css --content-type "text/css" --cache-control "no-cache" --metadata-directive REPLACE --profile altus
+aws s3 cp frontend\property-site\guidebook\js\guidebook.js s3://altus-retreats-frontend-dev-817760095908/guidebook/js/guidebook.js --content-type "application/javascript" --cache-control "no-cache" --metadata-directive REPLACE --profile altus
+aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/guidebook/*" --profile altus
+```
+
+See [DEPLOY-GUIDEBOOK.md](DEPLOY-GUIDEBOOK.md) for privacy verification and additional notes.
+
+## Admin SPA
+
 ```powershell
 cd C:\STRProjects\STRDirectBookingPlatform\frontend\admin-spa
-$env:VITE_API_BASE="https://teh1cl4b6a.execute-api.us-east-1.amazonaws.com/dev"
-$env:VITE_COGNITO_USER_POOL_ID="us-east-1_eMVB4AFGD"
-$env:VITE_COGNITO_CLIENT_ID="3l3km5lsgnqcitv295ltb5bq86"
 npm run build
-aws s3 sync dist s3://altus-retreats-admin-dev-817760095908 --delete --region us-east-1
-aws s3 cp dist s3://altus-retreats-admin-dev-817760095908 --recursive --exclude "*.html" --exclude "*.css" --exclude "*.ico" --content-type "application/javascript" --metadata-directive REPLACE --region us-east-1
-aws cloudfront create-invalidation --distribution-id E6XS2Y3HPS1YG --paths "/*" --region us-east-1
+aws s3 sync dist/ s3://altus-retreats-admin-dev-817760095908/ --delete --profile altus
+aws cloudfront create-invalidation --distribution-id E6XS2Y3HPS1YG --paths "/*" --profile altus
 ```
 
-### Invalidate CloudFront cache (after syncing)
+If JavaScript is served with the wrong MIME type, re-upload the exact generated `dist\assets\index-*.js` file with `--content-type "application/javascript" --metadata-directive REPLACE`.
+
+See [DEPLOY-ADMIN.md](DEPLOY-ADMIN.md) for the complete procedure.
+
+## Hub
+
 ```powershell
-# Get distribution IDs
-aws cloudformation describe-stack-resources --stack-name altus-retreats-dev --region us-east-1 --query "StackResources[?ResourceType=='AWS::CloudFront::Distribution'].[LogicalResourceId,PhysicalResourceId]" --output table
+cd C:\STRProjects\STRDirectBookingPlatform
+aws s3 sync frontend\hub-site\ s3://altus-retreats-hub-dev-817760095908/ --profile altus
+aws cloudfront create-invalidation --distribution-id E1X6NMJ8MCF7HR --paths "/*" --profile altus
 ```
-
----
 
 ## Secrets
 
-### Update Hospitable PAT (when you have it)
+Hospitable PAT:
+
 ```powershell
-aws secretsmanager update-secret --secret-id altus-retreats/dev/hospitable --secret-string '{"default":"YOUR_PAT_HERE"}' --region us-east-1
+aws secretsmanager update-secret --secret-id altus-retreats/dev/hospitable --secret-string '{"default":"YOUR_PAT","kentucky":"YOUR_PAT"}' --profile altus
 ```
 
-### Update Stripe keys
+Google Places:
+
 ```powershell
-aws secretsmanager update-secret --secret-id altus-retreats/dev/stripe --secret-string '{"secretKey":"sk_test_...","webhookSecret":"whsec_..."}' --region us-east-1
+aws secretsmanager update-secret --secret-id altus-retreats/dev/google --secret-string '{"placesApiKey":"YOUR_KEY"}' --profile altus
 ```
 
----
+Hospitable is the merchant of record and handles checkout. There are no Stripe secrets.
 
-## Seed / Admin
+## Seed and admin
 
-### Re-run Kentucky seed
+The seed is structural only; Hospitable is the source of truth for listing content.
+
 ```powershell
 cd C:\STRProjects\STRDirectBookingPlatform
-node scripts/seed-kentucky.js --env dev
+node scripts\seed-kentucky.js --env dev
 ```
 
-### Create admin Cognito user
+Create an admin user:
+
 ```powershell
-aws cognito-idp admin-create-user --user-pool-id <UserPoolId> --username your@email.com --temporary-password TempPass123! --region us-east-1
+aws cognito-idp admin-create-user --user-pool-id us-east-1_eMVB4AFGD --username your@email.com --temporary-password TempPass123! --profile altus
 ```
+
+## Verification
+
+```powershell
+cd C:\STRProjects\STRDirectBookingPlatform
+node scripts\smoke-test.js
+```
+
+For visual frontend changes, also verify at approximately `390px` and `1280px`, check keyboard operation, and confirm no horizontal overflow.

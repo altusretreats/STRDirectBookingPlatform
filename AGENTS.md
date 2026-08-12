@@ -7,6 +7,7 @@ This file is the primary context source when starting a new session on any machi
 ## Project
 Multi-property STR direct booking platform + digital guidebook for Altus Retreats LLC.
 Hub domain: altusretreats.net
+Visual system: [`STYLE-GUIDE.md`](STYLE-GUIDE.md)
 
 ## You have full autonomy on this project
 Run any bash command needed. Install packages. Deploy. Don't ask for permission on individual steps — complete the full task and report back when done.
@@ -168,7 +169,7 @@ Place items in a recommendations section (`sectionType: 'recommendations'`) rend
 ## Properties (future)
 - **The Lazy Palm** — Bradenton FL, coastal/tropical, family-friendly, pool. Domain: staythelazypalm.com (registered, no infrastructure yet). Adding a property is a data operation only — no code changes needed.
 
-## Current state (as of 2026-08-11)
+## Current state (as of 2026-08-12)
 - Admin panel fully functional at admin.altusretreats.net (PropertySettings, ContentEditor, Guidebook, Sync, Waitlist tabs)
 - Property site redesign is deployed as the root `index.html` at `www.staytheoverhang.com/` for live Hospitable widget testing (deployed 2026-08-11; CloudFront invalidation completed). The page remains noindex during testing.
 - The property page uses a wide editorial layout with a Blue + Canyon Red palette (`#1D3557`, `#D1614D`, `#FBFDFF`), full-width responsive photo gallery, centered content + Hospitable widget rail, logo/title lockup, dynamic property facts, conditional two-king-bedroom callout, experience photography, BOLT-inspired dynamic review wall, and scroll-rise reveals. The compact guest-oriented navigation is Overview / Amenities / Reviews / Location, with ordered scroll-position tracking for reliable active states in both directions. The photo gallery has a persistent mobile-safe View All entry point, a masonry-style editorial index, and a deep-blue immersive lightbox with keyboard, thumbnail, and swipe navigation. Hospitable amenities are grouped client-side into scannable category cards, with the complete dynamic list available in a categorized, instantly searchable modal. The closing "Altus standard" section uses four specific numbered commitments (honest listing, arrival preparation, real support, and direct-booking value) instead of decorative icons. The landing retains its framed photo-slider layout with layered contrast, a glass navigation rail, Canyon Red Book Now button, animated Explore cue, and a restrained scroll-linked hero parallax/fade into a compact deep-blue property header. A subtle lower-left back-to-landing button appears only after the gallery has passed. Book Now scrolls to the widget on desktop and opens `book.html` on mobile. Reduced-motion preferences are honored, and all existing API/widget hooks remain intact.

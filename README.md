@@ -3,6 +3,8 @@
 Multi-property direct booking site, digital guidebook, and admin system for Altus Retreats LLC.
 Hub: **altusretreats.net**
 
+Design tokens and guest-experience rules: [STYLE-GUIDE.md](STYLE-GUIDE.md)
+
 ---
 
 ## Live URLs & AWS Resources (dev)
@@ -11,8 +13,7 @@ Hub: **altusretreats.net**
 |------|-----|---------------|-----------|
 | Hub (coming soon) | https://www.altusretreats.net | `E1X6NMJ8MCF7HR` | `altus-retreats-hub-dev-817760095908` |
 | Hub (full future site preview) | https://www.altusretreats.net/hub.html | `E1X6NMJ8MCF7HR` | same bucket |
-| The Overhang (coming soon) | https://www.staytheoverhang.com | `EP3TSR36W3F7N` | `altus-retreats-frontend-dev-817760095908` |
-| The Overhang — Booking site preview | https://www.staytheoverhang.com/preview.html | `EP3TSR36W3F7N` | same bucket |
+| The Overhang — Property site | https://www.staytheoverhang.com | `EP3TSR36W3F7N` | `altus-retreats-frontend-dev-817760095908` |
 | The Overhang — Guidebook | https://www.staytheoverhang.com/guidebook/ | `EP3TSR36W3F7N` | same bucket |
 | Admin panel | https://admin.altusretreats.net | `E6XS2Y3HPS1YG` | `altus-retreats-admin-dev-817760095908` |
 | API | https://teh1cl4b6a.execute-api.us-east-1.amazonaws.com/dev | — | — |
@@ -63,7 +64,7 @@ Install these once on your machine:
 
 | Tool | Install |
 |------|---------|
-| Node.js 20 | https://nodejs.org |
+| Node.js 22 | https://nodejs.org |
 | AWS CLI v2 | https://aws.amazon.com/cli/ |
 | AWS SAM CLI | https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html |
 | Docker (for SAM local) | https://www.docker.com/products/docker-desktop |
@@ -88,7 +89,7 @@ In the AWS Console → IAM → Users → Create user:
 ### 3. Configure AWS CLI
 
 ```bash
-aws configure
+aws configure --profile altus
 # AWS Access Key ID:     <paste from step 2>
 # AWS Secret Access Key: <paste from step 2>
 # Default region:        us-east-1
@@ -147,15 +148,17 @@ SAM will output:
 After deploy, put real values in Secrets Manager:
 
 ```bash
-# Stripe (get keys from dashboard.stripe.com)
-aws secretsmanager update-secret \
-  --secret-id altus-retreats/dev/stripe \
-  --secret-string '{"secretKey":"sk_test_...","webhookSecret":"whsec_..."}'
-
 # Hospitable PAT (once you generate it at hospitable.com)
 aws secretsmanager update-secret \
   --secret-id altus-retreats/dev/hospitable \
-  --secret-string '{"kentucky":"<your-PAT>"}'
+  --secret-string '{"default":"<your-PAT>","kentucky":"<your-PAT>"}' \
+  --profile altus
+
+# Google Places API
+aws secretsmanager update-secret \
+  --secret-id altus-retreats/dev/google \
+  --secret-string '{"placesApiKey":"<your-key>"}' \
+  --profile altus
 ```
 
 ### 8. Create admin user
@@ -251,54 +254,20 @@ npm run dev
 
 ## Deploy commands
 
-```powershell
-# 1 — Backend (run first)
-sam build --template infrastructure/template.yaml
-cd infrastructure
-sam deploy --config-env dev
-cd ..
+Use the maintained, self-contained deployment guides:
 
-# 2 — Admin SPA
-cd frontend\admin-spa
-$env:VITE_API_BASE="https://teh1cl4b6a.execute-api.us-east-1.amazonaws.com/dev"
-$env:VITE_COGNITO_USER_POOL_ID="us-east-1_eMVB4AFGD"
-$env:VITE_COGNITO_CLIENT_ID="3l3km5lsgnqcitv295ltb5bq86"
-npm run build
-aws s3 sync dist s3://altus-retreats-admin-dev-817760095908 --delete --region us-east-1
-aws s3 cp dist s3://altus-retreats-admin-dev-817760095908 --recursive --exclude "*.html" --exclude "*.css" --exclude "*.ico" --content-type "application/javascript" --metadata-directive REPLACE --region us-east-1
-aws cloudfront create-invalidation --distribution-id E6XS2Y3HPS1YG --paths "/*" --region us-east-1
-cd ..\..
+- [Backend and quick-reference commands](DEV-COMMANDS.md)
+- [Property site](DEPLOY-FRONTEND.md)
+- [Guest guide](DEPLOY-GUIDEBOOK.md)
+- [Admin SPA](DEPLOY-ADMIN.md)
 
-# 3 — Property site + hub (re-pin coming soon + upload preview)
-aws s3 sync frontend\property-site s3://altus-retreats-frontend-dev-817760095908 --delete --region us-east-1
-aws s3 cp frontend\overhang-coming-soon\index.html s3://altus-retreats-frontend-dev-817760095908/index.html --region us-east-1
-aws s3 cp frontend\property-site\index.html s3://altus-retreats-frontend-dev-817760095908/preview.html --region us-east-1
-aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/*" --region us-east-1
-aws s3 sync frontend\hub-site s3://altus-retreats-hub-dev-817760095908 --delete --region us-east-1
-aws cloudfront create-invalidation --distribution-id E1X6NMJ8MCF7HR --paths "/*" --region us-east-1
-
-# 4 — Smoke test (after CloudFront propagates ~2 min)
-node scripts/smoke-test.js
-```
-
-All three deploy steps can run in parallel in separate PowerShell windows.
+The redesigned property page is the live root. Do not re-pin the retired coming-soon page after a property-site sync.
 
 ---
 
-## Stripe webhook setup
+## Payments
 
-After first deploy, register the webhook endpoint in Stripe Dashboard:
-
-1. Go to https://dashboard.stripe.com/webhooks
-2. Add endpoint: `<ApiUrl>/webhooks/stripe`
-3. Select events: `payment_intent.succeeded`, `payment_intent.payment_failed`
-4. Copy the **Signing secret** (starts with `whsec_`)
-5. Update Secrets Manager:
-   ```bash
-   aws secretsmanager update-secret \
-     --secret-id altus-retreats/dev/stripe \
-     --secret-string '{"secretKey":"sk_test_...","webhookSecret":"whsec_<signing-secret>"}'
-   ```
+Hospitable Direct is the merchant of record. Its embedded widget handles checkout; this platform does not use Stripe or store Stripe secrets.
 
 ---
 
@@ -306,8 +275,8 @@ After first deploy, register the webhook endpoint in Stripe Dashboard:
 
 1. Add a property record to DynamoDB (or use the admin panel)
 2. Update `altus-retreats/{env}/hospitable` secret with the new property's PAT
-3. Deploy a second CloudFront distribution with the property's domain
-4. Run seed data for the new property's guidebook
+3. Configure the property's domain and frontend distribution when it is ready to launch
+4. Add property-specific guidebook content through the admin panel
 
 No code changes needed. The architecture is multi-property from day one.
 
@@ -315,10 +284,8 @@ No code changes needed. The architecture is multi-property from day one.
 
 ## Key pending items
 
-- [ ] Hospitable PAT — generate at hospitable.com, add to Secrets Manager
-- [ ] Logo/branding — expected ~2026-08-09
-- [ ] Property domain — register + configure Route 53 + ACM
-- [ ] Real Stripe keys — switch from test to live when ready to accept payments
+- [ ] Repoint bare-root `staytheoverhang.com` from GoDaddy to CloudFront
+- [ ] Add the AI-readable guidebook context feed and AI-specific inclusion control
 - [ ] Guidebook content — fill in REPLACE_ME values via admin panel
 
 ---
@@ -355,7 +322,7 @@ Email Lambdas are deployed automatically with `sam deploy`. No extra steps neede
 
 ### 4. Test
 
-Book a reservation using Stripe's test card `4242 4242 4242 4242`. The confirmation email fires automatically after payment. Pre-arrival emails are scheduled for 48hrs before check-in.
+Test guest communication against a real or test Hospitable Direct reservation. Pre-arrival emails are intended to be scheduled for 48 hours before check-in.
 
 ---
 

@@ -6,11 +6,6 @@ Shared running list. Add items with priority (🔴 critical / 🟡 soon / 🟢 n
 
 ## 🔴 Critical / Blocking
 
-- [ ] **Add Stripe keys to Secrets Manager** — test keys for now; needed before any booking can complete
-  ```
-  aws secretsmanager update-secret --secret-id altus-retreats/dev/stripe \
-    --secret-string '{"secretKey":"sk_test_...","webhookSecret":"whsec_..."}' --region us-east-1
-  ```
 - [ ] **Root domain redirect (altusretreats.net)** — bare domain → GoDaddy Domain Forwarding → https://www.altusretreats.net (301)
   - GoDaddy → Domains → altusretreats.net → scroll to Forwarding → Add Forward
 - [ ] **Root domain redirect (staytheoverhang.com)** — bare domain → GoDaddy Domain Forwarding → https://www.staytheoverhang.com (301)
@@ -35,9 +30,10 @@ Shared running list. Add items with priority (🔴 critical / 🟡 soon / 🟢 n
   ```
   node scripts/seed-kentucky.js --env dev
   ```
-- [ ] **Fix guidebook AccessDenied** — verify guidebook/ files exist in S3 property bucket after sync; check CloudFront 403 handling
+- [x] **Fix guidebook AccessDenied** — guidebook is live through CloudFront at `/guidebook/` ✅
+- [x] **Redesign responsive guidebook** — rich desktop overview, intent-first mobile home, focused journey screens, unified outline icons ✅
 - [ ] **Mobile audit — all sites** — test at 375px width; check property site, guidebook, hub site, coming soon pages
-- [ ] **Booking flow end-to-end test** — requires Stripe keys; test full checkout → confirmation email → Hospitable block
+- [ ] **Booking flow end-to-end test** — test the Hospitable Direct widget and confirmation flow
 - [ ] **Verify PropertySettings save** — make sure `PUT /properties/{propertyId}` Lambda is deployed and wired in SAM template
 
 ---
@@ -46,11 +42,12 @@ Shared running list. Add items with priority (🔴 critical / 🟡 soon / 🟢 n
 
 - [ ] **Logo** — final brand logo pending ~Aug 9; replace placeholder on all sites once delivered
 - [ ] **hub.html → index.html swap** — when The Lazy Palm launches, replace hub coming soon with full hub site
-- [ ] **staytheoverhang.com** — swap coming soon for full booking site when ready
+- [x] **www.staytheoverhang.com** — redesigned property site is live at the CloudFront-backed `www` domain ✅
 - [ ] **The Lazy Palm** — set up DynamoDB property record + S3/CloudFront for staythelazypalm.com
 - [ ] **Guidebook content** — add actual house manual sections for The Overhang via admin → Guidebook Editor
-- [ ] **Guest confirmation email** — verify template renders correctly for a real booking; check in Stripe test mode
+- [ ] **Guest confirmation email** — verify template renders correctly for a real booking
 - [ ] **Pre-arrival email** — verify EventBridge Scheduler fires correctly 48h before check-in
+- [ ] **AI guidebook context feed** — create a separate agent-readable endpoint/page containing guest content plus explicitly included `aiContext`; exclude `hostNotes` and add an AI-specific inclusion control in admin
 - [ ] **Booking calendar** — test blocked-date display once real Hospitable listing ID is connected
 - [ ] **SEO** — add og:image, structured data, sitemap.xml for staytheoverhang.com once it goes live
 - [ ] **Analytics** — add simple event tracking (page views, waitlist signups, booking starts, booking completions)
@@ -61,18 +58,4 @@ Shared running list. Add items with priority (🔴 critical / 🟡 soon / 🟢 n
 
 ## Deploy Quick Reference
 
-```powershell
-# Backend
-sam build --template infrastructure/template.yaml
-cd infrastructure && sam deploy --config-env dev
-
-# Property site
-aws s3 sync frontend/property-site s3://altus-retreats-frontend-dev-817760095908 --delete --region us-east-1
-# Then re-upload coming soon (sync overwrites it):
-aws s3 cp frontend/overhang-coming-soon/index.html s3://altus-retreats-frontend-dev-817760095908/index.html --region us-east-1
-aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/*" --region us-east-1
-
-# Hub site
-aws s3 sync frontend/hub-site s3://altus-retreats-hub-dev-817760095908 --delete --region us-east-1
-aws cloudfront create-invalidation --distribution-id E1X6NMJ8MCF7HR --paths "/*" --region us-east-1
-```
+Use [DEV-COMMANDS.md](DEV-COMMANDS.md) for the current quick reference. Complete procedures are in [DEPLOY-FRONTEND.md](DEPLOY-FRONTEND.md), [DEPLOY-GUIDEBOOK.md](DEPLOY-GUIDEBOOK.md), and [DEPLOY-ADMIN.md](DEPLOY-ADMIN.md).
