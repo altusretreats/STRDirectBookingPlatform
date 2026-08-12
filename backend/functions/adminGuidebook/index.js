@@ -28,7 +28,7 @@ exports.handler = async (event) => {
 
     // PUT — upsert section
     if (method === 'PUT' && sectionId) {
-      const { title, icon, order, items, published } = body;
+      const { title, icon, order, items, published, sectionType, aiContext } = body;
       if (!title || order == null) return badRequest('title and order are required');
 
       const orderPadded = String(order).padStart(3, '0');
@@ -43,6 +43,8 @@ exports.handler = async (event) => {
         order,
         title,
         icon: icon ?? null,
+        sectionType: sectionType ?? 'general',
+        aiContext: aiContext ?? '',
         items: items ?? [],
         published: published ?? false,
         updatedAt: now,

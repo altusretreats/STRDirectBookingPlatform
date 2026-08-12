@@ -13,7 +13,15 @@ describe('getGuidebook', () => {
   });
 
   const SAMPLE_SECTIONS = [
-    { PK: 'PROPERTY#kentucky', SK: 'GUIDEBOOK#SECTION#010#welcome', sectionId: 'welcome', title: 'Welcome', published: true, items: [] },
+    {
+      PK: 'PROPERTY#kentucky',
+      SK: 'GUIDEBOOK#SECTION#010#welcome',
+      sectionId: 'welcome',
+      title: 'Welcome',
+      published: true,
+      aiContext: 'Use this when greeting a guest.',
+      items: [{ itemId: 'welcome-message', type: 'text', content: 'Welcome!', aiContext: 'Be warm.', hostNotes: 'Private note.' }],
+    },
     { PK: 'PROPERTY#kentucky', SK: 'GUIDEBOOK#SECTION#020#checkin', sectionId: 'checkin', title: 'Check-In', published: true, items: [] },
     { PK: 'PROPERTY#kentucky', SK: 'GUIDEBOOK#SECTION#030#rules', sectionId: 'rules', title: 'House Rules', published: false, items: [] },
   ];
@@ -29,7 +37,13 @@ describe('getGuidebook', () => {
     const body = JSON.parse(result.body);
     expect(body.sections).toHaveLength(2);
     expect(body.propertyId).toBe('kentucky');
-    expect(body.sections.every(s => s.published)).toBe(true);
+    expect(body.sections[0]).not.toHaveProperty('PK');
+    expect(body.sections[0]).not.toHaveProperty('SK');
+    expect(body.sections[0]).not.toHaveProperty('published');
+    expect(body.sections[0]).not.toHaveProperty('aiContext');
+    expect(body.sections[0].items[0]).not.toHaveProperty('aiContext');
+    expect(body.sections[0].items[0]).not.toHaveProperty('hostNotes');
+    expect(body.sections[0].items[0]).toMatchObject({ content: 'Welcome!', type: 'text' });
   });
 
   test('returns empty sections array when no content exists', async () => {

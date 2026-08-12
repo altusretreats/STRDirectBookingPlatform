@@ -1,6 +1,22 @@
 const db = require('/opt/nodejs/lib/db');
 const { ok, notFound, serverError } = require('/opt/nodejs/lib/response');
 
+function sanitizeItem(item = {}) {
+  const { aiContext, hostNotes, ...guestItem } = item;
+  return guestItem;
+}
+
+function sanitizeSection(section = {}) {
+  return {
+    sectionId: section.sectionId,
+    title: section.title,
+    icon: section.icon ?? null,
+    order: section.order,
+    sectionType: section.sectionType ?? 'general',
+    items: (section.items ?? []).map(sanitizeItem),
+  };
+}
+
 exports.handler = async (event) => {
   try {
     const { propertyId } = event.pathParameters;
@@ -27,7 +43,9 @@ exports.handler = async (event) => {
       propertyId,
       propertyName: property.name,
       branding: property.branding,
-      sections: sections ?? [],
+      // AI context and private host notes belong to future agent/admin feeds,
+      // never the public guest endpoint.
+      sections: (sections ?? []).map(sanitizeSection),
     });
   } catch (err) {
     return serverError(err);

@@ -1,10 +1,9 @@
 /**
- * Altus Retreats — Digital Guidebook
- * Fetches guidebook sections from API and renders them.
+ * Altus Retreats — responsive guest stay guide.
+ * The guest UI consumes only published, guest-safe guidebook content.
  */
 
-// ── Config ────────────────────────────────────────────
-const GB_CONFIG = {
+const GUIDE_CONFIG = {
   propertyId: new URLSearchParams(window.location.search).get('property') || 'kentucky',
   apiBase: window.location.hostname === 'localhost'
     ? 'http://localhost:3001'
@@ -12,450 +11,631 @@ const GB_CONFIG = {
   bookingUrl: '../index.html',
 };
 
-// ── State ─────────────────────────────────────────────
-let state = { sections: [], property: null, activeSection: null };
+const JOURNEYS = {
+  arriving: {
+    label: 'Arrival guide',
+    title: 'From the road to relaxed.',
+    mobileTitle: 'Arriving at your retreat',
+    context: 'Everything for a smooth arrival',
+  },
+  staying: {
+    label: 'At the house',
+    title: 'Settle in and switch off.',
+    mobileTitle: 'Make yourself at home',
+    context: 'Property essentials and how-tos',
+  },
+  exploring: {
+    label: 'Explore nearby',
+    title: 'Make a day of it.',
+    mobileTitle: 'Explore like a local',
+    context: 'Host-curated places and activities',
+  },
+  leaving: {
+    label: 'Departure guide',
+    title: 'A simple send-off.',
+    mobileTitle: 'Checking out',
+    context: 'Everything you need before you go',
+  },
+};
 
-// ── API ───────────────────────────────────────────────
-async function fetchGuidebook() {
-  const res = await fetch(`${GB_CONFIG.apiBase}/properties/${GB_CONFIG.propertyId}/guidebook`);
-  if (!res.ok) throw new Error(`Failed to fetch guidebook: ${res.status}`);
-  return res.json();
+const CATEGORY_ORDER = ['restaurant', 'attraction', 'activity', 'shop', 'services'];
+const CATEGORY_LABELS = {
+  restaurant: 'Restaurants',
+  attraction: 'Attractions',
+  activity: 'Activities',
+  shop: 'Shopping',
+  services: 'Services',
+};
+const CATEGORY_ICONS = {
+  restaurant: '🍽️',
+  attraction: '🏞️',
+  activity: '🧗',
+  shop: '🛒',
+  services: '⛽',
+};
+
+const state = {
+  sections: [],
+  property: null,
+  hospitable: null,
+  groups: { arriving: [], staying: [], exploring: [], leaving: [] },
+  activeJourney: 'arriving',
+  searchIndex: [],
+  places: new Map(),
+};
+
+const $ = (selector, scope = document) => scope.querySelector(selector);
+const $$ = (selector, scope = document) => [...scope.querySelectorAll(selector)];
+const icon = (name, className = '') => `<svg${className ? ` class="${className}"` : ''} aria-hidden="true"><use href="#icon-${name}"></use></svg>`;
+
+async function fetchJson(path) {
+  const response = await fetch(`${GUIDE_CONFIG.apiBase}${path}`);
+  if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+  return response.json();
 }
 
-// ── DOM helpers ───────────────────────────────────────
-const $ = (sel) => document.querySelector(sel);
-const $$ = (sel) => [...document.querySelectorAll(sel)];
-
-function applyBranding(branding) {
-  if (!branding) return;
-  const r = document.documentElement.style;
-  if (branding.primaryColor) r.setProperty('--color-primary', branding.primaryColor);
-  if (branding.accentColor)  r.setProperty('--color-accent',  branding.accentColor);
+function escapeHtml(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
-// ── Render nav ────────────────────────────────────────
-function renderNav(sections) {
-  const nav = $('#gb-nav-items');
-  if (!nav) return;
-  nav.innerHTML = '';
-  sections.forEach(section => {
-    const btn = document.createElement('button');
-    btn.className = 'gb-nav__item';
-    btn.dataset.sectionId = section.sectionId;
-    btn.innerHTML = `<span class="gb-nav__icon">${section.icon || '📄'}</span>${section.title}`;
-    btn.addEventListener('click', () => {
-      scrollToSection(section.sectionId);
-      closeNav();
-    });
-    nav.appendChild(btn);
+function safeUrl(value) {
+  if (!value) return '';
+  try {
+    const url = new URL(value, window.location.href);
+    return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+  } catch {
+    return '';
+  }
+}
+
+function mediaUrl(item) {
+  if (item.s3Key) return `https://media.altusretreats.net/${encodeURI(item.s3Key)}`;
+  return safeUrl(item.content);
+}
+
+function isPlaceholder(value) {
+  return !value || /REPLACE_ME|coming soon|add your/i.test(String(value));
+}
+
+function normalize(value = '') {
+  return String(value).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function sectionJourney(section) {
+  const items = section.items || [];
+  const text = normalize(`${section.sectionId} ${section.title} ${section.sectionType}`);
+  if (section.sectionType === 'recommendations' || items.some(item => item.type === 'place')) return 'exploring';
+  if (/checkout|check out|departure|leaving|before you go/.test(text)) return 'leaving';
+  if (/welcome|checkin|check in|arrival|arriving|parking|direction|entry|access/.test(text)) return 'arriving';
+  if (/local|recommend|restaurant|dining|outdoor|shopping|explore|attraction|activity/.test(text)) return 'exploring';
+  return 'staying';
+}
+
+function sectionIconName(section) {
+  const text = normalize(`${section.sectionId} ${section.title}`);
+  if (/wifi|tech|internet/.test(text)) return 'wifi';
+  if (/hot tub|pool|sauna|water/.test(text)) return 'waves';
+  if (/fire|grill/.test(text)) return 'flame';
+  if (/emergency|safety|contact/.test(text)) return 'shield';
+  if (/checkin|check in|entry|access/.test(text)) return 'key';
+  if (/checkout|check out|departure/.test(text)) return 'luggage';
+  if (/local|recommend|explore|restaurant|activity/.test(text)) return 'map';
+  return 'home';
+}
+
+function sectionSummary(section) {
+  const items = section.items || [];
+  if (!items.length) return 'Open for details';
+  const placeCount = items.filter(item => item.type === 'place').length;
+  if (placeCount) return `${placeCount} host-curated ${placeCount === 1 ? 'place' : 'places'}`;
+  if (items.length === 1 && items[0].label) return items[0].label;
+  return `${items.length} quick answers`;
+}
+
+function applyPropertyPresentation(guideData, propertyData) {
+  const property = propertyData?.property || null;
+  const hospitable = propertyData?.hospitable || null;
+  const propertyName = property?.name || guideData.propertyName || 'Your retreat';
+  state.property = property;
+  state.hospitable = hospitable;
+
+  document.title = `${propertyName} — Guest Stay Guide`;
+  $$('.property-name').forEach(element => { element.textContent = propertyName; });
+
+  const accent = property?.content?.heroAccentColor || property?.branding?.guidebookAccentColor;
+  const primary = property?.branding?.guidebookPrimaryColor;
+  if (accent) document.documentElement.style.setProperty('--guide-accent', accent);
+  if (primary) document.documentElement.style.setProperty('--guide-primary', primary);
+
+  const customPhotos = property?.content?.heroSliderPhotos || [];
+  const heroPhoto = customPhotos[0]
+    || property?.content?.heroPhoto
+    || hospitable?.photos?.[0]?.url;
+  if (safeUrl(heroPhoto)) $('#guide-hero-media').style.backgroundImage = `url("${safeUrl(heroPhoto)}")`;
+
+  const welcomeSection = state.sections.find(section => /welcome/.test(normalize(`${section.sectionId} ${section.title}`)));
+  const welcomeText = welcomeSection?.items?.find(item => item.type === 'text' && !isPlaceholder(item.content))?.content;
+  if (welcomeText) {
+    const sentence = String(welcomeText).split(/(?<=[.!?])\s/)[0];
+    $('#hero-message').textContent = sentence.length <= 170 ? sentence : 'Everything you need for an effortless stay—right when you need it.';
+  }
+
+  const checkIn = findSection(/checkin|check in|arrival/);
+  const checkInText = checkIn?.items?.map(item => item.content).find(content => /\d{1,2}(:\d{2})?\s*(am|pm)/i.test(content || ''));
+  if (checkInText) {
+    const time = checkInText.match(/\d{1,2}(?::\d{2})?\s*(?:AM|PM)/i)?.[0];
+    if (time) $('#mobile-now-title').textContent = `Check-in begins at ${time.toUpperCase()}`;
+  }
+}
+
+function groupSections() {
+  state.groups = { arriving: [], staying: [], exploring: [], leaving: [] };
+  state.sections.forEach(section => state.groups[sectionJourney(section)].push(section));
+}
+
+function renderJourney(journey, options = {}) {
+  if (!JOURNEYS[journey]) return;
+  state.activeJourney = journey;
+  const copy = JOURNEYS[journey];
+
+  $$('.journey-card').forEach(button => {
+    const active = button.dataset.journey === journey;
+    button.classList.toggle('is-active', active);
+    button.setAttribute('aria-pressed', String(active));
   });
+  $('#journey-label').textContent = copy.label;
+  $('#journey-title').textContent = copy.title;
+  $('#journey-context').textContent = copy.context;
+  $('#mobile-detail-label').textContent = copy.label;
+  $('#mobile-detail-title').textContent = copy.mobileTitle;
+
+  const sections = state.groups[journey];
+  const container = $('#guide-sections');
+  if (!sections.length) {
+    container.innerHTML = `<div class="empty-journey"><strong>Nothing needed here yet.</strong><span>This part of the stay guide will appear when content is added.</span></div>`;
+  } else {
+    container.innerHTML = '';
+    sections.forEach((section, index) => container.appendChild(renderSection(section, index, options.sectionId)));
+  }
+
+  if (options.mobile) {
+    document.body.classList.add('mobile-content-open');
+    setMobileTab(journey === 'exploring' ? 'explore' : '');
+  }
+
+  if (options.sectionId) {
+    requestAnimationFrame(() => revealSection(options.sectionId, options.scroll !== false));
+  } else if (options.scrollTop) {
+    requestAnimationFrame(() => $('#guide-workspace').scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  }
 }
 
-// ── Render quick links ────────────────────────────────
-function renderQuickLinks(sections) {
-  const grid = $('#gb-quick');
-  if (!grid) return;
-  grid.innerHTML = '';
-  sections.slice(0, 6).forEach(section => {
-    const btn = document.createElement('button');
-    btn.className = 'gb-quick__item';
-    btn.innerHTML = `<div class="gb-quick__icon">${section.icon || '📄'}</div><div class="gb-quick__label">${section.title}</div>`;
-    btn.addEventListener('click', () => scrollToSection(section.sectionId));
-    grid.appendChild(btn);
-  });
+function renderSection(section, index, requestedSectionId) {
+  const article = document.createElement('article');
+  article.className = 'guide-topic';
+  article.id = `section-${section.sectionId}`;
+  article.dataset.sectionId = section.sectionId;
+  const expanded = section.sectionId === requestedSectionId
+    || (!window.matchMedia('(max-width: 760px)').matches && index === 0);
+  const panelId = `topic-panel-${section.sectionId}`;
+  article.innerHTML = `
+    <button type="button" class="topic-toggle" aria-expanded="${expanded}" aria-controls="${escapeHtml(panelId)}">
+      <span class="topic-icon">${escapeHtml(section.icon || '⌂')}</span>
+      <span><strong>${escapeHtml(section.title)}</strong><small>${escapeHtml(sectionSummary(section))}</small></span>
+      ${icon('down', 'topic-chevron')}
+    </button>
+    <div class="topic-body" id="${escapeHtml(panelId)}"${expanded ? '' : ' hidden'}>
+      <div class="topic-items"></div>
+    </div>`;
+
+  const itemsContainer = $('.topic-items', article);
+  const normalItems = (section.items || []).filter(item => item.type !== 'place');
+  normalItems.forEach(item => itemsContainer.appendChild(renderItem(item)));
+  renderPlaces((section.items || []).filter(item => item.type === 'place'), itemsContainer);
+
+  if (!section.items?.length) {
+    itemsContainer.innerHTML = '<div class="guide-item__placeholder">Details will appear here when they are ready.</div>';
+  }
+
+  $('.topic-toggle', article).addEventListener('click', () => toggleTopic(article));
+  return article;
 }
 
-// ── Render sections ───────────────────────────────────
-function renderSections(sections) {
-  const container = $('#gb-sections');
-  if (!container) return;
-  container.innerHTML = '';
-
-  sections.forEach(section => {
-    const el = document.createElement('section');
-    el.className = 'gb-section';
-    el.id = `section-${section.sectionId}`;
-
-    el.innerHTML = `
-      <div class="gb-section__header">
-        <div class="gb-section__icon">${section.icon || '📄'}</div>
-        <h2 class="gb-section__title">${section.title}</h2>
-      </div>
-      <div class="gb-section__items"></div>
-    `;
-
-    const itemsEl = el.querySelector('.gb-section__items');
-    const isRecs  = section.sectionType === 'recommendations'
-      || (section.items || []).some(i => i.type === 'place');
-
-    if (isRecs) {
-      // Non-place items render normally
-      (section.items || []).filter(i => i.type !== 'place').forEach(item => {
-        itemsEl.appendChild(renderItem(item));
-      });
-
-      // Group place items by category
-      const placeItems = (section.items || []).filter(i => i.type === 'place');
-      const CAT_ORDER  = ['restaurant', 'attraction', 'activity', 'shop', 'services'];
-      const CAT_LABELS = {
-        restaurant: '🍽️ Restaurants',
-        attraction: '🏞️ Attractions',
-        activity:   '🧗 Activities',
-        shop:       '🛒 Shopping',
-        services:   '⛽ Services',
-      };
-
-      const byCategory = {};
-      placeItems.forEach(item => {
-        const cat = item.place?.category || 'activity';
-        if (!byCategory[cat]) byCategory[cat] = [];
-        byCategory[cat].push(item);
-      });
-
-      CAT_ORDER.forEach(cat => {
-        if (!byCategory[cat]) return;
-        const header = document.createElement('h3');
-        header.className = 'gb-place-cat-header';
-        header.textContent = CAT_LABELS[cat];
-        itemsEl.appendChild(header);
-
-        const grid = document.createElement('div');
-        grid.className = 'gb-place-grid';
-        byCategory[cat].forEach(item => grid.appendChild(renderPlaceCard(item)));
-        itemsEl.appendChild(grid);
-      });
-    } else {
-      (section.items || []).forEach(item => {
-        itemsEl.appendChild(renderItem(item));
-      });
-    }
-
-    container.appendChild(el);
-  });
+function toggleTopic(article, forceOpen) {
+  const button = $('.topic-toggle', article);
+  const body = $('.topic-body', article);
+  const next = forceOpen ?? button.getAttribute('aria-expanded') !== 'true';
+  button.setAttribute('aria-expanded', String(next));
+  body.hidden = !next;
 }
 
 function renderItem(item) {
-  const el = document.createElement('div');
-  el.className = `gb-item gb-item--${item.type || 'text'}`;
-
-  const label = item.label
-    ? `<div class="gb-item__label">${item.label}</div>`
-    : '';
-
+  const element = document.createElement('div');
+  element.className = `guide-item guide-item--${escapeHtml(item.type || 'text')}`;
+  const label = item.label ? `<div class="guide-item__label">${escapeHtml(item.label)}</div>` : '';
   let body = '';
-  switch (item.type) {
-    case 'text':
-      // Check if it looks like a short code/password → make it copyable
-      const isCode = item.content && item.content.length < 40 && !item.content.includes('\n')
-        && (item.label?.toLowerCase().includes('code') || item.label?.toLowerCase().includes('password')
-            || item.label?.toLowerCase().includes('wifi') || item.label?.toLowerCase().includes('network'));
-      if (isCode) {
-        body = `<div class="gb-item__body">
-          <button class="gb-copy" data-value="${item.content}" onclick="copyText(this)">
-            <span class="gb-copy__icon">📋</span>${item.content}
-          </button>
-        </div>`;
-      } else {
-        body = `<div class="gb-item__body">${escapeHtml(item.content || '')}</div>`;
-      }
-      break;
 
-    case 'image':
-      body = `<div class="gb-item__body">
-        <img src="${item.s3Key ? `https://media.altusretreats.net/${item.s3Key}` : item.content}"
-             alt="${item.label || ''}" loading="lazy">
-      </div>`;
-      break;
-
-    case 'video':
-      if (item.s3Key) {
-        body = `<div class="gb-item__body">
-          <video controls preload="metadata">
-            <source src="https://media.altusretreats.net/${item.s3Key}" type="video/mp4">
-          </video>
-        </div>`;
-      } else if (item.content) {
-        // YouTube/Vimeo embed
-        const embedUrl = getEmbedUrl(item.content);
-        body = embedUrl
-          ? `<div class="gb-item__body"><iframe src="${embedUrl}" allowfullscreen></iframe></div>`
-          : `<div class="gb-item__body"><div class="gb-item__body-placeholder">🎥 Video: <a href="${item.content}" target="_blank">${item.content}</a></div></div>`;
-      } else {
-        body = `<div class="gb-item__body"><div class="gb-item__body-placeholder">🎥 Video coming soon</div></div>`;
-      }
-      break;
-
-    case 'map':
-      const mapUrl = item.content || '';
-      const isGoogleMaps = mapUrl.includes('google.com/maps') || mapUrl.includes('maps.app.goo.gl');
-      body = `<div class="gb-item__body">
-        <a href="${mapUrl}" target="_blank" rel="noopener">
-          🗺️ ${isGoogleMaps ? 'Open in Google Maps' : 'View on map'}
-        </a>
-      </div>`;
-      break;
-
-    case 'link':
-      body = `<div class="gb-item__body">
-        <a href="${item.content}" target="_blank" rel="noopener">
-          🔗 ${item.label || item.content}
-        </a>
-      </div>`;
-      break;
-
-    default:
-      body = `<div class="gb-item__body">${escapeHtml(item.content || '')}</div>`;
+  if (item.type === 'text' || item.type === 'highlight' || !item.type) {
+    if (isPlaceholder(item.content)) {
+      body = `<div class="guide-item__placeholder">${icon('lock')}<span>This detail will appear when it is ready for your stay.</span></div>`;
+    } else {
+      const looksCopyable = item.content.length < 80
+        && /code|password|wifi|wi-fi|network/i.test(item.label || '');
+      body = looksCopyable
+        ? `<button type="button" class="copy-value" data-copy-value="${escapeHtml(item.content)}"><span>${escapeHtml(item.content)}</span><em>${icon('copy')}Copy</em></button>`
+        : `<div class="guide-item__text">${escapeHtml(item.content)}</div>`;
+    }
+  } else if (item.type === 'image') {
+    const url = mediaUrl(item);
+    body = url
+      ? `<img src="${escapeHtml(url)}" alt="${escapeHtml(item.label || '')}" loading="lazy">`
+      : '<div class="guide-item__placeholder">Image coming soon.</div>';
+  } else if (item.type === 'video') {
+    const url = mediaUrl(item);
+    const embed = getEmbedUrl(url);
+    if (item.s3Key && url) body = `<video controls preload="metadata"><source src="${escapeHtml(url)}" type="video/mp4"></video>`;
+    else if (embed) body = `<iframe src="${escapeHtml(embed)}" title="${escapeHtml(item.label || 'Guide video')}" allowfullscreen loading="lazy"></iframe>`;
+    else if (url) body = `<a class="guide-item__link" href="${escapeHtml(url)}" target="_blank" rel="noopener">${icon('play')}Watch video</a>`;
+    else body = '<div class="guide-item__placeholder">Video coming soon.</div>';
+  } else if (item.type === 'map') {
+    const url = safeUrl(item.content);
+    body = url
+      ? `<a class="guide-item__link" href="${escapeHtml(url)}" target="_blank" rel="noopener">${icon('navigation')}Open in Maps</a>`
+      : '<div class="guide-item__placeholder">Map details coming soon.</div>';
+  } else if (item.type === 'link') {
+    const url = safeUrl(item.content);
+    body = url
+      ? `<a class="guide-item__link guide-item__link--solid" href="${escapeHtml(url)}" target="_blank" rel="noopener">${icon('external')}${escapeHtml(item.label || 'Open link')}</a>`
+      : '<div class="guide-item__placeholder">Link coming soon.</div>';
+  } else {
+    body = isPlaceholder(item.content)
+      ? '<div class="guide-item__placeholder">Details coming soon.</div>'
+      : `<div class="guide-item__text">${escapeHtml(item.content)}</div>`;
   }
 
-  el.innerHTML = label + body;
-  return el;
+  element.innerHTML = label + body;
+  return element;
 }
 
+function renderPlaces(items, container) {
+  if (!items.length) return;
+  const grouped = {};
+  items.forEach(item => {
+    const category = item.place?.category || 'activity';
+    (grouped[category] ||= []).push(item);
+    state.places.set(item.itemId, item);
+  });
 
-// ── Render place card ─────────────────────────────────
+  const categories = [...CATEGORY_ORDER, ...Object.keys(grouped).filter(category => !CATEGORY_ORDER.includes(category))];
+  categories.forEach(category => {
+    if (!grouped[category]) return;
+    const section = document.createElement('section');
+    section.className = 'place-category';
+    section.innerHTML = `<h3>${escapeHtml(CATEGORY_LABELS[category] || 'Places')}</h3><div class="place-grid"></div>`;
+    const grid = $('.place-grid', section);
+    grouped[category].forEach(item => grid.appendChild(renderPlaceCard(item)));
+    container.appendChild(section);
+  });
+}
+
 function renderPlaceCard(item) {
-  const p   = item.place || {};
-  const cat = p.category || 'place';
-  const catIcon = { restaurant: '🍽️', attraction: '🏞️', activity: '🧗', shop: '🛒', services: '⛽' }[cat] || '📍';
-
-  const card = document.createElement('div');
-  card.className = 'gb-place-card';
-  card.setAttribute('role', 'button');
-  card.setAttribute('tabindex', '0');
-
-  card.innerHTML = `
-    <div class="gb-place-card__photo">
-      ${p.photoUrl
-        ? `<img src="${p.photoUrl}" alt="${escapeHtml(p.name || '')}" loading="lazy">`
-        : `<div class="gb-place-card__photo-placeholder">${catIcon}</div>`}
-    </div>
-    <div class="gb-place-card__body">
-      <div class="gb-place-card__cat">${catIcon} ${cat.charAt(0).toUpperCase() + cat.slice(1)}</div>
-      <div class="gb-place-card__name">${escapeHtml(p.name || item.label || 'Place')}</div>
-      ${item.description ? `<div class="gb-place-card__desc">${escapeHtml(item.description)}</div>` : ''}
-      <div class="gb-place-card__meta">
-        ${p.rating ? `<span>⭐ ${p.rating}</span>` : ''}
-        ${p.distanceMiles != null ? `<span>🚗 ${p.distanceMiles} mi</span>` : ''}
-        ${p.travelMinutes  != null ? `<span>~${p.travelMinutes} min</span>` : ''}
-        ${p.priceLabelString ? `<span>${p.priceLabelString}</span>` : ''}
+  const place = item.place || {};
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'place-card';
+  button.dataset.placeId = item.itemId;
+  const photo = safeUrl(place.photoUrl);
+  button.innerHTML = `
+    <div class="place-card__photo">${photo
+      ? `<img src="${escapeHtml(photo)}" alt="${escapeHtml(place.name || item.label || '')}" loading="lazy">`
+      : `<div class="place-card__placeholder">${CATEGORY_ICONS[place.category] || '📍'}</div>`}</div>
+    <div class="place-card__body">
+      <small>${escapeHtml(CATEGORY_LABELS[place.category] || 'Local favorite')}</small>
+      <strong>${escapeHtml(place.name || item.label || 'Local place')}</strong>
+      ${item.description ? `<p>${escapeHtml(item.description)}</p>` : ''}
+      <div class="place-card__meta">
+        ${place.rating ? `<span>${escapeHtml(place.rating)} ★</span>` : ''}
+        ${place.distanceMiles != null ? `<span>${escapeHtml(place.distanceMiles)} mi</span>` : ''}
+        ${place.travelMinutes != null ? `<span>About ${escapeHtml(place.travelMinutes)} min</span>` : ''}
+        ${place.priceLabelString ? `<span>${escapeHtml(place.priceLabelString)}</span>` : ''}
       </div>
-    </div>
-  `;
-
-  function openModal() { showPlaceModal(item); }
-  card.addEventListener('click', openModal);
-  card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') openModal(); });
-
-  return card;
+    </div>`;
+  button.addEventListener('click', () => openPlaceDialog(item));
+  return button;
 }
 
-// ── Place detail modal ────────────────────────────────
-function showPlaceModal(item) {
-  const p = item.place || {};
-
-  // Remove existing
-  document.querySelector('.gb-place-modal')?.remove();
-
-  const overlay = document.createElement('div');
-  overlay.className = 'gb-place-modal';
-
-  const catIcon = { restaurant: '🍽️', attraction: '🏞️', activity: '🧗', shop: '🛒', services: '⛽' }[p.category] || '📍';
-
-  overlay.innerHTML = `
-    <div class="gb-place-modal__inner">
-      <button class="gb-place-modal__close" aria-label="Close">✕</button>
-      ${p.photoUrl ? `<img class="gb-place-modal__photo" src="${p.photoUrl}" alt="${escapeHtml(p.name || '')}">` : ''}
-      <div class="gb-place-modal__body">
-        <div class="gb-place-modal__cat">${catIcon} ${(p.category || 'place').charAt(0).toUpperCase() + (p.category || 'place').slice(1)}</div>
-        <h2 class="gb-place-modal__name">${escapeHtml(p.name || item.label || 'Place')}</h2>
-        ${item.description ? `<p class="gb-place-modal__desc">${escapeHtml(item.description)}</p>` : ''}
-        <div class="gb-place-modal__chips">
-          ${p.rating        ? `<span class="gb-chip">⭐ ${p.rating}${p.totalRatings ? ` (${p.totalRatings.toLocaleString()})` : ''}</span>` : ''}
-          ${p.priceLabelString ? `<span class="gb-chip">${p.priceLabelString}</span>` : ''}
-          ${p.distanceMiles != null ? `<span class="gb-chip">🚗 ${p.distanceMiles} miles away</span>` : ''}
-          ${p.travelMinutes  != null ? `<span class="gb-chip">~${p.travelMinutes} min drive</span>` : ''}
+function openPlaceDialog(item) {
+  const place = item.place || {};
+  const root = $('#place-dialog-root');
+  const photo = safeUrl(place.photoUrl);
+  const website = safeUrl(place.website);
+  const directions = safeUrl(place.directionsUrl || place.mapsUrl);
+  const phoneHref = place.phone ? `tel:${String(place.phone).replace(/[^+\d]/g, '')}` : '';
+  root.innerHTML = `
+    <div class="place-dialog" role="dialog" aria-modal="true" aria-labelledby="place-dialog-title">
+      <div class="place-dialog__panel">
+        <div class="place-dialog__photo">
+          ${photo ? `<img src="${escapeHtml(photo)}" alt="${escapeHtml(place.name || item.label || '')}">` : ''}
+          <button type="button" class="dialog-close" data-close-place aria-label="Close place details">${icon('close')}</button>
         </div>
-        ${p.address ? `<div class="gb-place-modal__info"><span>📍</span>${escapeHtml(p.address)}</div>` : ''}
-        ${p.phone   ? `<div class="gb-place-modal__info"><span>📞</span><a href="tel:${p.phone}">${escapeHtml(p.phone)}</a></div>` : ''}
-        ${p.website ? `<div class="gb-place-modal__info"><span>🌐</span><a href="${p.website}" target="_blank" rel="noopener">${escapeHtml(p.website.replace(/^https?:\/\/(www\.)?/, ''))}</a></div>` : ''}
-        ${p.directionsUrl ? `
-          <a class="gb-place-modal__directions" href="${p.directionsUrl}" target="_blank" rel="noopener">
-            Get Directions
-          </a>` : ''}
+        <div class="place-dialog__body">
+          <small>${escapeHtml(CATEGORY_LABELS[place.category] || 'Local favorite')}</small>
+          <h2 id="place-dialog-title">${escapeHtml(place.name || item.label || 'Local place')}</h2>
+          ${item.description ? `<p>${escapeHtml(item.description)}</p>` : ''}
+          <div class="place-chips">
+            ${place.rating ? `<span>${escapeHtml(place.rating)} ★${place.totalRatings ? ` · ${Number(place.totalRatings).toLocaleString()} reviews` : ''}</span>` : ''}
+            ${place.distanceMiles != null ? `<span>${escapeHtml(place.distanceMiles)} miles away</span>` : ''}
+            ${place.travelMinutes != null ? `<span>About ${escapeHtml(place.travelMinutes)} min</span>` : ''}
+            ${place.priceLabelString ? `<span>${escapeHtml(place.priceLabelString)}</span>` : ''}
+          </div>
+          ${place.address ? `<div class="place-info">${icon('map')}<span>${escapeHtml(place.address)}</span></div>` : ''}
+          ${place.phone ? `<div class="place-info">${icon('phone')}<a href="${escapeHtml(phoneHref)}">${escapeHtml(place.phone)}</a></div>` : ''}
+          ${website ? `<div class="place-info">${icon('external')}<a href="${escapeHtml(website)}" target="_blank" rel="noopener">Visit website</a></div>` : ''}
+          ${directions ? `<a class="place-directions" href="${escapeHtml(directions)}" target="_blank" rel="noopener">${icon('navigation')}Get directions</a>` : ''}
+        </div>
       </div>
-    </div>
-  `;
+    </div>`;
+  document.body.classList.add('dialog-open');
+  const dialog = $('.place-dialog', root);
+  $('[data-close-place]', root).addEventListener('click', closePlaceDialog);
+  dialog.addEventListener('click', event => { if (event.target === dialog) closePlaceDialog(); });
+  $('[data-close-place]', root).focus();
+}
 
-  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
-  overlay.querySelector('.gb-place-modal__close').addEventListener('click', () => overlay.remove());
-  document.addEventListener('keydown', function esc(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', esc); } });
-
-  document.body.appendChild(overlay);
-  requestAnimationFrame(() => overlay.classList.add('open'));
+function closePlaceDialog() {
+  $('#place-dialog-root').innerHTML = '';
+  document.body.classList.remove('dialog-open');
 }
 
 function getEmbedUrl(url) {
-  const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
-  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
-  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
-  if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
-  return null;
+  if (!url) return '';
+  const youtube = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
+  if (youtube) return `https://www.youtube.com/embed/${youtube[1]}`;
+  const vimeo = url.match(/vimeo\.com\/(\d+)/);
+  if (vimeo) return `https://player.vimeo.com/video/${vimeo[1]}`;
+  return '';
 }
 
-function escapeHtml(str) {
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-            .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+function findSection(pattern) {
+  return state.sections.find(section => pattern.test(normalize(`${section.sectionId} ${section.title}`)));
 }
 
-// ── Copy to clipboard ─────────────────────────────────
-window.copyText = function(btn) {
-  const value = btn.dataset.value;
-  navigator.clipboard.writeText(value).then(() => {
-    btn.classList.add('copied');
-    const icon = btn.querySelector('.gb-copy__icon');
-    const originalHtml = btn.innerHTML;
-    btn.innerHTML = '<span class="gb-copy__icon">✓</span>Copied!';
-    setTimeout(() => { btn.innerHTML = originalHtml; btn.classList.remove('copied'); }, 2000);
+function renderEssentials() {
+  const preferred = [
+    { pattern: /wifi|wi fi|tech|internet/, icon: 'wifi', note: 'Network and devices' },
+    { pattern: /hot tub|sauna|pool/, icon: 'waves', note: 'Controls and care' },
+    { pattern: /checkin|check in|entry|access/, icon: 'key', note: 'Arrival and access' },
+    { pattern: /emergency|safety|contact/, icon: 'shield', note: 'Help when it matters' },
+  ];
+  const used = new Set();
+  const links = [];
+  preferred.forEach(preference => {
+    const section = state.sections.find(candidate => !used.has(candidate.sectionId)
+      && preference.pattern.test(normalize(`${candidate.sectionId} ${candidate.title}`)));
+    if (section) {
+      used.add(section.sectionId);
+      links.push({ section, icon: preference.icon, note: preference.note });
+    }
   });
-};
+  state.sections.forEach(section => {
+    if (links.length >= 4 || used.has(section.sectionId)) return;
+    used.add(section.sectionId);
+    links.push({ section, icon: sectionIconName(section), note: sectionSummary(section) });
+  });
 
-// ── Scroll + active nav ───────────────────────────────
-function scrollToSection(sectionId) {
-  const el = $(`#section-${sectionId}`);
-  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  $('#essential-links').innerHTML = links.map(({ section, icon: iconName, note }) => `
+    <button type="button" class="essential-link" data-section-link="${escapeHtml(section.sectionId)}">
+      <span class="essential-link__icon">${icon(iconName)}</span>
+      <span><strong>${escapeHtml(section.title)}</strong><small>${escapeHtml(note)}</small></span>
+      ${icon('chevron')}
+    </button>`).join('');
 }
 
-function updateActiveNav() {
-  const sections = $$('.gb-section');
-  let current = null;
-  sections.forEach(section => {
-    const rect = section.getBoundingClientRect();
-    if (rect.top <= 100) current = section.id.replace('section-', '');
-  });
-  $$('.gb-nav__item').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.sectionId === current);
-  });
-}
-
-// ── Search ────────────────────────────────────────────
-function initSearch(sections) {
-  const searchBtn = $('#gb-search-btn');
-  const overlay   = $('#gb-search');
-  const input     = $('#gb-search-input');
-  const results   = $('#gb-search-results');
-  const clearBtn  = $('#gb-search-clear');
-
-  // Build search index
-  const index = [];
-  sections.forEach(section => {
-    index.push({ type: 'section', icon: section.icon, title: section.title, sectionId: section.sectionId, sub: `${section.items?.length || 0} items` });
+function buildSearchIndex() {
+  state.searchIndex = [];
+  state.sections.forEach(section => {
+    const journey = sectionJourney(section);
+    state.searchIndex.push({
+      sectionId: section.sectionId,
+      journey,
+      icon: section.icon || '⌂',
+      title: section.title,
+      subtitle: sectionSummary(section),
+      haystack: normalize(`${section.title} ${section.sectionId}`),
+    });
     (section.items || []).forEach(item => {
-      index.push({ type: 'item', icon: section.icon, title: item.label || item.type, sectionId: section.sectionId, sub: section.title, content: item.content });
-    });
-  });
-
-  function openSearch() { overlay.classList.add('open'); setTimeout(() => input?.focus(), 50); }
-  function closeSearch() { overlay.classList.remove('open'); if(input) input.value = ''; renderSearchResults(''); }
-
-  searchBtn?.addEventListener('click', openSearch);
-  clearBtn?.addEventListener('click', closeSearch);
-  overlay?.addEventListener('click', e => { if (e.target === overlay) closeSearch(); });
-  document.addEventListener('keydown', e => {
-    if (e.key === 'k' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); openSearch(); }
-    if (e.key === 'Escape') closeSearch();
-  });
-
-  input?.addEventListener('input', () => renderSearchResults(input.value));
-
-  function renderSearchResults(query) {
-    if (!results) return;
-    const q = query.toLowerCase().trim();
-    if (!q) { results.innerHTML = `<div class="gb-search__empty">Type to search the guidebook…</div>`; return; }
-
-    const matches = index.filter(item =>
-      item.title.toLowerCase().includes(q) ||
-      item.sub?.toLowerCase().includes(q) ||
-      item.content?.toLowerCase().includes(q)
-    ).slice(0, 8);
-
-    if (!matches.length) { results.innerHTML = `<div class="gb-search__empty">No results for "${query}"</div>`; return; }
-
-    results.innerHTML = '';
-    matches.forEach(match => {
-      const btn = document.createElement('button');
-      btn.className = 'gb-search__result';
-      btn.innerHTML = `
-        <span class="gb-search__result-icon">${match.icon || '📄'}</span>
-        <div>
-          <div class="gb-search__result-title">${match.title}</div>
-          <div class="gb-search__result-sub">${match.sub}</div>
-        </div>`;
-      btn.addEventListener('click', () => {
-        closeSearch();
-        scrollToSection(match.sectionId);
+      const place = item.place || {};
+      const title = place.name || item.label || section.title;
+      const searchable = [title, item.content, item.description, place.category, place.address, section.title]
+        .filter(Boolean).join(' ');
+      state.searchIndex.push({
+        sectionId: section.sectionId,
+        journey,
+        icon: section.icon || CATEGORY_ICONS[place.category] || '⌂',
+        title,
+        subtitle: section.title,
+        haystack: normalize(searchable),
       });
-      results.appendChild(btn);
     });
+  });
+}
+
+function openSearch(initialQuery = '') {
+  const dialog = $('#search-dialog');
+  const input = $('#guide-search-input');
+  dialog.hidden = false;
+  document.body.classList.add('dialog-open');
+  input.value = initialQuery;
+  renderSearchResults(initialQuery);
+  requestAnimationFrame(() => input.focus());
+}
+
+function closeSearch() {
+  $('#search-dialog').hidden = true;
+  document.body.classList.remove('dialog-open');
+}
+
+function renderSearchResults(query) {
+  const results = $('#guide-search-results');
+  const normalizedQuery = normalize(query);
+  if (!normalizedQuery) {
+    results.innerHTML = '<p>Search check-in details, property instructions and local recommendations.</p>';
+    return;
   }
-
-  renderSearchResults('');
+  const terms = normalizedQuery.split(' ');
+  const matches = state.searchIndex
+    .filter(entry => terms.every(term => entry.haystack.includes(term)))
+    .slice(0, 10);
+  if (!matches.length) {
+    results.innerHTML = `<p>No guidebook answers found for “${escapeHtml(query)}”. Try a shorter phrase or contact your host.</p>`;
+    return;
+  }
+  results.innerHTML = matches.map(match => `
+    <button type="button" class="search-result" data-search-section="${escapeHtml(match.sectionId)}">
+      <span class="search-result__icon">${escapeHtml(match.icon)}</span>
+      <span><strong>${escapeHtml(match.title)}</strong><small>${escapeHtml(match.subtitle)}</small></span>
+      ${icon('chevron')}
+    </button>`).join('');
 }
 
-// ── Mobile nav toggle ─────────────────────────────────
-function initMobileNav() {
-  const menuBtn = $('#gb-menu-btn');
-  const nav     = $('#gb-nav');
-  const overlay = $('#gb-nav-overlay');
-
-  menuBtn?.addEventListener('click', () => { nav?.classList.toggle('open'); overlay?.classList.toggle('open'); });
-  overlay?.addEventListener('click', closeNav);
+function revealSection(sectionId, shouldScroll = true) {
+  const article = $(`#section-${CSS.escape(sectionId)}`);
+  if (!article) return;
+  toggleTopic(article, true);
+  if (shouldScroll) article.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  history.replaceState(null, '', `#${encodeURIComponent(sectionId)}`);
 }
 
-function closeNav() {
-  $('#gb-nav')?.classList.remove('open');
-  $('#gb-nav-overlay')?.classList.remove('open');
+function navigateToSection(sectionId, options = {}) {
+  const section = state.sections.find(candidate => candidate.sectionId === sectionId);
+  if (!section) return;
+  renderJourney(sectionJourney(section), {
+    mobile: window.matchMedia('(max-width: 760px)').matches,
+    sectionId,
+    scroll: options.scroll !== false,
+  });
 }
 
-// ── Boot ──────────────────────────────────────────────
-async function boot() {
+function openHelp() {
+  const helpSection = findSection(/emergency|contact|safety|help/);
+  if (helpSection) navigateToSection(helpSection.sectionId);
+  else renderJourney('staying', { mobile: window.matchMedia('(max-width: 760px)').matches, scrollTop: true });
+}
+
+function showMobileHome() {
+  document.body.classList.remove('mobile-content-open');
+  setMobileTab('home');
+  history.replaceState(null, '', window.location.pathname + window.location.search);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function setMobileTab(name) {
+  $$('.mobile-tabs button').forEach(button => button.removeAttribute('aria-current'));
+  const selector = name === 'home' ? '[data-mobile-home]' : name === 'explore' ? '[data-mobile-journey="exploring"]' : null;
+  if (selector) $(selector, $('.mobile-tabs'))?.setAttribute('aria-current', 'page');
+}
+
+function installEvents() {
+  $$('.journey-card').forEach(button => button.addEventListener('click', () => {
+    renderJourney(button.dataset.journey, { scrollTop: true });
+  }));
+  $$('[data-mobile-journey]').forEach(button => button.addEventListener('click', () => {
+    renderJourney(button.dataset.mobileJourney, { mobile: true });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }));
+  $$('[data-open-search]').forEach(button => button.addEventListener('click', () => openSearch()));
+  $$('[data-open-help]').forEach(button => button.addEventListener('click', openHelp));
+  $('[data-close-search]').addEventListener('click', closeSearch);
+  $('#search-dialog').addEventListener('click', event => { if (event.target.id === 'search-dialog') closeSearch(); });
+  $('#guide-search-input').addEventListener('input', event => renderSearchResults(event.target.value));
+  $('#guide-search-results').addEventListener('click', event => {
+    const button = event.target.closest('[data-search-section]');
+    if (!button) return;
+    closeSearch();
+    navigateToSection(button.dataset.searchSection);
+  });
+  $('#essential-links').addEventListener('click', event => {
+    const button = event.target.closest('[data-section-link]');
+    if (button) navigateToSection(button.dataset.sectionLink);
+  });
+  $('#guide-sections').addEventListener('click', event => {
+    const copyButton = event.target.closest('[data-copy-value]');
+    if (copyButton) copyValue(copyButton);
+  });
+  $('#mobile-back').addEventListener('click', showMobileHome);
+  $('[data-mobile-home]').addEventListener('click', showMobileHome);
+  document.addEventListener('keydown', event => {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); openSearch(); }
+    if (event.key === 'Escape') {
+      if (!$('#search-dialog').hidden) closeSearch();
+      if ($('.place-dialog')) closePlaceDialog();
+    }
+  });
+}
+
+async function copyValue(button) {
+  const value = button.dataset.copyValue;
   try {
-    const data = await fetchGuidebook();
-    state.sections = data.sections || [];
-    state.property = { name: data.propertyName, branding: data.branding };
+    if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(value);
+    else {
+      const textarea = document.createElement('textarea');
+      textarea.value = value;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      textarea.remove();
+    }
+    button.classList.add('is-copied');
+    const action = $('em', button);
+    const original = action.innerHTML;
+    action.innerHTML = `${icon('shield')}Copied`;
+    setTimeout(() => { action.innerHTML = original; button.classList.remove('is-copied'); }, 1800);
+  } catch {
+    button.classList.remove('is-copied');
+  }
+}
 
-    applyBranding(data.branding);
+function renderError() {
+  document.body.classList.remove('loading');
+  $('#guide-sections').innerHTML = `
+    <div class="guide-error"><h2>We couldn’t load the stay guide.</h2><p>Please check your connection and try again.</p><button type="button" onclick="window.location.reload()">Try again</button></div>`;
+  $('#essential-links').innerHTML = '';
+}
 
-    // Update page title + welcome
-    document.title = `${data.propertyName} — Guest Guidebook`;
-    const nameEls = document.querySelectorAll('.property-name');
-    nameEls.forEach(el => el.textContent = data.propertyName);
+async function boot() {
+  installEvents();
+  try {
+    const [guideData, propertyData] = await Promise.all([
+      fetchJson(`/properties/${encodeURIComponent(GUIDE_CONFIG.propertyId)}/guidebook`),
+      fetchJson(`/properties/${encodeURIComponent(GUIDE_CONFIG.propertyId)}`).catch(() => null),
+    ]);
 
-    renderNav(state.sections);
-    renderQuickLinks(state.sections);
-    renderSections(state.sections);
-    initSearch(state.sections);
-    initMobileNav();
+    state.sections = guideData.sections || [];
+    groupSections();
+    applyPropertyPresentation(guideData, propertyData);
+    renderEssentials();
+    buildSearchIndex();
 
-    // Remove loading state
+    const requestedSection = decodeURIComponent(window.location.hash.slice(1));
+    if (requestedSection && state.sections.some(section => section.sectionId === requestedSection)) {
+      const section = state.sections.find(candidate => candidate.sectionId === requestedSection);
+      renderJourney(sectionJourney(section), { sectionId: requestedSection, scroll: false });
+    } else {
+      const initialJourney = state.groups.arriving.length
+        ? 'arriving'
+        : Object.keys(state.groups).find(key => state.groups[key].length) || 'staying';
+      renderJourney(initialJourney);
+    }
+
     document.body.classList.remove('loading');
-    $('#gb-loading')?.remove();
-
-    // Scroll spy
-    window.addEventListener('scroll', updateActiveNav, { passive: true });
-    updateActiveNav();
-
-    // Deep link to section
-    const hash = window.location.hash.slice(1);
-    if (hash) setTimeout(() => scrollToSection(hash), 100);
-
-  } catch (err) {
-    console.error('Guidebook load failed:', err);
-    const main = $('#gb-main');
-    if (main) main.innerHTML = `<div style="text-align:center;padding:80px 24px;color:#6B7280;">
-      <div style="font-size:3rem;margin-bottom:16px">😕</div>
-      <h2>Couldn't load the guidebook</h2>
-      <p style="margin-top:8px">Please try refreshing the page.</p>
-    </div>`;
+  } catch (error) {
+    console.error('Guidebook load failed:', error);
+    renderError();
   }
 }
 

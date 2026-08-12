@@ -134,6 +134,13 @@ aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/*" 
 ## Guidebook — place items
 Place items in a recommendations section (`sectionType: 'recommendations'`) render as a card grid grouped by category (Restaurants / Attractions / Activities / Shopping). Clicking a card opens a detail modal with Directions button (uses lat/lng coordinates for reliable Google Maps routing).
 
+## Guidebook — guest UI and AI context boundary
+- The guest guide at `frontend/property-site/guidebook/` is one responsive application with two information hierarchies: a rich journey overview on desktop/tablet and a calm intent-first home on mobile. Both use the same published section data.
+- Sections are grouped client-side into Arriving / At the house / Explore / Checking out, so adding a property remains a data operation. Existing text, image, video, map, link, copyable code, search, and Google Place item types remain supported.
+- `GET /properties/{id}/guidebook` is guest-facing and must never return `aiContext`, `hostNotes`, DynamoDB keys, or other internal fields. It returns a sanitized guest projection of published sections only.
+- `aiContext` is intended for a separate future agent-readable context endpoint/page. `hostNotes` is private admin-only content and must never be returned to guests or AI agents.
+- Admin guidebook saves preserve section-level `sectionType` and `aiContext`, as well as item-level fields. "Visible to guests" (`published`) controls only the guest guide; a future AI feed should have its own explicit inclusion control rather than reuse guest visibility.
+
 ## Property site — page structure
 - **`index.html`** — The live property home page at `www.staytheoverhang.com/`. It currently retains `<meta name="robots" content="noindex,nofollow">` while the root deployment is being tested with the Hospitable widget.
 - **`frontend/overhang-coming-soon/index.html`** — Recoverable Coming Soon source only; it is no longer the bucket root. The exact pre-redesign root was also backed up in S3 at `backups/index-coming-soon-before-redesign-2026-08-11.html`.
@@ -169,6 +176,7 @@ Place items in a recommendations section (`sectionType: 'recommendations'`) rend
 - The Overhang logo is live at `frontend/property-site/img/logo-the-overhang.jpg`, wired into `index.html`'s nav (`.nav__logo-img`). `book.html` still uses the old text-based logo — not yet updated to match.
 - Bare-root `staytheoverhang.com` still on GoDaddy Website Builder — root DNS repoint to CloudFront is pending (see DNS / domain routing section).
 - Guidebook live and data-driven
+- Guidebook guest frontend redesigned as a responsive stay companion: desktop/tablet provides a rich journey overview and quick-essential rail, while mobile uses an intent-first home with focused drill-down screens. The public API strips AI/private fields, and admin saves now retain section-level AI context and section type.
 - The hub Coming Soon page remains live; The Overhang Coming Soon page is retained as a rollback source but is not currently the public root.
 - Hub site built as hub.html (ready to swap in when The Lazy Palm launches)
 - SES verified: support@altusretreats.net

@@ -2,118 +2,156 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="robots" content="noindex"> <!-- guidebook is private/guest-only -->
-  <title>Guest Guidebook — Altus Retreats</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#1D3557">
+  <title>Guest Guide — Altus Retreats</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/guidebook.css">
 </head>
 <body class="loading">
+  <svg class="icon-sprite" aria-hidden="true">
+    <symbol id="icon-mountain" viewBox="0 0 24 24"><path d="m3 20 6.4-11 3.1 5.2L15.8 9 22 20H3Z"/><path d="m7.6 12.2 1.8 1.3 1.5-1.2M14.2 11.5l1.7 1.2 1.5-1"/></symbol>
+    <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+    <symbol id="icon-message" viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v8Z"/></symbol>
+    <symbol id="icon-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m11 12 8-8 2 2-2 2 2 2-3 3-2-2-2 2"/></symbol>
+    <symbol id="icon-home" viewBox="0 0 24 24"><path d="m3 11 9-8 9 8v9H3v-9Z"/><path d="M9 20v-6h6v6"/></symbol>
+    <symbol id="icon-map" viewBox="0 0 24 24"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z"/><path d="M9 3v15M15 6v15"/></symbol>
+    <symbol id="icon-luggage" viewBox="0 0 24 24"><rect x="5" y="7" width="14" height="13" rx="2"/><path d="M9 7V4h6v3M9 11v5M15 11v5M8 22v-2M16 22v-2"/></symbol>
+    <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="icon-back" viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></symbol>
+    <symbol id="icon-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="icon-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="icon-wifi" viewBox="0 0 24 24"><path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M2 9a14 14 0 0 1 20 0"/><circle cx="12" cy="20" r="1"/></symbol>
+    <symbol id="icon-waves" viewBox="0 0 24 24"><path d="M3 7c3-2 5 2 8 0s5 2 8 0M3 12c3-2 5 2 8 0s5 2 8 0M3 17c3-2 5 2 8 0s5 2 8 0"/></symbol>
+    <symbol id="icon-flame" viewBox="0 0 24 24"><path d="M12 22c4 0 7-3 7-7 0-5-3-8-6-12 0 4-2 6-4 8-1-2-2-3-2-5-2 3-3 6-3 9 0 4 4 7 8 7Z"/></symbol>
+    <symbol id="icon-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="icon-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h4"/></symbol>
+    <symbol id="icon-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="icon-phone" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.5 2.1L8 10a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.9.6 2.9.7a2 2 0 0 1 1.7 2Z"/></symbol>
+    <symbol id="icon-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5 5-2Z"/></symbol>
+    <symbol id="icon-lock" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="icon-external" viewBox="0 0 24 24"><path d="M14 3h7v7M10 14 21 3M21 14v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h6"/></symbol>
+    <symbol id="icon-navigation" viewBox="0 0 24 24"><path d="m3 11 18-8-8 18-2-8-8-2Z"/></symbol>
+    <symbol id="icon-play" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m10 8 6 4-6 4V8Z"/></symbol>
+    <symbol id="icon-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 15-5-5L5 20"/></symbol>
+  </svg>
 
-<!-- ── Top header ──────────────────────────────────── -->
-<header class="gb-header">
-  <button class="gb-header__menu-btn" id="gb-menu-btn" aria-label="Open menu">☰</button>
-  <div class="gb-header__property">
-    <div class="gb-header__label">Guest Guidebook</div>
-    <div class="gb-header__name property-name">Altus Kentucky Retreat</div>
-  </div>
-  <button class="gb-header__search-btn" id="gb-search-btn" aria-label="Search guidebook" title="Search (⌘K)">🔍</button>
-  <a href="../index.html" class="gb-header__book-btn">Book Again</a>
-</header>
+  <header class="guide-header">
+    <a class="guide-brand" href="../index.html" aria-label="Return to property website">
+      <span class="guide-brand__mark"><svg><use href="#icon-mountain"></use></svg></span>
+      <span class="guide-brand__copy"><small>Altus Retreats · Stay guide</small><strong class="property-name">The Overhang</strong></span>
+    </a>
+    <div class="guide-header__actions">
+      <button type="button" class="header-action" data-open-search><svg><use href="#icon-search"></use></svg><span>Search</span></button>
+      <button type="button" class="header-action header-action--help" data-open-help><svg><use href="#icon-message"></use></svg><span>Need help?</span></button>
+      <a class="header-book" href="../index.html">Book again</a>
+    </div>
+  </header>
 
-<!-- ── Mobile nav overlay ──────────────────────────── -->
-<div class="gb-nav-overlay" id="gb-nav-overlay"></div>
-
-<!-- ── Layout ──────────────────────────────────────── -->
-<div class="gb-layout">
-
-  <!-- Sidebar nav -->
-  <nav class="gb-nav" id="gb-nav" aria-label="Guidebook sections">
-    <div class="gb-nav__inner">
-      <div class="gb-nav__label">Contents</div>
-      <div id="gb-nav-items">
-        <!-- Skeleton -->
-        <div class="skeleton" style="height:36px;margin-bottom:8px;"></div>
-        <div class="skeleton" style="height:36px;margin-bottom:8px;width:80%;"></div>
-        <div class="skeleton" style="height:36px;margin-bottom:8px;width:90%;"></div>
-        <div class="skeleton" style="height:36px;margin-bottom:8px;width:70%;"></div>
-        <div class="skeleton" style="height:36px;margin-bottom:8px;"></div>
-        <div class="skeleton" style="height:36px;margin-bottom:8px;width:85%;"></div>
+  <main>
+    <section class="guide-hero" id="guide-hero">
+      <div class="guide-hero__media" id="guide-hero-media"></div>
+      <div class="guide-hero__shade"></div>
+      <div class="guide-hero__content">
+        <div class="hero-eyebrow"><span></span>Your stay starts here</div>
+        <h1>Welcome to<br><span class="property-name">The Overhang</span>.</h1>
+        <p id="hero-message">Everything you need for an effortless stay—right when you need it.</p>
+        <button type="button" class="hero-search" data-open-search>
+          <svg><use href="#icon-search"></use></svg>
+          <span>What do you need?</span>
+          <kbd>Search</kbd>
+        </button>
       </div>
-    </div>
-    <div class="gb-nav__book-wrap">
-      <button class="gb-nav__book-btn" onclick="window.location='../index.html'">
-        Book Your Next Stay →
+    </section>
+
+    <section class="desktop-journeys" aria-label="Guide by stage of stay">
+      <button type="button" class="journey-card is-active" data-journey="arriving" aria-pressed="true">
+        <svg><use href="#icon-key"></use></svg><span><strong>I’m arriving</strong><small>Directions, parking and entry</small></span>
       </button>
-    </div>
+      <button type="button" class="journey-card" data-journey="staying" aria-pressed="false">
+        <svg><use href="#icon-home"></use></svg><span><strong>At the house</strong><small>Wi-Fi, amenities and how-tos</small></span>
+      </button>
+      <button type="button" class="journey-card" data-journey="exploring" aria-pressed="false">
+        <svg><use href="#icon-map"></use></svg><span><strong>Let’s explore</strong><small>Food, trails and local favorites</small></span>
+      </button>
+      <button type="button" class="journey-card" data-journey="leaving" aria-pressed="false">
+        <svg><use href="#icon-luggage"></use></svg><span><strong>Checking out</strong><small>Departure details in one place</small></span>
+      </button>
+    </section>
+
+    <section class="mobile-home" id="mobile-home">
+      <div class="mobile-home__intro"><small>Start here</small><h2>What are you doing?</h2></div>
+      <div class="mobile-journeys">
+        <button type="button" data-mobile-journey="arriving"><span class="mobile-journey__icon"><svg><use href="#icon-key"></use></svg></span><span><strong>I’m arriving</strong><small>Directions, parking and entry</small></span><svg class="chevron"><use href="#icon-chevron"></use></svg></button>
+        <button type="button" data-mobile-journey="staying"><span class="mobile-journey__icon"><svg><use href="#icon-home"></use></svg></span><span><strong>I’m at the house</strong><small>Wi-Fi, amenities and how-tos</small></span><svg class="chevron"><use href="#icon-chevron"></use></svg></button>
+        <button type="button" data-mobile-journey="exploring"><span class="mobile-journey__icon"><svg><use href="#icon-map"></use></svg></span><span><strong>I want to explore</strong><small>Food, trails and local favorites</small></span><svg class="chevron"><use href="#icon-chevron"></use></svg></button>
+        <button type="button" data-mobile-journey="leaving"><span class="mobile-journey__icon"><svg><use href="#icon-luggage"></use></svg></span><span><strong>I’m checking out</strong><small>Departure details in one place</small></span><svg class="chevron"><use href="#icon-chevron"></use></svg></button>
+      </div>
+      <button type="button" class="mobile-now" data-mobile-journey="arriving">
+        <span><small>Good to know</small><strong id="mobile-now-title">Check-in details, all in one place</strong><em id="mobile-now-copy">Directions, parking and access information are ready when you need them.</em></span>
+        <svg><use href="#icon-arrow"></use></svg>
+      </button>
+    </section>
+
+    <section class="guide-workspace" id="guide-workspace" aria-live="polite">
+      <div class="mobile-detail-heading">
+        <button type="button" id="mobile-back"><svg><use href="#icon-back"></use></svg>Back to guide</button>
+        <small id="mobile-detail-label">Arrival guide</small>
+        <h2 id="mobile-detail-title">Arriving at The Overhang</h2>
+      </div>
+
+      <div class="workspace-layout">
+        <div class="workspace-main">
+          <div class="journey-heading">
+            <div><small id="journey-label">Arrival guide</small><h2 id="journey-title">From the road to relaxed.</h2></div>
+            <span id="journey-context">Everything for a smooth arrival</span>
+          </div>
+          <div id="guide-sections" class="guide-sections">
+            <div class="loading-topic"><span></span><span></span><span></span></div>
+          </div>
+        </div>
+
+        <aside class="essential-rail">
+          <small>Always close by</small>
+          <h2>Quick essentials</h2>
+          <div id="essential-links" class="essential-links">
+            <div class="loading-essential"></div><div class="loading-essential"></div><div class="loading-essential"></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <footer class="guide-footer">
+    <div><strong>Need a real person?</strong><span>We’re here if the guide doesn’t have the answer.</span></div>
+    <button type="button" data-open-help><svg><use href="#icon-message"></use></svg>Contact your host</button>
+  </footer>
+
+  <nav class="mobile-tabs" aria-label="Guide navigation">
+    <button type="button" data-mobile-home aria-current="page"><svg><use href="#icon-home"></use></svg><span>Home</span></button>
+    <button type="button" data-open-search><svg><use href="#icon-search"></use></svg><span>Search</span></button>
+    <button type="button" data-mobile-journey="exploring"><svg><use href="#icon-compass"></use></svg><span>Explore</span></button>
+    <button type="button" data-open-help><svg><use href="#icon-message"></use></svg><span>Help</span></button>
   </nav>
 
-  <!-- Main content -->
-  <main class="gb-main" id="gb-main">
-
-    <!-- Welcome hero (populated by JS) -->
-    <div class="gb-welcome" id="gb-welcome">
-      <div class="gb-welcome__eyebrow">✦ Welcome</div>
-      <h1 class="gb-welcome__title property-name">Altus Kentucky Retreat</h1>
-      <p class="gb-welcome__message" id="gb-welcome-msg">
-        We're so glad you're here. This guidebook has everything you need
-        for a wonderful stay — from check-in instructions to local recommendations.
-      </p>
-      <div class="gb-welcome__meta" id="gb-welcome-meta">
-        <div class="gb-welcome__meta-item">⏰ Check-in: <strong>3:00 PM</strong></div>
-        <div class="gb-welcome__meta-item">🚪 Check-out: <strong>11:00 AM</strong></div>
-        <div class="gb-welcome__meta-item">📞 Need help? See Emergency Contacts below</div>
+  <div class="search-dialog" id="search-dialog" role="dialog" aria-modal="true" aria-labelledby="search-title" hidden>
+    <div class="search-dialog__panel">
+      <div class="search-dialog__header">
+        <div><small>Find it fast</small><h2 id="search-title">Search the stay guide</h2></div>
+        <button type="button" class="dialog-close" data-close-search aria-label="Close search"><svg><use href="#icon-close"></use></svg></button>
       </div>
-    </div>
-
-    <!-- Quick access grid -->
-    <div id="gb-quick" class="gb-quick">
-      <!-- Loading skeletons -->
-      <div class="skeleton" style="height:90px;"></div>
-      <div class="skeleton" style="height:90px;"></div>
-      <div class="skeleton" style="height:90px;"></div>
-      <div class="skeleton" style="height:90px;"></div>
-    </div>
-
-    <!-- Sections (injected by JS) -->
-    <div id="gb-sections">
-      <!-- Loading skeleton -->
-      <div id="gb-loading">
-        <div style="display:flex;gap:14px;margin-bottom:48px;align-items:center;">
-          <div class="skeleton" style="width:48px;height:48px;border-radius:12px;flex-shrink:0;"></div>
-          <div style="flex:1;"><div class="skeleton" style="height:24px;width:40%;margin-bottom:8px;"></div>
-          <div class="skeleton" style="height:14px;width:60%;"></div></div>
-        </div>
-        <div class="skeleton" style="height:80px;margin-bottom:12px;"></div>
-        <div class="skeleton" style="height:80px;margin-bottom:48px;width:80%;"></div>
-        <div style="display:flex;gap:14px;margin-bottom:48px;align-items:center;">
-          <div class="skeleton" style="width:48px;height:48px;border-radius:12px;flex-shrink:0;"></div>
-          <div style="flex:1;"><div class="skeleton" style="height:24px;width:35%;margin-bottom:8px;"></div></div>
-        </div>
-        <div class="skeleton" style="height:100px;margin-bottom:12px;"></div>
-      </div>
-    </div>
-
-  </main>
-</div>
-
-<!-- ── Search overlay ───────────────────────────────── -->
-<div class="gb-search" id="gb-search" role="dialog" aria-label="Search guidebook">
-  <div class="gb-search__box">
-    <div class="gb-search__input-wrap">
-      <span class="gb-search__icon">🔍</span>
-      <input type="text" class="gb-search__input" id="gb-search-input"
-             placeholder="Search the guidebook…" autocomplete="off">
-      <button class="gb-search__clear" id="gb-search-clear" aria-label="Close search">✕</button>
-    </div>
-    <div class="gb-search__results" id="gb-search-results">
-      <div class="gb-search__empty">Type to search the guidebook…</div>
+      <label class="search-field">
+        <svg><use href="#icon-search"></use></svg>
+        <input type="search" id="guide-search-input" placeholder="Try “hot tub” or “Wi-Fi”" autocomplete="off">
+      </label>
+      <div id="guide-search-results" class="search-results"><p>Search check-in details, property instructions and local recommendations.</p></div>
     </div>
   </div>
-</div>
 
-<script src="js/guidebook.js"></script>
+  <div id="place-dialog-root"></div>
+  <script src="js/guidebook.js"></script>
 </body>
 </html>
