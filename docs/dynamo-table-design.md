@@ -188,7 +188,40 @@ One record per section (e.g. Check-In, WiFi, House Rules, Local Recommendations)
 
 ---
 
-### 4. Property Cache (Hospitable data)
+### 4. Managed Reviews
+
+Reviews shown on a property site are curated in the admin and stored independently from Hospitable listing data. Third-party channel reviews are not imported automatically.
+
+| Key | Value | Example |
+|-----|-------|---------|
+| PK | `PROPERTY#{propertyId}` | `PROPERTY#kentucky` |
+| SK | `REVIEW#MANUAL#{reviewId}` | `REVIEW#MANUAL#8f03...` |
+
+**Attributes:**
+```json
+{
+  "PK": "PROPERTY#kentucky",
+  "SK": "REVIEW#MANUAL#8f03...",
+  "entityType": "MANUAL_REVIEW",
+  "propertyId": "kentucky",
+  "reviewId": "8f03...",
+  "reviewerName": "Jordan M.",
+  "reviewText": "A wonderful stay.",
+  "rating": 5,
+  "stayDate": "2026-07-01",
+  "sourceLabel": "Direct guest",
+  "featured": true,
+  "published": true,
+  "createdAt": "2026-08-12T00:00:00Z",
+  "updatedAt": "2026-08-12T00:00:00Z"
+}
+```
+
+Only published records are returned by the public reviews endpoint. Featured records sort before other reviews; reviews within each group sort newest first.
+
+---
+
+### 5. Property Cache (Hospitable data)
 
 Caches property info fetched from Hospitable so the frontend doesn't hit Hospitable on every request.
 
@@ -233,6 +266,7 @@ Caches property info fetched from Hospitable so the frontend doesn't hit Hospita
 | Get property config | Query | `PK=PROPERTY#kentucky, SK=METADATA` |
 | Get Hospitable cache | Query | `PK=PROPERTY#kentucky, SK=CACHE#HOSPITABLE` |
 | Get guidebook records for guest projection | Query + published filter | `PK=PROPERTY#kentucky, SK begins_with GUIDEBOOK#SECTION#` |
+| Get published managed reviews | Query + published filter | `PK=PROPERTY#kentucky, SK begins_with REVIEW#MANUAL#` |
 | Get booking by ID | Query | `PK=BOOKING#bk_01J4X` |
 | List bookings by property | GSI1 Query | `GSI1PK=PROPERTY#kentucky` + date range on GSI1SK |
 | Resolve legacy payment record | GSI2 Query | `GSI2PK=STRIPE#pi_3P...` |

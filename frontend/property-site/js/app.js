@@ -749,12 +749,13 @@ async function loadReviews() {
       const date  = r.created_at || r.date
         ? new Date(r.created_at || r.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
         : '';
+      const reviewMeta = [r.source, date].filter(Boolean).join(' · ');
 
       card.innerHTML = `
         <div class="frame-review-card__header">
           <span class="frame-review-card__name">${escapeHtml(r.reviewer_name || r.name || 'Guest')}</span>
           <span class="frame-review-card__stars">${stars}</span>
-          ${date ? `<span class="frame-review-card__date">${date}</span>` : ''}
+          ${reviewMeta ? `<span class="frame-review-card__date">${escapeHtml(reviewMeta)}</span>` : ''}
         </div>
         <p class="frame-review-card__body">${escapeHtml(r.public_review || r.comment || r.body || '')}</p>
       `;

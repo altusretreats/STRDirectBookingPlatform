@@ -290,12 +290,10 @@ Resources:
       FunctionName: !Sub altus-retreats-getReviews-${Environment}
       CodeUri: ../backend/functions/getReviews
       Handler: index.handler
-      Description: Returns guest reviews for a property from Hospitable API (public endpoint)
+      Description: Returns published admin-managed reviews for a property (public endpoint)
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref MainTable
-        - AWSSecretsManagerGetSecretValuePolicy:
-            SecretArn: !Ref HospitableSecret
       Events:
         GetReviews:
           Type: Api
@@ -344,6 +342,37 @@ Resources:
             RestApiId: !Ref ApiGateway
             Path: /admin/properties/{propertyId}
             Method: PUT
+
+  # ── Lambda: adminReviews ──────────────────
+  AdminReviewsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub altus-retreats-adminReviews-${Environment}
+      CodeUri: ../backend/functions/adminReviews
+      Handler: index.handler
+      Description: CRUD for property-scoped manually managed guest reviews — admin only
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MainTable
+      Events:
+        ListReviews:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/properties/{propertyId}/reviews
+            Method: GET
+        UpsertReview:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/properties/{propertyId}/reviews/{reviewId}
+            Method: PUT
+        DeleteReview:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/properties/{propertyId}/reviews/{reviewId}
+            Method: DELETE
 
   # ── Lambda: syncProperty ──────────────────
   SyncPropertyFunction:

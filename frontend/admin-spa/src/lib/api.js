@@ -46,6 +46,11 @@ export const adminApi = {
   upsertSection:  (propertyId, id, data) => request('PUT',    `/admin/properties/${propertyId}/guidebook/${id}`, data),
   deleteSection:  (propertyId, id)       => request('DELETE', `/admin/properties/${propertyId}/guidebook/${id}`),
 
+  // Reviews
+  listReviews:    (propertyId)           => request('GET',    `/admin/properties/${propertyId}/reviews`),
+  upsertReview:   (propertyId, id, data) => request('PUT',    `/admin/properties/${propertyId}/reviews/${id}`, data),
+  deleteReview:   (propertyId, id)       => request('DELETE', `/admin/properties/${propertyId}/reviews/${id}`),
+
   // Places (Google Maps lookup for local recommendations)
   lookupPlace: (propertyId, googleUrl)   => request('POST',   `/admin/properties/${propertyId}/places/lookup`, { googleUrl }),
 

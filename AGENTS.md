@@ -51,6 +51,7 @@ scripts/          Seed scripts (minimal — Hospitable is source of truth for co
 | getAvailability | GET /properties/{id}/availability | Public. Proxies Hospitable calendar |
 | getGuidebook | GET /properties/{id}/guidebook | Public. Returns sanitized guest guidebook sections |
 | getGuidebook | GET /properties/{id}/guidebook/agent-context | Public Markdown feed. Returns explicitly agent-available guest content + `aiContext`; never `hostNotes` |
+| getReviews | GET /properties/{id}/reviews | Public. Returns published admin-managed reviews; no third-party channel imports |
 | adminProperties | GET+POST+PUT /admin/properties | CRUD for property records |
 | syncProperty | POST /admin/properties/{id}/sync | Fetches Hospitable listing → stores in hospitable.cached on METADATA |
 | adminGuidebook | GET+PUT+DELETE /admin/properties/{id}/guidebook/{sectionId} | Guidebook section CRUD |
@@ -58,6 +59,7 @@ scripts/          Seed scripts (minimal — Hospitable is source of truth for co
 | adminMedia | POST /admin/media/sign | Presigned S3 PUT URLs for media upload |
 | adminPlaceLookup | POST /admin/properties/{id}/places/lookup | Google Places API v2 lookup → distance calc |
 | adminBookings | GET /admin/properties/{id}/bookings | List bookings |
+| adminReviews | GET /admin/properties/{id}/reviews; PUT+DELETE /admin/properties/{id}/reviews/{reviewId} | Property-scoped manual review CRUD; drafts remain private |
 | waitlist | POST /waitlist, GET /admin/waitlist | Waitlist capture |
 
 ## AWS Profile
@@ -125,6 +127,7 @@ aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/*" 
 - All money in **cents** (integers)
 - `ttl` attribute on FAILED bookings and cache entries (Unix timestamp)
 - Guidebook section SK: `GUIDEBOOK#SECTION#{order_padded}#{sectionId}` — zero-padded order for correct lexicographic sort
+- Manually managed review SK: `REVIEW#MANUAL#{reviewId}`. Records include reviewer name, exact review text, 1–5 rating, optional stay date/source label, `featured`, and `published`.
 - Property METADATA record holds `hospitable.cached` (full synced listing), `content` (admin overrides), `location` (admin overrides), `branding`
 
 ## Data architecture — key decisions
@@ -132,6 +135,7 @@ aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/*" 
 - **Seed script is minimal** — only creates the structural record with slug, name, domain, Hospitable property ID, and empty content/location. Never seed content.
 - **syncProperty** stores the full Hospitable listing under `property.hospitable.cached` and `lastSyncedAt`. Run from admin → Sync tab or daily at 2am EST via EventBridge.
 - **Guidebook place items** (`type: 'place'`) store Google Places v2 data under `item.place`. `aiContext` is hidden from guests and available only through the curated agent feed; `hostNotes` remains admin-only.
+- **Reviews are independent records, not listing content.** The admin Reviews tab manages authentic guest feedback. The public reviews endpoint returns only published admin-managed records and sorts featured reviews first. Third-party channel reviews are intentionally not imported, and Hospitable sync never overwrites reviews.
 
 ## Guidebook — place items
 Place items in a recommendations section (`sectionType: 'recommendations'`) render as a card grid grouped by category (Restaurants / Attractions / Activities / Shopping). Clicking a card opens a detail modal with Directions button (uses lat/lng coordinates for reliable Google Maps routing).
@@ -179,6 +183,7 @@ Place items in a recommendations section (`sectionType: 'recommendations'`) rend
 ## Current state (as of 2026-08-12)
 - Admin panel fully functional at admin.altusretreats.net (PropertySettings, ContentEditor, Guidebook, Sync, Waitlist tabs)
 - Admin SPA facelift deployed 2026-08-12: responsive Deep Blue/Canyon Red/Mist workspace styling aligned with the property guide, expanded editors for every editorial homepage section, content saves that preserve media and other tab-owned fields, a first-class Welcome guidebook section type, and a dedicated guidebook hero image uploader.
+- Property-scoped review management added 2026-08-12: the admin Reviews tab supports draft/published reviews, featured placement, reviewer name, rating, stay date, source label, and exact review text. Published reviews feed the existing homepage review wall; featured reviews display first.
 - Property site redesign is deployed as the root `index.html` at `www.staytheoverhang.com/` for live Hospitable widget testing (deployed 2026-08-11; CloudFront invalidation completed). The page remains noindex during testing.
 - The property page uses a wide editorial layout with a Blue + Canyon Red palette (`#1D3557`, `#D1614D`, `#FBFDFF`), full-width responsive photo gallery, centered content + Hospitable widget rail, logo/title lockup, dynamic property facts, conditional two-king-bedroom callout, experience photography, BOLT-inspired dynamic review wall, and scroll-rise reveals. The compact guest-oriented navigation is Overview / Amenities / Reviews / Location, with ordered scroll-position tracking for reliable active states in both directions. The photo gallery has a persistent mobile-safe View All entry point, a masonry-style editorial index, and a deep-blue immersive lightbox with keyboard, thumbnail, and swipe navigation. Hospitable amenities are grouped client-side into scannable category cards, with the complete dynamic list available in a categorized, instantly searchable modal. The closing "Altus standard" section uses four specific numbered commitments (honest listing, arrival preparation, real support, and direct-booking value) instead of decorative icons. The landing retains its framed photo-slider layout with layered contrast, a glass navigation rail, Canyon Red Book Now button, animated Explore cue, and a restrained scroll-linked hero parallax/fade into a compact deep-blue property header. A subtle lower-left back-to-landing button appears only after the gallery has passed. Book Now scrolls to the widget on desktop and opens `book.html` on mobile. Reduced-motion preferences are honored, and all existing API/widget hooks remain intact.
 - `getReviews` Lambda (`GET /properties/{propertyId}/reviews`) is SAM-deployed and live.

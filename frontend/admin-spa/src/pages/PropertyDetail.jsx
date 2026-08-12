@@ -8,8 +8,10 @@ import ContentEditor from '../components/ContentEditor';
 import LocationEditor from '../components/LocationEditor';
 import MediaPanel from '../components/MediaPanel';
 import AmenitiesPanel from '../components/AmenitiesPanel';
+import ReviewsEditor from '../components/ReviewsEditor';
 
 const TABS = [
+  { id: 'reviews',   label: 'Reviews',   icon: '★' },
   { id: 'overview',  label: 'Overview',  icon: '⊞' },
   { id: 'content',   label: 'Content',   icon: '✏️' },
   { id: 'media',     label: 'Media',     icon: '🖼️' },
@@ -93,6 +95,7 @@ export default function PropertyDetail({ propertyId, tab, property: propFromPare
 
       {/* Tab content */}
       <div className="admin-content" style={s.content}>
+        {activeTab === 'reviews'   && <ReviewsEditor propertyId={propertyId} propertyName={property.name} />}
         {activeTab === 'overview'  && <OverviewTab property={property} cached={cached} propertyId={propertyId} />}
         {activeTab === 'content'   && <ContentEditor property={property} onSaved={handlePropertyUpdate} />}
         {activeTab === 'media'     && <MediaPanel property={property} cached={cached} onSaved={handlePropertyUpdate} />}
