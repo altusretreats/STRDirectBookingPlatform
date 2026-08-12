@@ -28,10 +28,8 @@
 
 <!-- ══ FIXED NAV — transparent on landing, frosted once scrolled ══ -->
 <nav class="nav" id="site-nav" aria-label="Main navigation">
-  <!-- .nav__logo is a self-contained slot: text now, <img> logo later -->
   <div class="nav__logo">
-    <div class="nav__logo-name property-name"></div>
-    <div class="nav__logo-brand">Altus Retreats</div>
+    <img class="nav__logo-img" src="img/logo-the-overhang.jpg" alt="The Overhang">
   </div>
   <div class="nav__center">
     <button class="nav__link" data-section="property">The Property</button>
@@ -77,6 +75,7 @@
   <!-- Content column (left) + sticky booking widget (right) — one shared frosted panel -->
   <div class="site__body">
     <div class="site__panel">
+    <div class="site__inner">
     <div class="site__content">
 
       <!-- ── The Property ── -->
@@ -159,6 +158,7 @@
         </script>
       </div>
     </aside>
+    </div><!-- /site__inner -->
     </div><!-- /site__panel -->
 
   </div><!-- /site__body -->
