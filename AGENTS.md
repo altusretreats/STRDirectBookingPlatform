@@ -180,7 +180,7 @@ Place items in a recommendations section (`sectionType: 'recommendations'`) rend
 - The Overhang logo is live at `frontend/property-site/img/logo-the-overhang.jpg`, wired into `index.html`'s nav (`.nav__logo-img`). `book.html` still uses the old text-based logo — not yet updated to match.
 - Bare-root `staytheoverhang.com` still on GoDaddy Website Builder — root DNS repoint to CloudFront is pending (see DNS / domain routing section).
 - Guidebook live and data-driven
-- Public AI guidebook context feed and independent per-section AI availability control are implemented and build successfully, but cloud deployment is awaiting explicit approval of the public-access model. The feed is public by design, so private access details must not be enabled for it, and `hostNotes` are excluded by construction.
+- Public AI guidebook context feed and independent per-section AI availability control are deployed and live. The feed is public by design, so private access details must not be enabled for it, and `hostNotes` are excluded by construction.
 - Guidebook guest frontend redesigned as a responsive stay companion: desktop/tablet provides a rich journey overview and quick-essential rail, while mobile uses an intent-first home with focused drill-down screens. The public API strips AI/private fields, and admin saves now retain section-level AI context and section type.
 - The hub Coming Soon page remains live; The Overhang Coming Soon page is retained as a rollback source but is not currently the public root.
 - Hub site built as hub.html (ready to swap in when The Lazy Palm launches)
