@@ -8,6 +8,22 @@ import {
   useSortable, arrayMove,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import barMarkerIcon from '../../../property-site/img/map-icons/bar.svg';
+import bridgeMarkerIcon from '../../../property-site/img/map-icons/bridge.svg';
+import cameraMarkerIcon from '../../../property-site/img/map-icons/camera.svg';
+import climbingMarkerIcon from '../../../property-site/img/map-icons/climbing.svg';
+import coffeeMarkerIcon from '../../../property-site/img/map-icons/coffee.svg';
+import gasMarkerIcon from '../../../property-site/img/map-icons/gas.svg';
+import gondolaMarkerIcon from '../../../property-site/img/map-icons/gondola.svg';
+import groceriesMarkerIcon from '../../../property-site/img/map-icons/groceries.svg';
+import hikingMarkerIcon from '../../../property-site/img/map-icons/hiking.svg';
+import kayakMarkerIcon from '../../../property-site/img/map-icons/kayak.svg';
+import locationMarkerIcon from '../../../property-site/img/map-icons/location.svg';
+import offroadMarkerIcon from '../../../property-site/img/map-icons/offroad.svg';
+import restaurantMarkerIcon from '../../../property-site/img/map-icons/restaurant.svg';
+import shoppingMarkerIcon from '../../../property-site/img/map-icons/shopping.svg';
+import trailMarkerIcon from '../../../property-site/img/map-icons/trail.svg';
+import ziplineMarkerIcon from '../../../property-site/img/map-icons/zipline.svg';
 
 const ICON_OPTIONS = [
   '🔑','🚪','🛎️','🏠','🏡',
@@ -56,25 +72,25 @@ const CATEGORY_COLORS = {
 };
 
 const MAP_ICON_OPTIONS = [
-  { value: '', label: 'Automatic from category' },
-  { value: 'restaurant', label: 'Restaurant — fork and knife' },
-  { value: 'coffee', label: 'Coffee / café' },
-  { value: 'bar', label: 'Bar / brewery' },
+  { value: '', label: 'Automatic', asset: locationMarkerIcon },
+  { value: 'restaurant', label: 'Restaurant', asset: restaurantMarkerIcon },
+  { value: 'coffee', label: 'Coffee / café', asset: coffeeMarkerIcon },
+  { value: 'bar', label: 'Bar / brewery', asset: barMarkerIcon },
   { value: 'arch', label: 'Sandstone arch' },
-  { value: 'climber', label: 'Rock climbing' },
+  { value: 'climber', label: 'Rock climbing', asset: climbingMarkerIcon },
   { value: 'carabiner', label: 'Carabiner' },
-  { value: 'hiking', label: 'Hiking' },
-  { value: 'trail', label: 'Trailhead / trail sign' },
-  { value: 'bridge', label: 'Bridge' },
-  { value: 'paddle', label: 'Kayaking / paddling' },
-  { value: 'offroad', label: 'Off-road / 4×4' },
-  { value: 'gondola', label: 'Gondola / sky lift' },
-  { value: 'zipline', label: 'Zipline' },
-  { value: 'shopping', label: 'Shopping' },
-  { value: 'groceries', label: 'Groceries / market' },
-  { value: 'services', label: 'Gas / fuel' },
-  { value: 'camera', label: 'Scenic / photo spot' },
-  { value: 'pin', label: 'General location' },
+  { value: 'hiking', label: 'Hiking', asset: hikingMarkerIcon },
+  { value: 'trail', label: 'Trailhead', asset: trailMarkerIcon },
+  { value: 'bridge', label: 'Bridge', asset: bridgeMarkerIcon },
+  { value: 'paddle', label: 'Kayaking', asset: kayakMarkerIcon },
+  { value: 'offroad', label: 'Off-road / 4×4', asset: offroadMarkerIcon },
+  { value: 'gondola', label: 'Gondola / sky lift', asset: gondolaMarkerIcon },
+  { value: 'zipline', label: 'Zipline', asset: ziplineMarkerIcon },
+  { value: 'shopping', label: 'Shopping', asset: shoppingMarkerIcon },
+  { value: 'groceries', label: 'Groceries', asset: groceriesMarkerIcon },
+  { value: 'services', label: 'Gas / fuel', asset: gasMarkerIcon },
+  { value: 'camera', label: 'Scenic / photo', asset: cameraMarkerIcon },
+  { value: 'pin', label: 'General location', asset: locationMarkerIcon },
 ];
 
 export default function GuidebookEditor({ propertyId, propertyName, property, onPropertySaved }) {
@@ -570,12 +586,10 @@ function PlaceItemRow({ item, onRemove, onUpdate }) {
                 {Object.entries(CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </div>
-            <div style={s.formGroup}>
-              <label style={s.labelSm}>Map marker</label>
-              <select style={s.input} value={p.mapIcon || ''} onChange={e => onUpdate({ place: { ...p, mapIcon: e.target.value } })}>
-                {MAP_ICON_OPTIONS.map(option => <option key={option.value || 'auto'} value={option.value}>{option.label}</option>)}
-              </select>
-            </div>
+          </div>
+          <div style={s.formGroup}>
+            <label style={s.labelSm}>Map marker</label>
+            <MapIconPicker value={p.mapIcon || ''} onChange={mapIcon => onUpdate({ place: { ...p, mapIcon } })} />
           </div>
           <div style={s.formGroup}>
             <label style={s.labelSm}>Guest-facing description</label>
@@ -716,12 +730,10 @@ function PlacePreview({ place: initialPlace, onAdd, onDismiss }) {
               {Object.entries(CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
           </div>
-          <div style={s.formGroup}>
-            <label style={s.labelSm}>Map marker</label>
-            <select style={s.input} value={p.mapIcon || ''} onChange={e => update('mapIcon', e.target.value)}>
-              {MAP_ICON_OPTIONS.map(option => <option key={option.value || 'auto'} value={option.value}>{option.label}</option>)}
-            </select>
-          </div>
+        </div>
+        <div style={s.formGroup}>
+          <label style={s.labelSm}>Map marker</label>
+          <MapIconPicker value={p.mapIcon || ''} onChange={mapIcon => update('mapIcon', mapIcon)} />
         </div>
       </div>
 
@@ -734,6 +746,34 @@ function PlacePreview({ place: initialPlace, onAdd, onDismiss }) {
 }
 
 // ── Icon picker ───────────────────────────────────────────────────────────────
+function MapIconPicker({ value, onChange }) {
+  return (
+    <div style={s.mapIconGrid} role="radiogroup" aria-label="Map marker icon">
+      {MAP_ICON_OPTIONS.map(option => {
+        const selected = option.value === value;
+        return (
+          <button
+            key={option.value || 'auto'}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            title={option.label}
+            style={{ ...s.mapIconOption, ...(selected ? s.mapIconOptionSelected : {}) }}
+            onClick={() => onChange(option.value)}
+          >
+            <span style={s.mapIconPreview} aria-hidden="true">
+              {option.asset
+                ? <img src={option.asset} alt="" style={s.mapIconImage} />
+                : <span style={s.mapIconLegacy}>{option.value === 'arch' ? '⌒' : '⬡'}</span>}
+            </span>
+            <span style={s.mapIconLabel}>{option.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function IconPicker({ value, onChange }) {
   const [open, setOpen] = useState(false);
 
@@ -820,6 +860,13 @@ const s = {
   aiToggleSub:   { fontSize: 11, color: '#6B7280', fontWeight: 400 },
   placePreview:       { marginTop: 14, padding: 14, background: '#F9FAFB', borderRadius: 10, border: '1px solid #E5E7EB' },
   mockWarning:        { marginTop: 10, padding: '8px 12px', background: '#FFFBEB', border: '1px solid #FCD34D', borderRadius: 6, fontSize: 12, color: '#92400E' },
+  mapIconGrid:        { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(105px, 1fr))', gap: 7 },
+  mapIconOption:      { display: 'flex', minWidth: 0, alignItems: 'center', gap: 7, padding: '7px 8px', border: '1px solid #D7DEE3', borderRadius: 8, background: '#fff', color: '#374151', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' },
+  mapIconOptionSelected: { borderColor: '#1D3557', background: '#EEF3F7', boxShadow: '0 0 0 1px #1D3557' },
+  mapIconPreview:     { display: 'grid', width: 28, height: 28, placeItems: 'center', flexShrink: 0, borderRadius: 7, background: '#1D3557', color: '#fff' },
+  mapIconImage:       { width: 17, height: 17, objectFit: 'contain', filter: 'brightness(0) invert(1)' },
+  mapIconLegacy:      { color: '#fff', fontSize: 19, fontWeight: 700, lineHeight: 1 },
+  mapIconLabel:       { minWidth: 0, overflow: 'hidden', fontSize: 11, fontWeight: 600, lineHeight: 1.2, textOverflow: 'ellipsis' },
   iconPickerBtn:      { display: 'flex', alignItems: 'center', padding: '7px 10px', border: '1px solid #D1D5DB', borderRadius: 7, background: '#fff', cursor: 'pointer', fontFamily: 'inherit', width: '100%' },
   iconPickerOverlay:  { position: 'fixed', inset: 0, zIndex: 10 },
   iconPickerDropdown: { position: 'absolute', top: '100%', left: 0, zIndex: 20, marginTop: 4, background: '#fff', border: '1px solid #E5E7EB', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', padding: 10, width: 220 },
