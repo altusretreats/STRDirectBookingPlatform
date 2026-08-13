@@ -22,6 +22,7 @@ const api = (() => {
       request('GET', `/properties/${pid()}/availability?start_date=${start}&end_date=${end}`),
     getReviews: (propertyId) =>
       request('GET', `/properties/${propertyId || pid()}/reviews`),
+    getGuidebook: () => request('GET', `/properties/${pid()}/guidebook`),
     createBooking: (payload) =>
       request('POST', `/properties/${pid()}/bookings`, payload),
   };

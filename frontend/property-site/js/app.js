@@ -89,6 +89,150 @@ function createPropertyMapMarker({ logoUrl, propertyName }) {
   return marker;
 }
 
+const PLACE_CATEGORY_META = {
+  restaurant: { label: 'Eat & drink', singular: 'Restaurant' },
+  attraction: { label: 'Attractions', singular: 'Attraction' },
+  activity: { label: 'Things to do', singular: 'Activity' },
+  shopping: { label: 'Shopping', singular: 'Shopping' },
+  other: { label: 'Local favorites', singular: 'Local favorite' },
+};
+
+function normalizePlaceCategory(place) {
+  const category = String(place.category || '').toLowerCase();
+  if (PLACE_CATEGORY_META[category]) return category;
+  const types = (place.types || []).join(' ').toLowerCase();
+  if (/restaurant|cafe|bakery|bar|food/.test(types)) return 'restaurant';
+  if (/store|shopping|market/.test(types)) return 'shopping';
+  if (/park|museum|tourist_attraction|landmark/.test(types)) return 'attraction';
+  if (/activity|amusement|sports|trail|bridge/.test(types)) return 'activity';
+  return 'other';
+}
+
+function extractGuidebookPlaces(guidebook) {
+  const seen = new Set();
+  return (guidebook?.sections || []).flatMap(section => (section.items || []).map(item => ({ section, item })))
+    .filter(({ item }) => item.type === 'place' && item.place)
+    .map(({ section, item }) => {
+      const place = item.place;
+      const lat = Number(place.lat);
+      const lng = Number(place.lng);
+      const key = place.placeId || item.itemId || `${lat},${lng}`;
+      return {
+        ...place,
+        key,
+        lat,
+        lng,
+        category: normalizePlaceCategory(place),
+        description: item.description || '',
+        sectionTitle: section.title || '',
+      };
+    })
+    .filter(place => {
+      if (!Number.isFinite(place.lat) || !Number.isFinite(place.lng) || seen.has(place.key)) return false;
+      seen.add(place.key);
+      return true;
+    });
+}
+
+function safeExternalUrl(value) {
+  if (!value) return '';
+  try {
+    const url = new URL(value, window.location.href);
+    return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+  } catch {
+    return '';
+  }
+}
+
+function placeMarkerIcon(category) {
+  const paths = {
+    restaurant: '<path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10M16 3v18M16 3c3 1 4 3.5 4 7h-4"/>',
+    attraction: '<path d="m4 20 5.5-10 3 5 2-3 5.5 8H4Z"/><path d="m14 7 1-2 1 2 2 .5-1.5 1.4.4 2.1-1.9-1-1.9 1 .4-2.1L12 7.5 14 7Z"/>',
+    activity: '<path d="M4 19 9 5l4 9 2-4 5 9H4Z"/><path d="m8 12 2-2 2 2"/>',
+    shopping: '<path d="M5 8h14l-1 12H6L5 8Z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/>',
+    other: '<path d="M12 21s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/>',
+  };
+  return `<svg viewBox="0 0 24 24" aria-hidden="true">${paths[category] || paths.other}</svg>`;
+}
+
+function createPlaceMarker(place) {
+  const marker = document.createElement('button');
+  marker.type = 'button';
+  marker.className = `place-map-marker place-map-marker--${place.category}`;
+  marker.setAttribute('aria-label', `Show ${place.name} on the map`);
+  marker.innerHTML = placeMarkerIcon(place.category);
+  return marker;
+}
+
+function createPlaceCard(place, onSelect) {
+  const card = document.createElement('article');
+  card.className = 'location-place-card';
+  card.dataset.placeKey = place.key;
+
+  const photoUrl = safeExternalUrl(place.photoUrl);
+  const directionsUrl = safeExternalUrl(place.directionsUrl || place.mapsUrl);
+  const meta = [
+    Number.isFinite(Number(place.distanceMiles)) ? `${Number(place.distanceMiles).toFixed(1).replace('.0', '')} mi` : '',
+    Number.isFinite(Number(place.travelMinutes)) ? `${Math.round(Number(place.travelMinutes))} min` : '',
+  ].filter(Boolean).join(' · ');
+  const rating = Number(place.rating);
+
+  card.innerHTML = `
+    ${photoUrl ? `<img class="location-place-card__photo" src="${escapeHtml(photoUrl)}" alt="" loading="lazy">` : `<div class="location-place-card__photo location-place-card__photo--empty">${placeMarkerIcon(place.category)}</div>`}
+    <div class="location-place-card__body">
+      <span class="location-place-card__category">${escapeHtml(PLACE_CATEGORY_META[place.category]?.singular || 'Local favorite')}</span>
+      <h4>${escapeHtml(place.name || 'Nearby favorite')}</h4>
+      <div class="location-place-card__facts">
+        ${Number.isFinite(rating) ? `<span><strong>★ ${rating.toFixed(1)}</strong>${place.totalRatings ? ` <small>(${Number(place.totalRatings).toLocaleString()})</small>` : ''}</span>` : ''}
+        ${meta ? `<span>${escapeHtml(meta)}</span>` : ''}
+      </div>
+      ${directionsUrl ? `<a href="${escapeHtml(directionsUrl)}" target="_blank" rel="noopener" aria-label="Directions to ${escapeHtml(place.name)}">Directions <span aria-hidden="true">↗</span></a>` : ''}
+    </div>`;
+
+  const select = event => {
+    if (event.target.closest('a')) return;
+    onSelect(place);
+  };
+  card.addEventListener('click', select);
+  card.querySelector('h4')?.setAttribute('tabindex', '0');
+  card.querySelector('h4')?.setAttribute('role', 'button');
+  card.querySelector('h4')?.setAttribute('aria-label', `Show ${place.name} on the map`);
+  card.querySelector('h4')?.addEventListener('keydown', event => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    onSelect(place);
+  });
+  return card;
+}
+
+function createPlaceInfoContent(place) {
+  const content = document.createElement('div');
+  content.className = 'place-map-info';
+  const category = document.createElement('span');
+  category.className = 'place-map-info__category';
+  category.textContent = PLACE_CATEGORY_META[place.category]?.singular || 'Local favorite';
+  const title = document.createElement('strong');
+  title.textContent = place.name;
+  const facts = document.createElement('span');
+  facts.textContent = [
+    Number.isFinite(Number(place.rating)) ? `★ ${Number(place.rating).toFixed(1)}` : '',
+    Number.isFinite(Number(place.distanceMiles)) ? `${Number(place.distanceMiles).toFixed(1).replace('.0', '')} miles` : '',
+    Number.isFinite(Number(place.travelMinutes)) ? `${Math.round(Number(place.travelMinutes))} min drive` : '',
+  ].filter(Boolean).join(' · ');
+  content.append(category, title, facts);
+
+  const directionsUrl = safeExternalUrl(place.directionsUrl || place.mapsUrl);
+  if (directionsUrl) {
+    const link = document.createElement('a');
+    link.href = directionsUrl;
+    link.target = '_blank';
+    link.rel = 'noopener';
+    link.textContent = 'Get directions ↗';
+    content.appendChild(link);
+  }
+  return content;
+}
+
 function setMapFallback(mapEl, location) {
   if (location.mapsEmbed) {
     mapEl.innerHTML = location.mapsEmbed;
@@ -99,7 +243,7 @@ function setMapFallback(mapEl, location) {
   mapEl.innerHTML = `<iframe src="${src}" width="100%" height="100%" style="border:0" loading="lazy" title="Property location"></iframe>`;
 }
 
-function initPropertyMap({ mapEl, location, propertyName }) {
+function initPropertyMap({ mapEl, location, propertyName, places = [] }) {
   const lat = Number(location.pinLat);
   const lng = Number(location.pinLng);
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
@@ -108,6 +252,75 @@ function initPropertyMap({ mapEl, location, propertyName }) {
   if (!mapsConfig.apiKey || !mapsConfig.mapId) {
     setMapFallback(mapEl, location);
     return;
+  }
+
+  const filterBar = document.getElementById('location-filter-bar');
+  const cardsEl = document.getElementById('location-place-cards');
+  const placesHeading = document.getElementById('location-places-heading');
+  const viewAllButton = document.getElementById('location-view-all');
+  const placesModal = document.getElementById('places-modal');
+  const placesModalBody = document.getElementById('places-modal-body');
+  const featuredPlaces = places.slice(0, 6);
+  let activeCategory = 'all';
+  let focusPlace = () => {};
+
+  const visiblePlaces = () => places.filter(place => activeCategory === 'all' || place.category === activeCategory);
+  const visibleFeaturedPlaces = () => featuredPlaces.filter(place => activeCategory === 'all' || place.category === activeCategory);
+
+  const renderCards = () => {
+    if (!cardsEl) return;
+    cardsEl.replaceChildren(...visibleFeaturedPlaces().map(place => createPlaceCard(place, selected => focusPlace(selected))));
+    cardsEl.hidden = visibleFeaturedPlaces().length === 0;
+  };
+
+  if (places.length) {
+    if (placesHeading) placesHeading.hidden = false;
+    const categories = [...new Set(places.map(place => place.category))];
+    const filters = [{ key: 'all', label: 'All places' }, ...categories.map(key => ({ key, label: PLACE_CATEGORY_META[key]?.label || 'Local favorites' }))];
+    filterBar?.replaceChildren(...filters.map(filter => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `location-filter${filter.key === 'all' ? ' is-active' : ''}`;
+      button.textContent = filter.label;
+      button.dataset.category = filter.key;
+      button.setAttribute('aria-pressed', String(filter.key === 'all'));
+      button.addEventListener('click', () => {
+        activeCategory = filter.key;
+        filterBar.querySelectorAll('.location-filter').forEach(item => {
+          const active = item.dataset.category === activeCategory;
+          item.classList.toggle('is-active', active);
+          item.setAttribute('aria-pressed', String(active));
+        });
+        renderCards();
+        focusPlace(null);
+      });
+      return button;
+    }));
+    renderCards();
+  } else if (filterBar) {
+    filterBar.hidden = true;
+  }
+
+  const closePlacesModal = () => {
+    if (!placesModal) return;
+    placesModal.style.display = 'none';
+    document.body.style.overflow = '';
+  };
+  if (places.length > featuredPlaces.length && viewAllButton && placesModalBody) {
+    viewAllButton.hidden = false;
+    viewAllButton.textContent = `View all ${places.length} places`;
+    placesModalBody.replaceChildren(...places.map(place => createPlaceCard(place, selected => {
+      closePlacesModal();
+      focusPlace(selected);
+    })));
+    viewAllButton.addEventListener('click', () => {
+      placesModal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+      document.getElementById('places-modal-close')?.focus();
+    });
+    document.getElementById('places-modal-close')?.addEventListener('click', closePlacesModal);
+    placesModal?.addEventListener('click', event => { if (event.target === placesModal) closePlacesModal(); });
+    document.addEventListener('keydown', event => { if (event.key === 'Escape' && placesModal?.style.display !== 'none') closePlacesModal(); });
   }
 
   mapEl.innerHTML = `
@@ -123,7 +336,7 @@ function initPropertyMap({ mapEl, location, propertyName }) {
 
     try {
       await loadGoogleMaps();
-      const [{ Map }, { AdvancedMarkerElement }] = await Promise.all([
+      const [{ Map, InfoWindow }, { AdvancedMarkerElement }] = await Promise.all([
         google.maps.importLibrary('maps'),
         google.maps.importLibrary('marker'),
       ]);
@@ -150,6 +363,55 @@ function initPropertyMap({ mapEl, location, propertyName }) {
         content: createPropertyMapMarker({ logoUrl, propertyName }),
         zIndex: 10,
       });
+
+      const infoWindow = new InfoWindow({ disableAutoPan: false });
+      const placeMarkers = places.map(place => {
+        const content = createPlaceMarker(place);
+        const marker = new AdvancedMarkerElement({
+          map,
+          position: { lat: place.lat, lng: place.lng },
+          title: place.name,
+          content,
+          gmpClickable: true,
+          zIndex: 2,
+        });
+        content.addEventListener('click', () => focusPlace(place));
+        return { place, marker, content };
+      });
+
+      const fitPlaces = () => {
+        const bounds = new google.maps.LatLngBounds();
+        bounds.extend({ lat, lng });
+        visiblePlaces().forEach(place => bounds.extend({ lat: place.lat, lng: place.lng }));
+        map.fitBounds(bounds, { top: 76, right: 62, bottom: 62, left: 62 });
+        google.maps.event.addListenerOnce(map, 'idle', () => {
+          if ((map.getZoom() || 0) > 14) map.setZoom(14);
+        });
+      };
+
+      focusPlace = selectedPlace => {
+        const filtered = visiblePlaces();
+        placeMarkers.forEach(entry => {
+          const visible = filtered.some(place => place.key === entry.place.key);
+          entry.marker.map = visible ? map : null;
+          entry.content.classList.toggle('is-active', selectedPlace?.key === entry.place.key);
+        });
+        document.querySelectorAll('.location-place-card').forEach(card => card.classList.toggle('is-active', card.dataset.placeKey === selectedPlace?.key));
+
+        if (!selectedPlace) {
+          infoWindow.close();
+          fitPlaces();
+          return;
+        }
+        const entry = placeMarkers.find(item => item.place.key === selectedPlace.key);
+        if (!entry) return;
+        map.panTo({ lat: selectedPlace.lat, lng: selectedPlace.lng });
+        if ((map.getZoom() || 0) < 14) map.setZoom(14);
+        infoWindow.setContent(createPlaceInfoContent(selectedPlace));
+        infoWindow.open({ map, anchor: entry.marker });
+      };
+
+      focusPlace(null);
     } catch (error) {
       console.warn('Branded property map unavailable; using the embed fallback.', error);
       setMapFallback(mapEl, location);
@@ -407,7 +669,7 @@ function initLightbox() {
 }
 
 // ── Frame: populate sections ──────────────────────────
-function initFrameSections({ photos, amenities, description, bedrooms, bathrooms, maxGuests, location, propertyName, content = {} }) {
+function initFrameSections({ photos, amenities, description, bedrooms, bathrooms, maxGuests, location, propertyName, places = [], content = {} }) {
 
   // ── Photo grid: large main left + 2×2 thumbnails right ──
   const photoGrid = document.getElementById('frame-photo-grid');
@@ -683,7 +945,7 @@ function initFrameSections({ photos, amenities, description, bedrooms, bathrooms
     const mapEl = document.getElementById('frame-location-map');
     if (mapEl) {
       if (location.pinLat && location.pinLng) {
-        initPropertyMap({ mapEl, location, propertyName });
+        initPropertyMap({ mapEl, location, propertyName, places });
       } else if (location.neighborhood) {
         mapEl.innerHTML = `<div class="property-map-empty">📍 ${escapeHtml(location.neighborhood)}</div>`;
       }
@@ -960,7 +1222,13 @@ function initHouseRules(houseRules, cancellationPolicy) {
 // ── Property data ─────────────────────────────────────
 async function loadProperty() {
   try {
-    const data = await api.getProperty();
+    const [data, guidebook] = await Promise.all([
+      api.getProperty(),
+      api.getGuidebook().catch(error => {
+        console.warn('Guidebook places are not available for the location map.', error);
+        return null;
+      }),
+    ]);
     const h = data.hospitable || {};
     const p = data.property   || {};
     const c = p.content       || {};
@@ -974,6 +1242,7 @@ async function loadProperty() {
     const amenities   = h.amenities || [];
     const photos      = h.photos    || [];
     const location    = p.location  || null;
+    const places      = extractGuidebookPlaces(guidebook);
     const houseRules         = h.houseRules         || [];
     const cancellationPolicy = h.cancellationPolicy || null;
     const heroPhoto   = c.heroPhoto || null;
@@ -1050,7 +1319,7 @@ async function loadProperty() {
     initHouseRules(houseRules, cancellationPolicy);
 
     // Frame sections
-    initFrameSections({ photos, amenities, description, bedrooms, bathrooms, maxGuests, location, propertyName: name, content: c });
+    initFrameSections({ photos, amenities, description, bedrooms, bathrooms, maxGuests, location, propertyName: name, places, content: c });
     initEditorialDetails({
       description,
       summary: h.summary,
