@@ -16,11 +16,19 @@ The bare `staytheoverhang.com` domain still points to GoDaddy. Always verify wit
 Run from the repository root:
 
 ```powershell
+$googleSecret = aws secretsmanager get-secret-value --secret-id altus-retreats/dev/google --query SecretString --output text --profile altus | ConvertFrom-Json
+@"
+window.ALTUS_MAPS_CONFIG = Object.freeze({
+  apiKey: '$($googleSecret.mapsBrowserApiKey)',
+  mapId: '$($googleSecret.mapsMapId)',
+});
+"@ | Set-Content -Encoding utf8 frontend\property-site\js\maps-config.js
 aws s3 sync frontend\property-site\ s3://altus-retreats-frontend-dev-817760095908/ --profile altus
 aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/*" --profile altus
 ```
 
 Do not add `--delete`; the bucket contains a rollback backup under `backups/`.
+`js/maps-config.js` is intentionally gitignored. The deployed browser key is publicly visible by design, so keep its Google Cloud website-referrer and Maps JavaScript API restrictions in place.
 
 ## Publish only the redesigned root and its shared assets
 
@@ -30,7 +38,8 @@ Use this for focused styling releases:
 aws s3 cp frontend\property-site\index.html s3://altus-retreats-frontend-dev-817760095908/index.html --content-type "text/html" --cache-control "no-cache, max-age=0, must-revalidate" --metadata-directive REPLACE --profile altus
 aws s3 cp frontend\property-site\css\main.css s3://altus-retreats-frontend-dev-817760095908/css/main.css --content-type "text/css" --cache-control "no-cache, max-age=0, must-revalidate" --metadata-directive REPLACE --profile altus
 aws s3 cp frontend\property-site\js\app.js s3://altus-retreats-frontend-dev-817760095908/js/app.js --content-type "application/javascript" --cache-control "no-cache, max-age=0, must-revalidate" --metadata-directive REPLACE --profile altus
-aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/" "/index.html" "/css/main.css" "/js/app.js" --profile altus
+aws s3 cp frontend\property-site\js\maps-config.js s3://altus-retreats-frontend-dev-817760095908/js/maps-config.js --content-type "application/javascript" --cache-control "no-cache, max-age=0, must-revalidate" --metadata-directive REPLACE --profile altus
+aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/" "/index.html" "/css/main.css" "/js/app.js" "/js/maps-config.js" --profile altus
 ```
 
 Wait for the invalidation to complete, then hard-refresh `https://www.staytheoverhang.com/`.

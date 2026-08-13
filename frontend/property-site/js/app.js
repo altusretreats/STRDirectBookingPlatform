@@ -16,6 +16,144 @@ window.showToast = function(message, type = 'info', duration = 5000) {
   setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, duration);
 };
 
+// ── Branded Google map ──────────────────────────────────────
+let googleMapsLoader;
+
+function loadGoogleMaps() {
+  if (window.google?.maps?.importLibrary) return Promise.resolve(window.google.maps);
+  if (googleMapsLoader) return googleMapsLoader;
+
+  const mapsConfig = window.ALTUS_MAPS_CONFIG || {};
+  if (!mapsConfig.apiKey) return Promise.reject(new Error('Google Maps browser key is not configured.'));
+
+  googleMapsLoader = new Promise((resolve, reject) => {
+    const callbackName = `__altusMapsReady${Date.now()}`;
+    const script = document.createElement('script');
+    const params = new URLSearchParams({
+      key: mapsConfig.apiKey,
+      v: 'weekly',
+      loading: 'async',
+      libraries: 'marker',
+      callback: callbackName,
+    });
+
+    window[callbackName] = () => {
+      delete window[callbackName];
+      resolve(window.google.maps);
+    };
+    script.src = `https://maps.googleapis.com/maps/api/js?${params}`;
+    script.async = true;
+    script.onerror = () => {
+      delete window[callbackName];
+      googleMapsLoader = null;
+      reject(new Error('Google Maps could not be loaded.'));
+    };
+    document.head.appendChild(script);
+  });
+
+  return googleMapsLoader;
+}
+
+function createPropertyMapMarker({ logoUrl, propertyName }) {
+  const marker = document.createElement('div');
+  marker.className = 'property-map-marker';
+  marker.setAttribute('aria-label', propertyName);
+
+  const art = document.createElement('span');
+  art.className = 'property-map-marker__art';
+  const logo = document.createElement('img');
+  logo.src = logoUrl;
+  logo.alt = '';
+  art.appendChild(logo);
+
+  const label = document.createElement('span');
+  label.className = 'property-map-marker__label';
+  label.textContent = propertyName;
+
+  marker.append(art, label);
+  return marker;
+}
+
+function setMapFallback(mapEl, location) {
+  if (location.mapsEmbed) {
+    mapEl.innerHTML = location.mapsEmbed;
+    return;
+  }
+
+  const src = `https://maps.google.com/maps?q=${location.pinLat},${location.pinLng}&z=13&output=embed`;
+  mapEl.innerHTML = `<iframe src="${src}" width="100%" height="100%" style="border:0" loading="lazy" title="Property location"></iframe>`;
+}
+
+function initPropertyMap({ mapEl, location, propertyName }) {
+  const lat = Number(location.pinLat);
+  const lng = Number(location.pinLng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+  const mapsConfig = window.ALTUS_MAPS_CONFIG || {};
+  if (!mapsConfig.apiKey || !mapsConfig.mapId) {
+    setMapFallback(mapEl, location);
+    return;
+  }
+
+  mapEl.innerHTML = `
+    <div class="property-map-loading" role="status">
+      <span class="property-map-loading__pulse" aria-hidden="true"></span>
+      <span>Loading the neighborhood map…</span>
+    </div>`;
+
+  let initialized = false;
+  const initialize = async () => {
+    if (initialized) return;
+    initialized = true;
+
+    try {
+      await loadGoogleMaps();
+      const [{ Map }, { AdvancedMarkerElement }] = await Promise.all([
+        google.maps.importLibrary('maps'),
+        google.maps.importLibrary('marker'),
+      ]);
+
+      mapEl.replaceChildren();
+      const map = new Map(mapEl, {
+        center: { lat, lng },
+        zoom: 14,
+        mapId: mapsConfig.mapId,
+        tilt: 0,
+        heading: 0,
+        clickableIcons: false,
+        disableDefaultUI: true,
+        zoomControl: true,
+        gestureHandling: 'cooperative',
+        keyboardShortcuts: false,
+      });
+
+      const logoUrl = document.querySelector('.nav__logo-img')?.getAttribute('src') || '';
+      new AdvancedMarkerElement({
+        map,
+        position: { lat, lng },
+        title: propertyName,
+        content: createPropertyMapMarker({ logoUrl, propertyName }),
+        zIndex: 10,
+      });
+    } catch (error) {
+      console.warn('Branded property map unavailable; using the embed fallback.', error);
+      setMapFallback(mapEl, location);
+    }
+  };
+
+  if (!('IntersectionObserver' in window)) {
+    initialize();
+    return;
+  }
+
+  const observer = new IntersectionObserver(entries => {
+    if (!entries.some(entry => entry.isIntersecting)) return;
+    observer.disconnect();
+    initialize();
+  }, { rootMargin: '600px 0px' });
+  observer.observe(mapEl);
+}
+
 // ── Hero gallery (full-page background slides) ────────
 function initGallery(photos) {
   const slidesEl = document.querySelector('.slides');
@@ -529,13 +667,10 @@ function initFrameSections({ photos, amenities, description, bedrooms, bathrooms
 
     const mapEl = document.getElementById('frame-location-map');
     if (mapEl) {
-      if (location.mapsEmbed) {
-        mapEl.innerHTML = location.mapsEmbed;
-      } else if (location.pinLat && location.pinLng) {
-        const src = `https://maps.google.com/maps?q=${location.pinLat},${location.pinLng}&z=13&output=embed`;
-        mapEl.innerHTML = `<iframe src="${src}" width="100%" height="100%" style="border:0;border-radius:10px;" loading="lazy" title="Property location"></iframe>`;
+      if (location.pinLat && location.pinLng) {
+        initPropertyMap({ mapEl, location, propertyName });
       } else if (location.neighborhood) {
-        mapEl.innerHTML = `<div style="height:100%;display:flex;align-items:center;justify-content:center;color:rgba(0,0,0,0.4);font-size:13px;">📍 ${location.neighborhood}</div>`;
+        mapEl.innerHTML = `<div class="property-map-empty">📍 ${escapeHtml(location.neighborhood)}</div>`;
       }
     }
 

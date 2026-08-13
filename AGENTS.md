@@ -92,6 +92,13 @@ aws cloudfront create-invalidation --distribution-id E6XS2Y3HPS1YG --paths "/*" 
 # Property site / guidebook
 # The redesign is now the live root index.html. Do not re-pin Coming Soon after syncing.
 # Avoid --delete so the S3 rollback backup under backups/ is preserved.
+$googleSecret = aws secretsmanager get-secret-value --secret-id altus-retreats/dev/google --query SecretString --output text --profile altus | ConvertFrom-Json
+@"
+window.ALTUS_MAPS_CONFIG = Object.freeze({
+  apiKey: '$($googleSecret.mapsBrowserApiKey)',
+  mapId: '$($googleSecret.mapsMapId)',
+});
+"@ | Set-Content -Encoding utf8 frontend\property-site\js\maps-config.js
 aws s3 sync frontend\property-site\ s3://altus-retreats-frontend-dev-817760095908/ --profile altus
 aws s3 cp frontend\property-site\guidebook\js\guidebook.js s3://altus-retreats-frontend-dev-817760095908/guidebook/js/guidebook.js --content-type "application/javascript" --metadata-directive REPLACE --profile altus
 aws s3 cp frontend\property-site\guidebook\css\guidebook.css s3://altus-retreats-frontend-dev-817760095908/guidebook/css/guidebook.css --content-type "text/css" --metadata-directive REPLACE --profile altus
@@ -121,7 +128,7 @@ aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/*" 
 
 ## Secrets Manager convention
 - Hospitable PAT: `altus-retreats/{env}/hospitable` → `{ "default": "<PAT>", "kentucky": "<PAT>" }`
-- Google Places API: `altus-retreats/{env}/google` → `{ "placesApiKey": "AIza..." }`
+- Google APIs: `altus-retreats/{env}/google` → `{ "placesApiKey": "<server key>", "mapsBrowserApiKey": "<website-restricted browser key>", "mapsMapId": "<public Map ID>" }`. The browser key is emitted to ignored `frontend/property-site/js/maps-config.js` before deployment; it is public by design and protected with website + Maps JavaScript API restrictions.
 - (Stripe removed — Hospitable handles payments)
 
 ## DynamoDB conventions
@@ -163,6 +170,7 @@ Place items in a recommendations section (`sectionType: 'recommendations'`) rend
 - **Section structure in `frame-scroll`:** Each content section (reviews, location, promise) uses `frame-section > frame-section__wrap > frame-section__inner` (frosted glass panel). The property section uses `frame-section > frame-section__inner--property` (no wrap — full bleed photo grid).
 - **`book.html`** — Booking page. Nav + hero strip (first photo) + 2-column layout: property details left (stats, about, amenities, house rules), Hospitable widget right (sticky). `css/book.css` + `js/book.js`.
 - **`js/app.js`** — Fetches `/properties/{id}`, populates hero slides, pills, title blocks, frame sections (photos, description, amenities, reviews, location, promise).
+- **Property map** — Uses the Maps JavaScript API with a vector Map ID, a property-branded Advanced Marker, fixed north-up view, and lazy initialization near the Location section. The Map ID's cloud style hides lodging/business POIs; the page falls back to the legacy iframe if browser map configuration is absent or the loader fails. Browser configuration lives in ignored `js/maps-config.js`, generated from Secrets Manager during deployment.
 - **Content fields** (all in `property.content`, admin-editable via ContentEditor):
   - `heroHeadline` — property name override
   - `heroSubtitle` — tagline / description override
@@ -192,6 +200,7 @@ Place items in a recommendations section (`sectionType: 'recommendations'`) rend
 - Property-scoped review management added 2026-08-12: the admin Reviews tab supports draft/published reviews, featured placement, reviewer name, rating, stay date, source label, and exact review text. Published reviews feed the existing homepage review wall; featured reviews display first.
 - Four layout-testing reviews are stored for `kentucky` as unpublished drafts (`demo-layout-1` through `demo-layout-4`). They are clearly labeled `Demo content - do not publish`, exercise featured and standard card layouts, and must not be presented as authentic guest testimonials. The live public reviews feed remains empty until a real review is deliberately published.
 - Property site redesign is deployed as the root `index.html` at `www.staytheoverhang.com/` for live Hospitable widget testing (latest frontend deployment and CloudFront verification completed 2026-08-12). The page remains noindex during testing.
+- A branded vector Google property map was added 2026-08-13 with a custom property marker, lazy loading, and iframe fallback. Its Map ID must remain associated with the Altus cloud map style that hides lodging/business POIs.
 - The property page uses a wide editorial layout with a Blue + Canyon Red palette (`#1D3557`, `#D1614D`, `#FBFDFF`), full-width responsive photo gallery, centered content + Hospitable widget rail, logo/title lockup, dynamic property facts, conditional two-king-bedroom callout, experience photography, BOLT-inspired dynamic review wall, and scroll-rise reveals. The compact guest-oriented navigation is Overview / Amenities / Reviews / Location, with ordered scroll-position tracking for reliable active states in both directions. The photo gallery has a persistent mobile-safe View All entry point, a masonry-style editorial index, and a deep-blue immersive lightbox with keyboard, thumbnail, and swipe navigation. Hospitable amenities are grouped client-side into scannable category cards, with the complete dynamic list available in a categorized, instantly searchable modal. The closing "Altus standard" section uses four specific numbered commitments (honest listing, arrival preparation, real support, and direct-booking value) instead of decorative icons. The landing retains its framed photo-slider layout with layered contrast, a glass navigation rail, Canyon Red Book Now button, animated Explore cue, and a restrained scroll-linked hero parallax/fade into a compact deep-blue property header. A subtle lower-left back-to-landing button appears only after the gallery has passed. Book Now scrolls to the centered on-page Hospitable widget on desktop and mobile; at 390px the complete widget lands below the sticky header and remains fully visible. Reduced-motion preferences are honored, and all existing API/widget hooks remain intact.
 - `getReviews` Lambda (`GET /properties/{propertyId}/reviews`) is SAM-deployed and live.
 - MediaBucket allows public `s3:GetObject` on `properties/*` only (added 2026-08-11) — uploaded photos (hero slider, etc.) are embedded as direct S3 URLs in property content and need to be publicly readable. ACLs stay blocked; access is via bucket policy only.

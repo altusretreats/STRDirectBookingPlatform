@@ -95,10 +95,21 @@ Hospitable PAT:
 aws secretsmanager update-secret --secret-id altus-retreats/dev/hospitable --secret-string '{"default":"YOUR_PAT","kentucky":"YOUR_PAT"}' --profile altus
 ```
 
-Google Places:
+Google APIs (preserve all three fields when rotating either key):
 
 ```powershell
-aws secretsmanager update-secret --secret-id altus-retreats/dev/google --secret-string '{"placesApiKey":"YOUR_KEY"}' --profile altus
+$googleSecret = [ordered]@{
+  placesApiKey      = 'YOUR_SERVER_KEY'
+  mapsBrowserApiKey = 'YOUR_WEBSITE_RESTRICTED_KEY'
+  mapsMapId          = 'YOUR_MAP_ID'
+} | ConvertTo-Json -Compress
+$secretFile = [System.IO.Path]::GetTempFileName()
+try {
+  [System.IO.File]::WriteAllText($secretFile, $googleSecret, [System.Text.UTF8Encoding]::new($false))
+  aws secretsmanager update-secret --secret-id altus-retreats/dev/google --secret-string "file://$secretFile" --profile altus
+} finally {
+  Remove-Item -LiteralPath $secretFile -Force -ErrorAction SilentlyContinue
+}
 ```
 
 Hospitable is the merchant of record and handles checkout. There are no Stripe secrets.

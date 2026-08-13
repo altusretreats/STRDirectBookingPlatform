@@ -8,6 +8,7 @@ node_modules/
 .env.local
 .env.*.local
 *.pem
+frontend/property-site/js/maps-config.js
 
 # Build artifacts
 dist/
