@@ -458,7 +458,7 @@ function initPropertyMap({ mapEl, location, propertyName, places = [] }) {
         map.panTo({ lat: selectedPlace.lat, lng: selectedPlace.lng });
         if ((map.getZoom() || 0) < 14) map.setZoom(14);
         infoWindow.setContent(createPlaceInfoContent(selectedPlace));
-        infoWindow.open({ map, anchor: entry.marker });
+        infoWindow.open({ map, anchor: entry.marker, shouldFocus: false });
       };
 
       infoWindow.addListener('closeclick', () => {
