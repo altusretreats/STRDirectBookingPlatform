@@ -104,7 +104,9 @@ const PLACE_ICON_PATHS = {
   arch: '<path d="M3 20h4v-5a5 5 0 0 1 10 0v5h4"/><path d="M3 20C4 11 7 6 12 4c5 2 8 7 9 16"/>',
   climber: '<path d="M19 3v18M14 6l5-2M12 9l3 3M15 12l-2 5M15 12l3 3"/><circle cx="12" cy="6" r="1.5"/>',
   carabiner: '<path d="M16.8 3.8a5 5 0 0 1 0 7.1l-6 6a3 3 0 1 1-4.3-4.2l6.1-6.1"/><path d="m11 8 5 5"/>',
+  hiking: '<path d="M7 3v8l-3 4v4h16v-4l-7-1-2-4V3H7Z"/><path d="M8 7h4M8 10h4M5 16h14"/>',
   trail: '<path d="M5 18h4l-2-3h2L6 9l-3 6h2l-2 3h2v3M18 17h3l-2-3h2l-3-6-3 6h2l-2 3h3v4"/><path d="M10 21c0-5 5-6 5-10"/>',
+  bridge: '<path d="M3 8c5 1 7-2 10-2s5 2 8 2v12h-4v-4a5 5 0 0 0-10 0v4H3V8Z"/><path d="M3 11h18"/>',
   paddle: '<path d="M3 15c4 4 14 4 18 0H3Z"/><path d="m7 4 10 16M5 3l4 2-2 3M19 21l-4-2 2-3"/>',
   offroad: '<path d="M4 16h16v-5l-3-4H8l-2 4H4v5ZM9 7v4h8M3 13h3M18 13h3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>',
   shopping: '<path d="M5 8h14l-1 12H6L5 8Z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/>',
@@ -115,7 +117,7 @@ const PLACE_ICON_PATHS = {
 const DEFAULT_PLACE_ICONS = {
   restaurant: 'food',
   attraction: 'arch',
-  activity: 'trail',
+  activity: 'hiking',
   shopping: 'shopping',
   shop: 'shopping',
   services: 'services',
