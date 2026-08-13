@@ -316,6 +316,7 @@ function SectionModal({ section, saving, propertyId, onSave, onClose }) {
   const [data, setData] = useState({ ...section });
   const [newItem, setNewItem] = useState({ type: 'text', label: '', content: '', aiContext: '', hostNotes: '' });
   const [showAiFields, setShowAiFields] = useState(false);
+  const [itemNotice, setItemNotice] = useState('');
 
   const isRecs = data.sectionType === 'recommendations';
   const isWelcome = data.sectionType === 'welcome';
@@ -324,10 +325,16 @@ function SectionModal({ section, saving, propertyId, onSave, onClose }) {
   const setNI = (k, v) => setNewItem(i => ({ ...i, [k]: v }));
 
   function addItem() {
-    if (!newItem.label && newItem.type !== 'place') return;
-    const item = { ...newItem, itemId: `item-${Date.now()}`, order: (data.items?.length || 0 + 1) * 10 };
-    set('items', [...(data.items || []), item]);
+    const content = newItem.content.trim();
+    const label = newItem.label.trim() || (newItem.type === 'map' ? 'View on Google Maps' : newItem.type === 'link' ? 'Open link' : '');
+    if (!label || !content) {
+      setItemNotice(content ? 'Add a label for this item.' : 'Add the content or URL before adding this item.');
+      return;
+    }
+    const item = { ...newItem, label, content, itemId: `item-${Date.now()}`, order: ((data.items?.length || 0) + 1) * 10 };
+    setData(current => ({ ...current, items: [...(current.items || []), item] }));
     setNewItem({ type: newItem.type, label: '', content: '', aiContext: '', hostNotes: '' });
+    setItemNotice(`${label} added. Save the section to keep this change.`);
   }
 
   function removeItem(itemId) {
@@ -449,11 +456,17 @@ function SectionModal({ section, saving, propertyId, onSave, onClose }) {
             {/* Add item form */}
             {isRecs ? (
               <PlaceAddForm propertyId={propertyId} onAdd={placeItem => {
-                const item = { ...placeItem, itemId: `item-${Date.now()}`, type: 'place', order: (data.items?.length || 0 + 1) * 10 };
-                set('items', [...(data.items || []), item]);
+                const item = { ...placeItem, itemId: `item-${Date.now()}`, type: 'place', order: ((data.items?.length || 0) + 1) * 10 };
+                setData(current => ({ ...current, items: [...(current.items || []), item] }));
+                setItemNotice(`${placeItem.place?.name || placeItem.label || 'Place'} added. Save the section to keep this change.`);
               }} />
             ) : (
               <GenericAddForm newItem={newItem} setNI={setNI} onAdd={addItem} />
+            )}
+            {itemNotice && (
+              <div role="status" style={{ ...s.itemNotice, ...(itemNotice.startsWith('Add ') ? s.itemNoticeError : {}) }}>
+                {itemNotice}
+              </div>
             )}
           </div>}
         </div>
@@ -860,6 +873,8 @@ const s = {
   aiToggleSub:   { fontSize: 11, color: '#6B7280', fontWeight: 400 },
   placePreview:       { marginTop: 14, padding: 14, background: '#F9FAFB', borderRadius: 10, border: '1px solid #E5E7EB' },
   mockWarning:        { marginTop: 10, padding: '8px 12px', background: '#FFFBEB', border: '1px solid #FCD34D', borderRadius: 6, fontSize: 12, color: '#92400E' },
+  itemNotice:         { marginTop: 10, padding: '9px 12px', border: '1px solid #A7D7C7', borderRadius: 7, background: '#EFFAF6', color: '#23614D', fontSize: 12, fontWeight: 600 },
+  itemNoticeError:    { borderColor: '#F5B8AE', background: '#FFF4F1', color: '#A33F31' },
   mapIconGrid:        { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(105px, 1fr))', gap: 7 },
   mapIconOption:      { display: 'flex', minWidth: 0, alignItems: 'center', gap: 7, padding: '7px 8px', border: '1px solid #D7DEE3', borderRadius: 8, background: '#fff', color: '#374151', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' },
   mapIconOptionSelected: { borderColor: '#1D3557', background: '#EEF3F7', boxShadow: '0 0 0 1px #1D3557' },
