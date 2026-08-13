@@ -155,9 +155,9 @@ Resources:
     Type: AWS::SecretsManager::Secret
     Properties:
       Name: !Sub altus-retreats/${Environment}/google
-      Description: Google Places API key for guidebook local recommendations
-      # Structure: { "placesApiKey": "AIza..." }
-      SecretString: '{"placesApiKey": "REPLACE_ME"}'
+      Description: Google server/browser API keys and public Map ID
+      # Structure: { "placesApiKey": "<server key>", "mapsBrowserApiKey": "<website-restricted key>", "mapsMapId": "<public Map ID>" }
+      # Intentionally no placeholder SecretString: populate after deploy using DEV-COMMANDS.md.
 
   # ── Shared Lambda Layer ───────────────────
   SharedLayer:

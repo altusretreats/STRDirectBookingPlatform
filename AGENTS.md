@@ -97,6 +97,7 @@ $googleSecret = aws secretsmanager get-secret-value --secret-id altus-retreats/d
 window.ALTUS_MAPS_CONFIG = Object.freeze({
   apiKey: '$($googleSecret.mapsBrowserApiKey)',
   mapId: '$($googleSecret.mapsMapId)',
+  markerLogoUrl: '/img/logo-the-overhang-map-icon.png',
 });
 "@ | Set-Content -Encoding utf8 frontend\property-site\js\maps-config.js
 aws s3 sync frontend\property-site\ s3://altus-retreats-frontend-dev-817760095908/ --profile altus
@@ -128,7 +129,7 @@ aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/*" 
 
 ## Secrets Manager convention
 - Hospitable PAT: `altus-retreats/{env}/hospitable` → `{ "default": "<PAT>", "kentucky": "<PAT>" }`
-- Google APIs: `altus-retreats/{env}/google` → `{ "placesApiKey": "<server key>", "mapsBrowserApiKey": "<website-restricted browser key>", "mapsMapId": "<public Map ID>" }`. The browser key is emitted to ignored `frontend/property-site/js/maps-config.js` before deployment; it is public by design and protected with website + Maps JavaScript API restrictions.
+- Google APIs: `altus-retreats/{env}/google` → `{ "placesApiKey": "<server key>", "mapsBrowserApiKey": "<website-restricted browser key>", "mapsMapId": "<public Map ID>" }`. The browser key is emitted to ignored `frontend/property-site/js/maps-config.js` before deployment; it is public by design and protected with website + Maps JavaScript API restrictions. On Windows PowerShell, update this secret through a UTF-8 JSON file (`file://...`) as documented in `DEV-COMMANDS.md`; passing compressed JSON directly to the native AWS command can strip quotes and corrupt the secret structure.
 - (Stripe removed — Hospitable handles payments)
 
 ## DynamoDB conventions

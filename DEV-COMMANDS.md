@@ -112,6 +112,8 @@ try {
 }
 ```
 
+Keep the `file://` form above on Windows. Passing `$googleSecret` directly to `--secret-string` can strip JSON quotation marks and leave the secret unreadable by the Lambda.
+
 Hospitable is the merchant of record and handles checkout. There are no Stripe secrets.
 
 ## Seed and admin

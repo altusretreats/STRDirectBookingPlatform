@@ -1,6 +1,6 @@
 # Deploy the Property Site (Front End)
 
-Last verified: 2026-08-12, including the centered Hospitable widget and mobile Book Now scroll behavior.
+Last verified: 2026-08-13, including the branded attraction map and compact property marker.
 
 The redesign is currently served from the root:
 
@@ -21,6 +21,7 @@ $googleSecret = aws secretsmanager get-secret-value --secret-id altus-retreats/d
 window.ALTUS_MAPS_CONFIG = Object.freeze({
   apiKey: '$($googleSecret.mapsBrowserApiKey)',
   mapId: '$($googleSecret.mapsMapId)',
+  markerLogoUrl: '/img/logo-the-overhang-map-icon.png',
 });
 "@ | Set-Content -Encoding utf8 frontend\property-site\js\maps-config.js
 aws s3 sync frontend\property-site\ s3://altus-retreats-frontend-dev-817760095908/ --profile altus
