@@ -1797,22 +1797,22 @@ h2 {
 .location-explorer .frame-location-map { height: clamp(420px, 48vw, 540px); }
 .place-map-marker {
   display: grid;
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   place-items: center;
   padding: 0;
   border: 2px solid #fff;
-  border-radius: 50% 50% 50% 8px;
+  border-radius: 50% 50% 50% 6px;
   background: var(--property-canyon);
   color: #fff;
-  box-shadow: 0 7px 20px rgba(29, 53, 87, 0.28);
+  box-shadow: 0 5px 14px rgba(29, 53, 87, 0.26);
   cursor: pointer;
   transform: rotate(-45deg);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 .place-map-marker svg {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.8;
@@ -1821,8 +1821,8 @@ h2 {
   transform: rotate(45deg);
 }
 .place-map-marker .place-marker-icon--carabiner {
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   stroke-width: 2;
 }
 .place-map-marker--restaurant { background: #b95745; }
@@ -1832,7 +1832,7 @@ h2 {
 .place-map-marker--shop { background: #88617b; }
 .place-map-marker--services { background: #6d6670; }
 .place-map-marker:hover,
-.place-map-marker.is-active { transform: rotate(-45deg) scale(1.13); box-shadow: 0 9px 26px rgba(29, 53, 87, 0.4); }
+.place-map-marker.is-active { transform: rotate(-45deg) scale(1.15); box-shadow: 0 7px 20px rgba(29, 53, 87, 0.36); }
 .frame-location-map .gm-style-iw-c { padding: 0 !important; }
 .frame-location-map .gm-style-iw-chr {
   position: absolute;
