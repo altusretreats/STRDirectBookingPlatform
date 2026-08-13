@@ -355,6 +355,17 @@ function initPropertyMap({ mapEl, location, propertyName, places = [] }) {
         keyboardShortcuts: false,
       });
 
+      let wheelZoomActive = false;
+      let wheelZoomTimer;
+      mapEl.addEventListener('wheel', () => {
+        wheelZoomActive = true;
+        window.clearTimeout(wheelZoomTimer);
+        wheelZoomTimer = window.setTimeout(() => { wheelZoomActive = false; }, 320);
+      }, { capture: true, passive: true });
+      map.addListener('zoom_changed', () => {
+        if (wheelZoomActive) map.setCenter({ lat, lng });
+      });
+
       const logoUrl = document.querySelector('.nav__logo-img')?.getAttribute('src') || '';
       new AdvancedMarkerElement({
         map,
