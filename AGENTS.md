@@ -67,6 +67,9 @@ All AWS CLI and SAM commands use the named profile `altus` (region: `us-east-1`)
 Set up once with: `aws configure --profile altus`
 SAM profile is set in `samconfig.toml` under `[dev.deploy.parameters] profile = "altus"`.
 
+## New-machine / laptop setup
+The comprehensive Windows setup and verification checklist is [`LAPTOP-SETUP.md`](LAPTOP-SETUP.md). When work resumes from a new laptop, follow it in order, check off only steps actually verified on that machine, and do not deploy merely to validate the setup. The checklist includes the desktop pre-travel sync gate, secure GitHub/AWS/Codex sign-in, Node 22 and SAM installation, dependency restoration, ignored Maps configuration regeneration, non-mutating tests, and the final readiness report.
+
 ## Deploy commands (PowerShell on Windows)
 See also [`DEV-COMMANDS.md`](DEV-COMMANDS.md) for the full quick-reference (resource IDs, admin SPA build, secrets, seed scripts), or these self-contained step-by-step guides (no AI assistant needed): [`DEPLOY-FRONTEND.md`](DEPLOY-FRONTEND.md) (property site), [`DEPLOY-ADMIN.md`](DEPLOY-ADMIN.md) (admin panel), [`DEPLOY-GUIDEBOOK.md`](DEPLOY-GUIDEBOOK.md) (guest guidebook).
 
@@ -224,6 +227,7 @@ Place items in a recommendations section (`sectionType: 'recommendations'`) rend
 - Hospitable widget installed on index.html and book.html; `data-site-uuid` may need updating once Direct channel fully configured
 
 ## Key pending items
+- Complete and verify [`LAPTOP-SETUP.md`](LAPTOP-SETUP.md) on David's travel laptop before doing development or deployment from it.
 - Root domain `staytheoverhang.com` still needs DNS repoint off GoDaddy (see DNS / domain routing section)
 - AI concierge chat/agent integration (the public Markdown context feed and inclusion controls are complete)
 - The Lazy Palm: full property setup when ready to launch
