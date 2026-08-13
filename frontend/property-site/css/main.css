@@ -1740,6 +1740,15 @@ h2 {
   object-position: center top;
   filter: brightness(0) invert(1);
 }
+.property-map-marker__art--icon {
+  width: 36px;
+  height: 36px;
+}
+.property-map-marker__art--icon img {
+  width: 36px;
+  height: 36px;
+  object-position: center;
+}
 .property-map-marker__label {
   position: relative;
   z-index: 1;

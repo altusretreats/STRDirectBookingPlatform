@@ -6,4 +6,5 @@
 window.ALTUS_MAPS_CONFIG = Object.freeze({
   apiKey: 'YOUR_BROWSER_RESTRICTED_MAPS_JAVASCRIPT_API_KEY',
   mapId: 'YOUR_GOOGLE_MAP_ID',
+  markerLogoUrl: '', // Optional property-specific square/compact logo artwork.
 });

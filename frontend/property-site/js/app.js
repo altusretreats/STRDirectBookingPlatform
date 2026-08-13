@@ -69,13 +69,13 @@ function loadGoogleMaps() {
   return googleMapsLoader;
 }
 
-function createPropertyMapMarker({ logoUrl, propertyName }) {
+function createPropertyMapMarker({ logoUrl, propertyName, iconOnly = false }) {
   const marker = document.createElement('div');
   marker.className = 'property-map-marker';
   marker.setAttribute('aria-label', propertyName);
 
   const art = document.createElement('span');
-  art.className = 'property-map-marker__art';
+  art.className = `property-map-marker__art${iconOnly ? ' property-map-marker__art--icon' : ''}`;
   const logo = document.createElement('img');
   logo.src = logoUrl;
   logo.alt = '';
@@ -388,12 +388,13 @@ function initPropertyMap({ mapEl, location, propertyName, places = [] }) {
         if (wheelZoomActive) map.setCenter({ lat, lng });
       });
 
-      const logoUrl = document.querySelector('.nav__logo-img')?.getAttribute('src') || '';
+      const dedicatedLogoUrl = safeExternalUrl(mapsConfig.markerLogoUrl);
+      const logoUrl = dedicatedLogoUrl || document.querySelector('.nav__logo-img')?.getAttribute('src') || '';
       new AdvancedMarkerElement({
         map,
         position: { lat, lng },
         title: propertyName,
-        content: createPropertyMapMarker({ logoUrl, propertyName }),
+        content: createPropertyMapMarker({ logoUrl, propertyName, iconOnly: Boolean(dedicatedLogoUrl) }),
         zIndex: 10,
       });
 
