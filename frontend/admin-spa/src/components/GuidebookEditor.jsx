@@ -622,14 +622,14 @@ function PlaceAddForm({ propertyId, onAdd }) {
     }
   }
 
-  function handleAdd() {
-    if (!preview) return;
+  function handleAdd(confirmedPlace = preview) {
+    if (!confirmedPlace) return;
     onAdd({
-      label:       preview.name,
+      label:       confirmedPlace.name,
       description: '',
       aiContext:   '',
       hostNotes:   '',
-      place:       preview,
+      place:       confirmedPlace,
     });
     setUrl('');
     setPreview(null);
@@ -721,7 +721,7 @@ function PlacePreview({ place: initialPlace, onAdd, onDismiss }) {
 
       <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
         <button style={s.btnSecondary} onClick={onDismiss}>Dismiss</button>
-        <button style={s.btnPrimary} onClick={onAdd}>Add to section</button>
+        <button style={s.btnPrimary} onClick={() => onAdd(p)}>Add to section</button>
       </div>
     </div>
   );
