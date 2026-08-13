@@ -72,7 +72,7 @@ const CATEGORY_COLORS = {
 };
 
 const MAP_ICON_OPTIONS = [
-  { value: '', label: 'Automatic', asset: locationMarkerIcon },
+  { value: '', label: 'Automatic' },
   { value: 'restaurant', label: 'Restaurant', asset: restaurantMarkerIcon },
   { value: 'coffee', label: 'Coffee / café', asset: coffeeMarkerIcon },
   { value: 'bar', label: 'Bar / brewery', asset: barMarkerIcon },
@@ -764,7 +764,7 @@ function MapIconPicker({ value, onChange }) {
             <span style={s.mapIconPreview} aria-hidden="true">
               {option.asset
                 ? <img src={option.asset} alt="" style={s.mapIconImage} />
-                : <span style={s.mapIconLegacy}>{option.value === 'arch' ? '⌒' : '⬡'}</span>}
+                : <span style={s.mapIconLegacy}>{option.value === '' ? 'A' : option.value === 'arch' ? '⌒' : '⬡'}</span>}
             </span>
             <span style={s.mapIconLabel}>{option.label}</span>
           </button>
