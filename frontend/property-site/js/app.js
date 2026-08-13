@@ -38,8 +38,23 @@ function loadGoogleMaps() {
     });
 
     window[callbackName] = () => {
-      delete window[callbackName];
-      resolve(window.google.maps);
+      let attempts = 0;
+      const resolveWhenReady = () => {
+        if (window.google?.maps?.importLibrary) {
+          delete window[callbackName];
+          resolve(window.google.maps);
+          return;
+        }
+        if (attempts < 20) {
+          attempts += 1;
+          window.setTimeout(resolveWhenReady, 50);
+          return;
+        }
+        delete window[callbackName];
+        googleMapsLoader = null;
+        reject(new Error('Google Maps initialized without its maps library.'));
+      };
+      resolveWhenReady();
     };
     script.src = `https://maps.googleapis.com/maps/api/js?${params}`;
     script.async = true;
