@@ -103,7 +103,7 @@ const PLACE_ICON_PATHS = {
   food: '<path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10M16 3v18M16 3c3 1 4 3.5 4 7h-4"/>',
   arch: '<path d="M3 20h4v-5a5 5 0 0 1 10 0v5h4"/><path d="M3 20C4 11 7 6 12 4c5 2 8 7 9 16"/>',
   climber: '<path d="M19 3v18M14 6l5-2M12 9l3 3M15 12l-2 5M15 12l3 3"/><circle cx="12" cy="6" r="1.5"/>',
-  carabiner: '<path d="M16.8 3.8a5 5 0 0 1 0 7.1l-6 6a3 3 0 1 1-4.3-4.2l6.1-6.1"/><path d="m11 8 5 5"/>',
+  carabiner: '<path d="M8.7 3.2c4.8-1.8 9.4 1 10.4 5.6 1.1 5-1.6 10.2-6.2 11.8-4.1 1.4-8.3-.9-9.1-5-.5-2.7.4-5.4 2.6-7.2"/><rect x="4.8" y="6.5" width="5.2" height="7.1" rx="1" transform="rotate(-24 7.4 10)"/><path d="m6.2 8 3.1-1.4M7.9 12.8l3-1.4"/>',
   hiking: '<path d="M7 3v8l-3 4v4h16v-4l-7-1-2-4V3H7Z"/><path d="M8 7h4M8 10h4M5 16h14"/>',
   trail: '<path d="M5 18h4l-2-3h2L6 9l-3 6h2l-2 3h2v3M18 17h3l-2-3h2l-3-6-3 6h2l-2 3h3v4"/><path d="M10 21c0-5 5-6 5-10"/>',
   bridge: '<path d="M3 8c5 1 7-2 10-2s5 2 8 2v12h-4v-4a5 5 0 0 0-10 0v4H3V8Z"/><path d="M3 11h18"/>',
@@ -176,7 +176,7 @@ function placeMarkerIcon(place) {
   const icon = PLACE_ICON_PATHS[requestedIcon]
     ? requestedIcon
     : (DEFAULT_PLACE_ICONS[place?.category] || 'pin');
-  return `<svg viewBox="0 0 24 24" aria-hidden="true">${PLACE_ICON_PATHS[icon]}</svg>`;
+  return `<svg class="place-marker-icon place-marker-icon--${icon}" viewBox="0 0 24 24" aria-hidden="true">${PLACE_ICON_PATHS[icon]}</svg>`;
 }
 
 function createPlaceMarker(place) {
@@ -381,13 +381,26 @@ function initPropertyMap({ mapEl, location, propertyName, places = [] }) {
 
       let wheelZoomActive = false;
       let wheelZoomTimer;
+      let wheelRecenterTimers = [];
+      const propertyPosition = { lat, lng };
+      const recenterWheelZoom = () => map.setCenter(propertyPosition);
       mapEl.addEventListener('wheel', () => {
         wheelZoomActive = true;
         window.clearTimeout(wheelZoomTimer);
-        wheelZoomTimer = window.setTimeout(() => { wheelZoomActive = false; }, 320);
+        wheelRecenterTimers.forEach(timer => window.clearTimeout(timer));
+        recenterWheelZoom();
+        wheelRecenterTimers = [60, 160, 320, 600].map(delay => window.setTimeout(recenterWheelZoom, delay));
+        wheelZoomTimer = window.setTimeout(() => {
+          recenterWheelZoom();
+          wheelZoomActive = false;
+          wheelRecenterTimers = [];
+        }, 720);
       }, { capture: true, passive: true });
       map.addListener('zoom_changed', () => {
-        if (wheelZoomActive) map.setCenter({ lat, lng });
+        if (wheelZoomActive) recenterWheelZoom();
+      });
+      map.addListener('idle', () => {
+        if (wheelZoomActive) recenterWheelZoom();
       });
 
       const dedicatedLogoUrl = safeExternalUrl(mapsConfig.markerLogoUrl);

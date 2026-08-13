@@ -1820,6 +1820,11 @@ h2 {
   stroke-linejoin: round;
   transform: rotate(45deg);
 }
+.place-map-marker .place-marker-icon--carabiner {
+  width: 28px;
+  height: 28px;
+  stroke-width: 2;
+}
 .place-map-marker--restaurant { background: #b95745; }
 .place-map-marker--activity { background: #416f78; }
 .place-map-marker--attraction { background: #6f7550; }
