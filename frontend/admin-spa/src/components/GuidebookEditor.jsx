@@ -55,6 +55,20 @@ const CATEGORY_COLORS = {
   services:   '#F9FAFB',
 };
 
+const MAP_ICON_OPTIONS = [
+  { value: '', label: 'Automatic from category' },
+  { value: 'food', label: 'Food — fork and knife' },
+  { value: 'arch', label: 'Sandstone arch' },
+  { value: 'climber', label: 'Climber on a cliff' },
+  { value: 'carabiner', label: 'Carabiner' },
+  { value: 'trail', label: 'Forest trail' },
+  { value: 'paddle', label: 'Paddle / kayak' },
+  { value: 'offroad', label: 'Off-road / 4×4' },
+  { value: 'shopping', label: 'Shopping bag' },
+  { value: 'services', label: 'Fuel / services' },
+  { value: 'pin', label: 'Classic map pin' },
+];
+
 export default function GuidebookEditor({ propertyId, propertyName, property, onPropertySaved }) {
   const [sections, setSections] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -537,7 +551,7 @@ function PlaceItemRow({ item, onRemove, onUpdate }) {
       {/* Expanded editor */}
       {expanded && (
         <div style={{ width: '100%', marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(0,0,0,0.08)' }}>
-          <div style={s.formRow}>
+          <div style={{ ...s.formRow, flexWrap: 'wrap' }}>
             <div style={s.formGroup}>
               <label style={s.labelSm}>Display name</label>
               <input style={s.input} value={p.name || ''} onChange={e => onUpdate({ place: { ...p, name: e.target.value } })} />
@@ -546,6 +560,12 @@ function PlaceItemRow({ item, onRemove, onUpdate }) {
               <label style={s.labelSm}>Category</label>
               <select style={s.input} value={p.category || 'activity'} onChange={e => onUpdate({ place: { ...p, category: e.target.value } })}>
                 {Object.entries(CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </div>
+            <div style={s.formGroup}>
+              <label style={s.labelSm}>Map marker</label>
+              <select style={s.input} value={p.mapIcon || ''} onChange={e => onUpdate({ place: { ...p, mapIcon: e.target.value } })}>
+                {MAP_ICON_OPTIONS.map(option => <option key={option.value || 'auto'} value={option.value}>{option.label}</option>)}
               </select>
             </div>
           </div>
@@ -677,7 +697,7 @@ function PlacePreview({ place: initialPlace, onAdd, onDismiss }) {
 
       {/* Editable override fields */}
       <div style={{ marginTop: 14 }}>
-        <div style={s.formRow}>
+        <div style={{ ...s.formRow, flexWrap: 'wrap' }}>
           <div style={s.formGroup}>
             <label style={s.labelSm}>Name override</label>
             <input style={s.input} value={p.name} onChange={e => update('name', e.target.value)} />
@@ -686,6 +706,12 @@ function PlacePreview({ place: initialPlace, onAdd, onDismiss }) {
             <label style={s.labelSm}>Category</label>
             <select style={s.input} value={p.category} onChange={e => update('category', e.target.value)}>
               {Object.entries(CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+          </div>
+          <div style={s.formGroup}>
+            <label style={s.labelSm}>Map marker</label>
+            <select style={s.input} value={p.mapIcon || ''} onChange={e => update('mapIcon', e.target.value)}>
+              {MAP_ICON_OPTIONS.map(option => <option key={option.value || 'auto'} value={option.value}>{option.label}</option>)}
             </select>
           </div>
         </div>

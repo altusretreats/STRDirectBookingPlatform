@@ -1814,6 +1814,8 @@ h2 {
 .place-map-marker--activity { background: #416f78; }
 .place-map-marker--attraction { background: #6f7550; }
 .place-map-marker--shopping { background: #88617b; }
+.place-map-marker--shop { background: #88617b; }
+.place-map-marker--services { background: #6d6670; }
 .place-map-marker:hover,
 .place-map-marker.is-active { transform: rotate(-45deg) scale(1.13); box-shadow: 0 9px 26px rgba(29, 53, 87, 0.4); }
 .place-map-info {

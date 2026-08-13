@@ -94,7 +94,32 @@ const PLACE_CATEGORY_META = {
   attraction: { label: 'Attractions', singular: 'Attraction' },
   activity: { label: 'Things to do', singular: 'Activity' },
   shopping: { label: 'Shopping', singular: 'Shopping' },
+  shop: { label: 'Shopping', singular: 'Shop' },
+  services: { label: 'Services', singular: 'Service' },
   other: { label: 'Local favorites', singular: 'Local favorite' },
+};
+
+const PLACE_ICON_PATHS = {
+  food: '<path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10M16 3v18M16 3c3 1 4 3.5 4 7h-4"/>',
+  arch: '<path d="M3 20h4v-5a5 5 0 0 1 10 0v5h4"/><path d="M3 20C4 11 7 6 12 4c5 2 8 7 9 16"/>',
+  climber: '<path d="M19 3v18M14 6l5-2M12 9l3 3M15 12l-2 5M15 12l3 3"/><circle cx="12" cy="6" r="1.5"/>',
+  carabiner: '<path d="M16.8 3.8a5 5 0 0 1 0 7.1l-6 6a3 3 0 1 1-4.3-4.2l6.1-6.1"/><path d="m11 8 5 5"/>',
+  trail: '<path d="M5 18h4l-2-3h2L6 9l-3 6h2l-2 3h2v3M18 17h3l-2-3h2l-3-6-3 6h2l-2 3h3v4"/><path d="M10 21c0-5 5-6 5-10"/>',
+  paddle: '<path d="M3 15c4 4 14 4 18 0H3Z"/><path d="m7 4 10 16M5 3l4 2-2 3M19 21l-4-2 2-3"/>',
+  offroad: '<path d="M4 16h16v-5l-3-4H8l-2 4H4v5ZM9 7v4h8M3 13h3M18 13h3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>',
+  shopping: '<path d="M5 8h14l-1 12H6L5 8Z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/>',
+  services: '<path d="M5 3h9v18H5V3ZM7 6h5v4H7V6ZM14 8h3l2 3v7a2 2 0 0 1-4 0v-3"/>',
+  pin: '<path d="M12 21s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/>',
+};
+
+const DEFAULT_PLACE_ICONS = {
+  restaurant: 'food',
+  attraction: 'arch',
+  activity: 'trail',
+  shopping: 'shopping',
+  shop: 'shopping',
+  services: 'services',
+  other: 'pin',
 };
 
 function normalizePlaceCategory(place) {
@@ -144,15 +169,12 @@ function safeExternalUrl(value) {
   }
 }
 
-function placeMarkerIcon(category) {
-  const paths = {
-    restaurant: '<path d="M7 3v8M4 3v5a3 3 0 0 0 6 0V3M7 11v10M16 3v18M16 3c3 1 4 3.5 4 7h-4"/>',
-    attraction: '<path d="m4 20 5.5-10 3 5 2-3 5.5 8H4Z"/><path d="m14 7 1-2 1 2 2 .5-1.5 1.4.4 2.1-1.9-1-1.9 1 .4-2.1L12 7.5 14 7Z"/>',
-    activity: '<path d="M4 19 9 5l4 9 2-4 5 9H4Z"/><path d="m8 12 2-2 2 2"/>',
-    shopping: '<path d="M5 8h14l-1 12H6L5 8Z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/>',
-    other: '<path d="M12 21s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/>',
-  };
-  return `<svg viewBox="0 0 24 24" aria-hidden="true">${paths[category] || paths.other}</svg>`;
+function placeMarkerIcon(place) {
+  const requestedIcon = String(place?.mapIcon || '');
+  const icon = PLACE_ICON_PATHS[requestedIcon]
+    ? requestedIcon
+    : (DEFAULT_PLACE_ICONS[place?.category] || 'pin');
+  return `<svg viewBox="0 0 24 24" aria-hidden="true">${PLACE_ICON_PATHS[icon]}</svg>`;
 }
 
 function createPlaceMarker(place) {
@@ -160,7 +182,7 @@ function createPlaceMarker(place) {
   marker.type = 'button';
   marker.className = `place-map-marker place-map-marker--${place.category}`;
   marker.setAttribute('aria-label', `Show ${place.name} on the map`);
-  marker.innerHTML = placeMarkerIcon(place.category);
+  marker.innerHTML = placeMarkerIcon(place);
   return marker;
 }
 
@@ -178,7 +200,7 @@ function createPlaceCard(place, onSelect) {
   const rating = Number(place.rating);
 
   card.innerHTML = `
-    ${photoUrl ? `<img class="location-place-card__photo" src="${escapeHtml(photoUrl)}" alt="" loading="lazy">` : `<div class="location-place-card__photo location-place-card__photo--empty">${placeMarkerIcon(place.category)}</div>`}
+    ${photoUrl ? `<img class="location-place-card__photo" src="${escapeHtml(photoUrl)}" alt="" loading="lazy">` : `<div class="location-place-card__photo location-place-card__photo--empty">${placeMarkerIcon(place)}</div>`}
     <div class="location-place-card__body">
       <span class="location-place-card__category">${escapeHtml(PLACE_CATEGORY_META[place.category]?.singular || 'Local favorite')}</span>
       <h4>${escapeHtml(place.name || 'Nearby favorite')}</h4>
