@@ -57,18 +57,24 @@ const CATEGORY_COLORS = {
 
 const MAP_ICON_OPTIONS = [
   { value: '', label: 'Automatic from category' },
-  { value: 'food', label: 'Food — fork and knife' },
+  { value: 'restaurant', label: 'Restaurant — fork and knife' },
+  { value: 'coffee', label: 'Coffee / café' },
+  { value: 'bar', label: 'Bar / brewery' },
   { value: 'arch', label: 'Sandstone arch' },
-  { value: 'climber', label: 'Climber on a cliff' },
+  { value: 'climber', label: 'Rock climbing' },
   { value: 'carabiner', label: 'Carabiner' },
-  { value: 'hiking', label: 'Hiking boot' },
-  { value: 'trail', label: 'Forest trail' },
-  { value: 'bridge', label: 'Sandstone bridge' },
-  { value: 'paddle', label: 'Paddle / kayak' },
+  { value: 'hiking', label: 'Hiking' },
+  { value: 'trail', label: 'Trailhead / trail sign' },
+  { value: 'bridge', label: 'Bridge' },
+  { value: 'paddle', label: 'Kayaking / paddling' },
   { value: 'offroad', label: 'Off-road / 4×4' },
-  { value: 'shopping', label: 'Shopping bag' },
-  { value: 'services', label: 'Fuel / services' },
-  { value: 'pin', label: 'Classic map pin' },
+  { value: 'gondola', label: 'Gondola / sky lift' },
+  { value: 'zipline', label: 'Zipline' },
+  { value: 'shopping', label: 'Shopping' },
+  { value: 'groceries', label: 'Groceries / market' },
+  { value: 'services', label: 'Gas / fuel' },
+  { value: 'camera', label: 'Scenic / photo spot' },
+  { value: 'pin', label: 'General location' },
 ];
 
 export default function GuidebookEditor({ propertyId, propertyName, property, onPropertySaved }) {

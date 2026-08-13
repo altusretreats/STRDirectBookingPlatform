@@ -1820,6 +1820,13 @@ h2 {
   stroke-linejoin: round;
   transform: rotate(45deg);
 }
+.place-map-marker img.place-marker-icon--asset {
+  width: 17px;
+  height: 17px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+  transform: rotate(45deg);
+}
 .place-map-marker .place-marker-icon--carabiner {
   width: 22px;
   height: 22px;

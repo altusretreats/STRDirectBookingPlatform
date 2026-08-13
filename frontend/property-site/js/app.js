@@ -114,6 +114,26 @@ const PLACE_ICON_PATHS = {
   pin: '<path d="M12 21s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"/><circle cx="12" cy="9" r="2.5"/>',
 };
 
+const PLACE_ICON_ASSETS = {
+  food: 'restaurant.svg',
+  restaurant: 'restaurant.svg',
+  climber: 'climbing.svg',
+  hiking: 'hiking.svg',
+  trail: 'trail.svg',
+  bridge: 'bridge.svg',
+  paddle: 'kayak.svg',
+  offroad: 'offroad.svg',
+  shopping: 'shopping.svg',
+  services: 'gas.svg',
+  pin: 'location.svg',
+  gondola: 'gondola.svg',
+  zipline: 'zipline.svg',
+  coffee: 'coffee.svg',
+  bar: 'bar.svg',
+  groceries: 'groceries.svg',
+  camera: 'camera.svg',
+};
+
 const DEFAULT_PLACE_ICONS = {
   restaurant: 'food',
   attraction: 'arch',
@@ -173,9 +193,12 @@ function safeExternalUrl(value) {
 
 function placeMarkerIcon(place) {
   const requestedIcon = String(place?.mapIcon || '');
-  const icon = PLACE_ICON_PATHS[requestedIcon]
+  const icon = PLACE_ICON_ASSETS[requestedIcon] || PLACE_ICON_PATHS[requestedIcon]
     ? requestedIcon
     : (DEFAULT_PLACE_ICONS[place?.category] || 'pin');
+  if (PLACE_ICON_ASSETS[icon]) {
+    return `<img class="place-marker-icon place-marker-icon--asset place-marker-icon--${icon}" src="img/map-icons/${PLACE_ICON_ASSETS[icon]}" alt="" aria-hidden="true">`;
+  }
   return `<svg class="place-marker-icon place-marker-icon--${icon}" viewBox="0 0 24 24" aria-hidden="true">${PLACE_ICON_PATHS[icon]}</svg>`;
 }
 
