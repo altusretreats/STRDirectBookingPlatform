@@ -428,17 +428,18 @@ function initPropertyMap({ mapEl, location, propertyName, places = [] }) {
         return { place, marker, content };
       });
 
-      const fitPlaces = () => {
+      const fitPlaces = ({ centerProperty = false } = {}) => {
         const bounds = new google.maps.LatLngBounds();
         bounds.extend({ lat, lng });
         visiblePlaces().forEach(place => bounds.extend({ lat: place.lat, lng: place.lng }));
         map.fitBounds(bounds, { top: 76, right: 62, bottom: 62, left: 62 });
         google.maps.event.addListenerOnce(map, 'idle', () => {
           if ((map.getZoom() || 0) > 14) map.setZoom(14);
+          if (centerProperty) map.setCenter(propertyPosition);
         });
       };
 
-      focusPlace = selectedPlace => {
+      focusPlace = (selectedPlace, { centerProperty = false } = {}) => {
         const filtered = visiblePlaces();
         placeMarkers.forEach(entry => {
           const visible = filtered.some(place => place.key === entry.place.key);
@@ -449,7 +450,7 @@ function initPropertyMap({ mapEl, location, propertyName, places = [] }) {
 
         if (!selectedPlace) {
           infoWindow.close();
-          fitPlaces();
+          fitPlaces({ centerProperty });
           return;
         }
         const entry = placeMarkers.find(item => item.place.key === selectedPlace.key);
@@ -459,6 +460,10 @@ function initPropertyMap({ mapEl, location, propertyName, places = [] }) {
         infoWindow.setContent(createPlaceInfoContent(selectedPlace));
         infoWindow.open({ map, anchor: entry.marker });
       };
+
+      infoWindow.addListener('closeclick', () => {
+        focusPlace(null, { centerProperty: true });
+      });
 
       focusPlace(null);
     } catch (error) {
