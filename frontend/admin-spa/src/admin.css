@@ -115,6 +115,22 @@ input:focus, textarea:focus, select:focus {
   background-size: cover;
   overflow: hidden;
 }
+.guidebook-pdf-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 20px;
+  padding: 16px 18px;
+  border: 1px solid var(--admin-line);
+  border-radius: 14px;
+  background: var(--admin-mist);
+}
+.guidebook-pdf-notice strong,
+.guidebook-pdf-notice span { display: block; }
+.guidebook-pdf-notice strong { margin-bottom: 4px; color: var(--admin-blue); font-family: "Fraunces", Georgia, serif; font-size: 17px; }
+.guidebook-pdf-notice span { color: var(--admin-muted); font-size: 12px; line-height: 1.5; }
+.guidebook-pdf-notice .guidebook-pdf-saved { flex: 0 0 auto; color: #2f735d; font-weight: 700; }
 
 @media (max-width: 860px) {
   .admin-shell { display: block !important; }
@@ -125,6 +141,8 @@ input:focus, textarea:focus, select:focus {
   .admin-editor-intro, .guidebook-hero-settings { display: block; }
   .admin-source-note { max-width: none; margin-top: 12px; }
   .guidebook-hero-preview { margin-bottom: 18px; }
+  .guidebook-pdf-notice { display: block; }
+  .guidebook-pdf-notice .guidebook-pdf-saved { margin-top: 10px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

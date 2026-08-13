@@ -45,20 +45,22 @@ npm run build
 ```
 This creates a `dist\` folder with the production build.
 
-**4. Find the exact built filenames** (Vite adds a random hash to each build, e.g. `index-a1b2c3d4.js`):
+**4. Review the built filenames** (Vite adds random hashes and may create lazy-loaded chunks such as `guidebookPdf-XXXX.js`):
 ```powershell
 Get-ChildItem dist\assets
 ```
-Note the `.js` filename you see — you'll need it in step 6.
+All `.js` files in this folder are published in step 6.
 
 **5. Sync the build to S3:**
 ```powershell
 aws s3 sync dist/ s3://altus-retreats-admin-dev-817760095908/ --delete --profile altus
 ```
 
-**6. Fix the JS file's content-type** (S3 sometimes guesses wrong, which breaks the app in the browser). Replace `index-XXXX.js` below with the exact filename from step 4:
+**6. Fix every JavaScript file's content type** (S3 sometimes guesses wrong, which breaks the app or a lazy-loaded feature in the browser):
 ```powershell
-aws s3 cp dist\assets\index-XXXX.js s3://altus-retreats-admin-dev-817760095908/assets/index-XXXX.js --content-type "application/javascript" --metadata-directive REPLACE --profile altus
+Get-ChildItem dist\assets\*.js | ForEach-Object {
+  aws s3 cp $_.FullName "s3://altus-retreats-admin-dev-817760095908/assets/$($_.Name)" --content-type "application/javascript" --metadata-directive REPLACE --profile altus
+}
 ```
 
 **7. Clear CloudFront's cache:**
@@ -74,6 +76,7 @@ aws cloudfront get-invalidation --distribution-id E6XS2Y3HPS1YG --id <paste-the-
 
 ## Notes / gotchas
 
-- If the admin panel shows a blank white screen or console errors about MIME types after deploying, you likely skipped (or mistyped) step 6 — the JS file needs the correct `Content-Type` header or the browser refuses to run it.
+- If the admin panel shows a blank white screen, or a feature such as PDF download fails with a module/MIME error, step 6 was likely skipped or mistyped. Every built JS chunk needs the correct `Content-Type` header.
+- The Guidebook PDF is generated locally in the browser from saved sections marked **Available to AI agents**. It is not uploaded to S3 and requires no backend deployment. After an admin release touching this feature, download a PDF and confirm it contains selectable text and no `hostNotes` or non-AI sections.
 - The environment variables in step 2 must be set **every new PowerShell window** — they don't save automatically. If `npm run build` fails or the deployed app can't reach the API, double check those three lines ran first.
 - Full end-to-end, this is: `npm install` (once) → set env vars → `npm run build` → find hash → `s3 sync` → fix JS content-type → invalidate → hard-refresh and test.

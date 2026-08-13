@@ -261,6 +261,8 @@ Visual visibility and AI availability are different concepts.
 - Property content editors must preserve existing unedited content fields when saving so media and other tab-owned overrides are never discarded.
 - AI context and host notes must be visibly differentiated from guest-visible content.
 - Do not imply that “Visible to guests” also controls AI availability.
+- The Guidebook admin's Hospitable export is an operational document, not a guest brochure: use a restrained Deep Blue/Canyon Red hierarchy, selectable text, clear section headings, page numbers, and no decorative photography.
+- PDF export language must state that it uses saved **Available to AI agents** sections and excludes private host notes. Never imply that unsaved editor changes are included.
 
 ### Email
 

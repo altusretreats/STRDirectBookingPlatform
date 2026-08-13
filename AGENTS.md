@@ -21,7 +21,7 @@ Run any bash command needed. Install packages. Deploy. Don't ask for permission 
 - **Payments:** Hospitable is merchant of record — their widget handles checkout. No Stripe.
 - **Calendar sync:** Hospitable API (sync via `syncProperty` Lambda)
 - **Frontend:** Static S3 + CloudFront (no SSR)
-- **Admin SPA:** React + Vite (hash routing `#/properties/{id}/{tab}`, `#/hub/{tab}`)
+- **Admin SPA:** React + Vite (hash routing `#/properties/{id}/{tab}`, `#/hub/{tab}`); jsPDF is lazy-loaded for client-side, searchable guidebook knowledge exports
 
 ## Multi-property — non-negotiable
 Every function, query, and data record is scoped by `propertyId`. Never hardcode a property. Adding a new property is a data operation only.
@@ -85,8 +85,8 @@ cd ..
 cd frontend\admin-spa
 npm run build
 aws s3 sync dist/ s3://altus-retreats-admin-dev-817760095908/ --delete --profile altus
-# Fix MIME types (get exact filename from Get-Item dist\assets\index-*.js first)
-aws s3 cp dist\assets\index-XXXX.js s3://altus-retreats-admin-dev-817760095908/assets/index-XXXX.js --content-type "application/javascript" --metadata-directive REPLACE --profile altus
+# Fix MIME types for the entry point and lazy-loaded chunks
+Get-ChildItem dist\assets\*.js | ForEach-Object { aws s3 cp $_.FullName "s3://altus-retreats-admin-dev-817760095908/assets/$($_.Name)" --content-type "application/javascript" --metadata-directive REPLACE --profile altus }
 aws cloudfront create-invalidation --distribution-id E6XS2Y3HPS1YG --paths "/*" --profile altus
 
 # Property site / guidebook
@@ -153,6 +153,7 @@ Place items in a recommendations section (`sectionType: 'recommendations'`) rend
 - The guest guide is a public, non-sensitive house manual and deliberately contains no booking CTA, return-to-property-site link, direct-booking promotion, discount, or review solicitation. This reduces OTA off-platform risk but does not make the `staytheoverhang.com` URL itself risk-free when shared through Airbnb or Vrbo messaging.
 - The guidebook does not expose Wi-Fi credentials, door codes, personal contact details, or reservation-specific information. Wi-Fi is provided by in-house QR codes/the secure guest portal, and door access is delivered through the reservation email or booking channel.
 - Guidebook Help is informational rather than an embedded messaging channel. Every **Need help?**, **Help**, or **Contact instructions** entry point opens a responsive dialog directing the guest to reply to the original booking message in the app or email used to reserve the stay. This keeps communication attached to the reservation; there is currently no HostBuddy widget or custom guest-to-host messaging integration.
+- The admin Guidebook tab can generate a searchable, text-based PDF for Hospitable's Knowledge Hub. Generation is entirely client-side from the currently saved section data, includes only sections enabled by `aiPublished` (with the same `published` migration fallback as the agent feed), includes guest content/place facts/`aiContext`, and excludes `hostNotes` by construction. The stable filename is `{propertyId}-hospitable-ai-knowledge.pdf`. Save section edits before downloading.
 
 ## Property site — page structure
 - **`index.html`** — The live property home page at `www.staytheoverhang.com/`. It currently retains `<meta name="robots" content="noindex,nofollow">` while the root deployment is being tested with the Hospitable widget.
@@ -201,6 +202,7 @@ Place items in a recommendations section (`sectionType: 'recommendations'`) rend
 - The branded agent-feed URL is `https://www.staytheoverhang.com/guidebook/agent-context.md`; CloudFront proxies it dynamically to API Gateway, so admin content changes require no frontend deployment.
 - Guidebook guest frontend redesigned as a responsive stay companion: desktop/tablet provides a rich journey overview and quick-essential rail, while mobile uses an intent-first home with focused drill-down screens. The public API strips AI/private fields, and admin saves now retain section-level AI context and section type.
 - Guidebook contact guidance was deployed 2026-08-12: the desktop footer displays the booking-message instruction directly, and all desktop/mobile Help controls open the same accessible dialog. Guests are told to reply through the app or email used for their reservation; no contact data or reservation identifiers are exposed.
+- Admin Guidebook PDF export added 2026-08-12: **Download AI knowledge PDF** produces a branded, searchable document for manual upload to Hospitable's Knowledge Hub. It is generated on demand in the browser with no backend storage and excludes private host notes and non-AI sections.
 - The hub Coming Soon page remains live; The Overhang Coming Soon page is retained as a rollback source but is not currently the public root.
 - Hub site built as hub.html (ready to swap in when The Lazy Palm launches)
 - SES verified: support@altusretreats.net

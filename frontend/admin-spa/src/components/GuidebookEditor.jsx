@@ -63,6 +63,8 @@ export default function GuidebookEditor({ propertyId, propertyName, property, on
   const [error, setError] = useState('');
   const [heroUploading, setHeroUploading] = useState(false);
   const [heroSaved, setHeroSaved] = useState(false);
+  const [pdfGenerating, setPdfGenerating] = useState(false);
+  const [pdfSaved, setPdfSaved] = useState('');
   const heroInputRef = useRef(null);
 
   const sensors = useSensors(
@@ -137,6 +139,20 @@ export default function GuidebookEditor({ propertyId, propertyName, property, on
     }
   }
 
+  async function downloadKnowledgePdf() {
+    setPdfGenerating(true); setError(''); setPdfSaved('');
+    try {
+      const { downloadGuidebookKnowledgePdf } = await import('../lib/guidebookPdf.mjs');
+      const filename = downloadGuidebookKnowledgePdf({ propertyId, propertyName, sections });
+      setPdfSaved(filename);
+      setTimeout(() => setPdfSaved(''), 5000);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setPdfGenerating(false);
+    }
+  }
+
   if (loading) return <div style={{ color: '#6B7280', padding: 40 }}>Loading guidebook…</div>;
 
   return (
@@ -146,9 +162,23 @@ export default function GuidebookEditor({ propertyId, propertyName, property, on
           <h1 style={s.title}>Guidebook</h1>
           <p style={s.sub}>{propertyName} — drag to reorder sections</p>
         </div>
-        <button style={s.btnPrimary} onClick={() => setEditing({ title: '', icon: '📄', sectionType: 'general', items: [], published: false, aiPublished: false })}>
-          + Add Section
-        </button>
+        <div style={s.headerActions}>
+          <button style={s.btnSecondary} onClick={downloadKnowledgePdf} disabled={pdfGenerating || sections.length === 0}>
+            {pdfGenerating ? 'Generating PDF…' : 'Download AI knowledge PDF'}
+          </button>
+          <button style={s.btnPrimary} onClick={() => setEditing({ title: '', icon: '📄', sectionType: 'general', items: [], published: false, aiPublished: false })}>
+            + Add Section
+          </button>
+        </div>
+      </div>
+
+      <div className="guidebook-pdf-notice">
+        <div>
+          <p style={s.eyebrow}>Hospitable Knowledge Hub</p>
+          <strong>Searchable AI knowledge PDF</strong>
+          <span>Includes saved sections marked “Available to AI agents,” guest content, place details, and AI context. Private host notes are always excluded.</span>
+        </div>
+        {pdfSaved && <span className="guidebook-pdf-saved">✓ Downloaded {pdfSaved}</span>}
       </div>
 
       <div className="guidebook-hero-settings">
@@ -715,7 +745,8 @@ function IconPicker({ value, onChange }) {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 const s = {
-  header:        { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 },
+  header:        { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap', marginBottom: 20 },
+  headerActions: { display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, flexWrap: 'wrap' },
   title:         { fontSize: 28, fontWeight: 700, color: '#111827', marginBottom: 4 },
   sub:           { color: '#6B7280', fontSize: 15 },
   errorBanner:   { background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626', padding: '12px 16px', borderRadius: 8, marginBottom: 20, fontSize: 14 },
