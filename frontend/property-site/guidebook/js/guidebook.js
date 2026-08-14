@@ -12,10 +12,10 @@ const GUIDE_CONFIG = {
 
 const JOURNEYS = {
   arriving: {
-    label: 'Arrival guide',
-    title: 'From the road to relaxed.',
-    mobileTitle: 'Arriving at your retreat',
-    context: 'Everything for a smooth arrival',
+    label: 'Welcome in',
+    title: 'Your stay starts here.',
+    mobileTitle: 'Welcome in',
+    context: 'A quick guide to getting settled',
   },
   staying: {
     label: 'Home essentials',
