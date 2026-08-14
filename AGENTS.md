@@ -140,6 +140,7 @@ aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/*" 
 - All money in **cents** (integers)
 - `ttl` attribute on FAILED bookings and cache entries (Unix timestamp)
 - Guidebook section SK: `GUIDEBOOK#SECTION#{order_padded}#{sectionId}` — zero-padded order for correct lexicographic sort
+- Guidebook section upserts atomically delete prior sort keys for the same `sectionId` before writing the new order. This is required because order is embedded in the SK; a plain put on reorder creates duplicate logical sections.
 - Manually managed review SK: `REVIEW#MANUAL#{reviewId}`. Records include reviewer name, exact review text, 1–5 rating, optional stay date/source label, `featured`, and `published`.
 - Property METADATA record holds `hospitable.cached` (full synced listing), `content` (admin overrides), `location` (admin overrides), `branding`
 

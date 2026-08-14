@@ -9,6 +9,7 @@ const mockDdb = {
   put: jest.fn(),
   update: jest.fn(),
   delete: jest.fn(),
+  transactWrite: jest.fn(),
 };
 jest.mock('/opt/nodejs/lib/db', () => mockDdb);
 

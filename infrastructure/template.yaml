@@ -499,6 +499,10 @@ Resources:
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref MainTable
+        - Statement:
+            - Effect: Allow
+              Action: dynamodb:TransactWriteItems
+              Resource: !GetAtt MainTable.Arn
       Events:
         ListSections:
           Type: Api
