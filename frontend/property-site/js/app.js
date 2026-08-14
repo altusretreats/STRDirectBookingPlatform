@@ -257,6 +257,25 @@ function createPlaceCard(place, onSelect) {
   return card;
 }
 
+function createPlacesMoreCard() {
+  const card = document.createElement('aside');
+  card.className = 'location-place-more-card';
+  card.setAttribute('aria-label', 'More recommendations are available in the complete guest guide');
+  card.innerHTML = `
+    <svg class="location-place-more-card__route" viewBox="0 0 280 170" aria-hidden="true">
+      <path d="M-12 136C32 91 58 156 99 111s60-84 111-55 53-15 84-44" />
+      <circle cx="100" cy="110" r="5" />
+      <circle cx="210" cy="56" r="5" />
+    </svg>
+    <div class="location-place-more-card__content">
+      <span>Keep exploring</span>
+      <strong>And so much more.</strong>
+      <p>We’ve got your Gorge plans covered.</p>
+      <small>The complete guest guide keeps even more local favorites close at hand.</small>
+    </div>`;
+  return card;
+}
+
 function createPlaceInfoContent(place) {
   const content = document.createElement('div');
   content.className = 'place-map-info';
@@ -376,10 +395,12 @@ function initPropertyMap({ mapEl, location, propertyName, places = [] }) {
     if (!placesModal || !placesModalBody) return;
     if (placesModalKicker) placesModalKicker.textContent = kicker;
     if (placesModalTitle) placesModalTitle.textContent = title;
-    placesModalBody.replaceChildren(...group.map(place => createPlaceCard(place, selected => {
+    const cards = group.map(place => createPlaceCard(place, selected => {
       closePlacesModal();
       selectPlaceFromCard(selected);
-    })));
+    }));
+    if (group.length % 2 === 1) cards.push(createPlacesMoreCard());
+    placesModalBody.replaceChildren(...cards);
     placesModal.style.display = 'flex';
     document.body.style.overflow = 'hidden';
     document.getElementById('places-modal-close')?.focus();
