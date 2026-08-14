@@ -18,7 +18,7 @@ const JOURNEYS = {
     context: 'Everything for a smooth arrival',
   },
   staying: {
-    label: 'At the house',
+    label: 'Home essentials',
     title: 'Settle in and switch off.',
     mobileTitle: 'Make yourself at home',
     context: 'Property essentials and how-tos',
