@@ -1972,7 +1972,11 @@ h2 {
 .location-place-card__facts strong { color: var(--property-navy); }
 .location-place-card__facts small { color: var(--property-muted); font-size: inherit; }
 .location-place-card a { width: fit-content; margin-top: auto; padding-top: 10px; color: var(--property-canyon); font-size: 11px; font-weight: 700; text-decoration: none; }
-.places-modal { width: min(960px, 94vw); max-height: 90vh; }
+.places-modal {
+  width: min(1180px, calc(100vw - 48px));
+  max-width: 1180px;
+  max-height: 90vh;
+}
 .places-modal__header { padding-bottom: 18px; }
 .places-modal__body {
   display: grid;
@@ -1981,6 +1985,8 @@ h2 {
   overflow-y: auto;
   padding: 4px 28px 30px;
 }
+.places-modal .location-place-card { grid-template-columns: 150px minmax(0, 1fr); }
+.places-modal .location-place-card__photo { width: 150px; min-height: 168px; }
 
 @media (max-width: 700px) {
   .location-explorer { margin-top: 18px; }
@@ -2003,6 +2009,8 @@ h2 {
   .location-place-card__photo { width: 102px; min-height: 136px; }
   .places-modal { width: calc(100vw - 24px); max-height: 90vh; border-radius: 16px; }
   .places-modal__body { grid-template-columns: 1fr; padding: 4px 18px 24px; }
+  .places-modal .location-place-card { grid-template-columns: 102px minmax(0, 1fr); }
+  .places-modal .location-place-card__photo { width: 102px; min-height: 136px; }
 }
 .frame-map-link { color: var(--property-canyon); }
 
