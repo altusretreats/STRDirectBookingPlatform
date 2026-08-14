@@ -1104,7 +1104,7 @@ function initFrameSections({ photos, amenities, description, bedrooms, bathrooms
     const hiddenPlaceCount = Math.max(0, totalPlaceCount - places.length);
     if (morePlaces && hiddenPlaceCount > 0) {
       const count = morePlaces.querySelector('[data-location-more-count]');
-      if (count) count.textContent = `${hiddenPlaceCount} more local ${hiddenPlaceCount === 1 ? 'favorite' : 'favorites'}`;
+      if (count) count.textContent = 'many more local favorites';
       morePlaces.hidden = false;
     }
   }
