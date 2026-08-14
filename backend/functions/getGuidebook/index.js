@@ -15,6 +15,7 @@ function sanitizeSection(section = {}) {
     icon: section.icon ?? null,
     order: section.order,
     sectionType: section.sectionType ?? 'general',
+    audiences: Array.isArray(section.audiences) ? section.audiences : [],
     items: (section.items ?? []).map(sanitizeItem),
   };
 }
@@ -41,6 +42,7 @@ function itemMarkdown(item = {}) {
   const label = cleanText(place.name || item.label || 'Guidebook item');
 
   lines.push(`### ${label}`);
+  if (item.audiences?.length) lines.push('', `Best for: ${item.audiences.map(cleanText).join(', ')}`);
 
   if (item.type === 'place') {
     if (item.description && !isPlaceholder(item.description)) lines.push('', cleanText(item.description));
@@ -109,6 +111,7 @@ function buildAgentMarkdown(property, propertyId, sections) {
 
   availableSections.forEach(section => {
     lines.push('', `## ${cleanText(section.title || section.sectionId)}`);
+    if (section.audiences?.length) lines.push('', `Best for: ${section.audiences.map(cleanText).join(', ')}`);
     if (section.aiContext) lines.push('', `**Section AI guidance:** ${cleanText(section.aiContext)}`);
 
     const items = (section.items || []).map(itemMarkdown).filter(Boolean);

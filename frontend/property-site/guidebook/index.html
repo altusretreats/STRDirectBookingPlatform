@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/guidebook.css?v=20260813-4">
+  <link rel="stylesheet" href="css/guidebook.css?v=20260813-5">
 </head>
 <body class="loading">
   <svg class="icon-sprite" aria-hidden="true">
@@ -46,6 +46,12 @@
     <symbol id="icon-shopping-bag" viewBox="0 0 24 24"><path d="M5 8h14l1 13H4L5 8Z"/><path d="M9 10V6a3 3 0 0 1 6 0v4"/></symbol>
     <symbol id="icon-fuel" viewBox="0 0 24 24"><path d="M4 21V4a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v17M3 21h13M7 6h5v4H7zM15 7h2l3 3v7a2 2 0 0 1-4 0v-4"/></symbol>
     <symbol id="icon-pin" viewBox="0 0 24 24"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+    <symbol id="icon-hiking" viewBox="0 0 24 24"><path d="M8 3v7l-3 5v4h12a3 3 0 0 0 3-3v-1l-6-1-2-4V3H8Z"/><path d="M8 8h4M6 15h6M5 19v2h13"/></symbol>
+    <symbol id="icon-climbing" viewBox="0 0 24 24"><path d="M3 21 10 4l4 8 2-4 5 13H3Z"/><circle cx="13.5" cy="5" r="1.5"/><path d="m13 7-2 4 3 2-2 4M11 10l-3 2M14 13l3 2"/></symbol>
+    <symbol id="icon-offroad" viewBox="0 0 24 24"><path d="M4 15h16l-1-5-3-2H8l-3 3-1 4Z"/><path d="M3 15v3h2M21 15v3h-2M8 8l1-3h6l1 3"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></symbol>
+    <symbol id="icon-golf" viewBox="0 0 24 24"><path d="M7 21V3l9 3-9 3"/><ellipse cx="13" cy="20" rx="7" ry="2"/><circle cx="18.5" cy="15.5" r="1.5"/></symbol>
+    <symbol id="icon-family" viewBox="0 0 24 24"><circle cx="8" cy="7" r="3"/><circle cx="17" cy="8" r="2.5"/><path d="M2.5 20v-3.5A4.5 4.5 0 0 1 7 12h2a4.5 4.5 0 0 1 4.5 4.5V20M13 14.5a4 4 0 0 1 3.5-2h1A4 4 0 0 1 21.5 16v4"/></symbol>
+    <symbol id="icon-nightlife" viewBox="0 0 24 24"><path d="M4 3h16l-6 8v7h4v3H6v-3h4v-7L4 3Z"/><path d="M7 6h10M17.5 2v3M20 3.5h-5"/></symbol>
   </svg>
 
   <header class="guide-header">
@@ -121,6 +127,7 @@
             <div><small id="journey-label">Arrival guide</small><h2 id="journey-title">From the road to relaxed.</h2></div>
             <span id="journey-context">Everything for a smooth arrival</span>
           </div>
+          <div id="interest-filter" class="interest-filter" hidden></div>
           <div id="guide-sections" class="guide-sections">
             <div class="loading-topic"><span></span><span></span><span></span></div>
           </div>
@@ -177,6 +184,6 @@
   </div>
 
   <div id="place-dialog-root"></div>
-  <script src="js/guidebook.js?v=20260813-2"></script>
+  <script src="js/guidebook.js?v=20260813-3"></script>
 </body>
 </html>

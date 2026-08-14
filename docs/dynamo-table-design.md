@@ -147,15 +147,17 @@ One record per section (e.g. Check-In, WiFi, House Rules, Local Recommendations)
   "title": "Check-In",
   "icon": "key",
   "sectionType": "general",
+  "audiences": ["hikers"],
   "published": true,
   "aiPublished": true,
   "aiContext": "Use this section for arrival and entry questions.",
   "items": [
     {
       "itemId": "checkin-code",
-      "type": "text",          // text | image | video | map | link
+      "type": "text",          // text | guide | image | video | map | link
       "label": "Door Code",
       "content": "The code is 1234. Use the keypad on the front door.",
+      "audiences": ["hikers", "families"],
       "aiContext": "Explain that each reservation receives a unique code.",
       "hostNotes": "Private operational note; never expose to guests or AI.",
       "order": 10
@@ -186,6 +188,8 @@ One record per section (e.g. Check-In, WiFi, House Rules, Local Recommendations)
 - `aiContext` is returned only by the agent-readable feed when its section is enabled for AI agents.
 - `hostNotes` is admin-only and must never be included in a guest or AI response.
 - `sectionType: "recommendations"` identifies recommendation sections; `general` is the default.
+- Optional `audiences` tags may be stored on a whole section or an individual item. Supported values are `hikers`, `climbers`, `offroaders`, `golfers`, `families`, and `nightlife`. The Explore UI shows only filters represented in published content. A tagged section appears in full; otherwise a filter projects only matching items from a mixed section.
+- `type: "guide"` stores limited guest-facing Markdown for longer editorial content such as packing lists. The renderer supports paragraphs, bullet lists, and ordinary HTTPS links; scripts and arbitrary HTML are never rendered.
 - Stored `icon` values remain editable metadata. The current guest renderer maps section meaning to its own consistent outline icon system instead of rendering stored emoji.
 
 ---

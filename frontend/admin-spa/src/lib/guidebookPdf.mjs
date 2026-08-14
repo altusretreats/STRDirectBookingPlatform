@@ -32,6 +32,24 @@ function isPlaceholder(value) {
   return !value || /REPLACE_ME|coming soon|add your/i.test(String(value));
 }
 
+function readableAudience(value) {
+  return ({
+    hikers: 'Hikers',
+    climbers: 'Climbers',
+    offroaders: 'Off-roaders',
+    golfers: 'Golfers',
+    families: 'Families',
+    nightlife: 'Nightlife',
+  })[value] || pdfText(value);
+}
+
+function flattenMarkdown(value) {
+  return pdfText(value)
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '$1 ($2)')
+    .replace(/^\s*[-*]\s+/gm, '- ')
+    .replace(/[*_`#]/g, '');
+}
+
 function sectionAvailableToAi(section = {}) {
   return section.aiPublished ?? section.published ?? false;
 }
@@ -55,9 +73,11 @@ function itemToKnowledge(item = {}) {
     [place.website, place.mapsUrl, place.directionsUrl].filter(Boolean).forEach(url => details.push(`Link: ${pdfText(url)}`));
     if (details.length) paragraphs.push(details.map(detail => `- ${detail}`).join('\n'));
   } else if (!isPlaceholder(item.content)) {
-    paragraphs.push(pdfText(item.s3Key ? `https://media.altusretreats.net/${item.s3Key}` : item.content));
+    const content = item.s3Key ? `https://media.altusretreats.net/${item.s3Key}` : item.content;
+    paragraphs.push(item.type === 'guide' ? flattenMarkdown(content) : pdfText(content));
   }
 
+  if (item.audiences?.length) paragraphs.unshift(`Best for: ${item.audiences.map(readableAudience).join(', ')}`);
   if (item.aiContext) paragraphs.push(`AI guidance: ${pdfText(item.aiContext)}`);
   return { title, paragraphs: paragraphs.filter(Boolean) };
 }
@@ -68,6 +88,7 @@ export function buildGuidebookKnowledgeModel({ propertyId, propertyName, section
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
     .map(section => ({
       title: pdfText(section.title || section.sectionId),
+      audiences: Array.isArray(section.audiences) ? section.audiences.map(readableAudience) : [],
       aiContext: section.aiContext ? pdfText(section.aiContext) : '',
       items: (section.items || []).map(itemToKnowledge).filter(item => item.title || item.paragraphs.length),
     }));
@@ -176,6 +197,9 @@ export function createGuidebookKnowledgePdf(input) {
 
     if (section.aiContext) {
       addWrappedText(`Section AI guidance: ${section.aiContext}`, { fontSize: 9.5, color: COLORS.muted, style: 'italic', gapAfter: 14 });
+    }
+    if (section.audiences.length) {
+      addWrappedText(`Best for: ${section.audiences.join(', ')}`, { fontSize: 9.5, color: COLORS.muted, style: 'bold', gapAfter: 12 });
     }
 
     section.items.forEach(item => {

@@ -281,6 +281,35 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
   font-size: 12px;
   text-align: center;
 }
+.interest-filter {
+  margin: 0 0 18px;
+  padding: 17px 18px;
+  border: 1px solid var(--guide-line);
+  border-radius: 16px;
+  background: linear-gradient(135deg, #fff, var(--guide-background));
+}
+.interest-filter[hidden] { display: none; }
+.interest-filter__heading small,
+.interest-filter__heading strong { display: block; }
+.interest-filter__heading small { margin-bottom: 3px; color: var(--guide-accent); font-size: 9px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; }
+.interest-filter__heading strong { color: var(--guide-primary); font-family: var(--guide-serif); font-size: 19px; font-weight: 500; }
+.interest-filter__options { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 13px; }
+.interest-filter__options button {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 13px;
+  border: 1px solid var(--guide-line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--guide-muted);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+.interest-filter__options button svg { width: 18px; height: 18px; }
+.interest-filter__options button[aria-pressed="true"] { border-color: var(--guide-primary); background: var(--guide-primary); color: #fff; }
 
 .guide-sections { display: grid; gap: 14px; }
 .guide-topic {
@@ -340,6 +369,18 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
   background: var(--guide-background);
   white-space: pre-wrap;
 }
+.guide-item__guide {
+  padding: 18px 18px 16px;
+  border: 1px solid var(--guide-line);
+  border-radius: 15px;
+  background: var(--guide-surface);
+}
+.guide-item__guide p { margin: 0 0 12px; }
+.guide-item__guide p:last-child { margin-bottom: 0; }
+.guide-item__guide ul { display: grid; gap: 10px; margin: 0; padding: 0 0 0 20px; }
+.guide-item__guide li { padding-left: 2px; }
+.guide-item__guide a { color: var(--guide-primary); font-weight: 600; text-decoration-color: rgba(189,80,62,.55); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.guide-item__guide a:hover { color: var(--guide-accent); }
 .guide-item__placeholder {
   display: flex;
   align-items: center;
@@ -452,6 +493,12 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .place-card__body { padding: 13px 14px 15px; }
 .place-card__body > small { color: var(--guide-accent); font-size: 9px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
 .place-card__body strong { display: block; margin: 4px 0; font-family: var(--guide-serif); font-size: 19px; font-weight: 500; }
+.place-card__audiences,
+.place-dialog__audiences { display: flex; flex-wrap: wrap; gap: 5px; }
+.place-card__audiences { margin: 6px 0 3px; }
+.place-dialog__audiences { margin: 0 0 12px; }
+.place-card__audiences span,
+.place-dialog__audiences span { padding: 4px 7px; border-radius: 999px; background: var(--guide-soft); color: #35554b; font-size: 9px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
 .place-card__body p {
   display: -webkit-box;
   overflow: hidden;
@@ -780,6 +827,11 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
   .workspace-main { padding: 20px 18px; border: 0; border-radius: 0; background: var(--guide-background); }
   .journey-heading,
   .essential-rail { display: none; }
+  .interest-filter { margin: 0 0 15px; padding: 15px 14px; }
+  .interest-filter__heading strong { font-size: 18px; }
+  .interest-filter__options { flex-wrap: nowrap; overflow-x: auto; margin-right: -14px; padding-right: 14px; scrollbar-width: none; }
+  .interest-filter__options::-webkit-scrollbar { display: none; }
+  .interest-filter__options button { flex: 0 0 auto; }
   .guide-sections { gap: 11px; }
   .guide-topic { border-radius: 17px; scroll-margin-top: 15px; }
   .topic-toggle { min-height: 70px; grid-template-columns: 39px 1fr 20px; gap: 11px; padding: 12px 14px; }

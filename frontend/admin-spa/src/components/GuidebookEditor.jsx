@@ -14,11 +14,14 @@ import cameraMarkerIcon from '../../../property-site/img/map-icons/camera.svg';
 import climbingMarkerIcon from '../../../property-site/img/map-icons/climbing.svg';
 import coffeeMarkerIcon from '../../../property-site/img/map-icons/coffee.svg';
 import gasMarkerIcon from '../../../property-site/img/map-icons/gas.svg';
+import golfMarkerIcon from '../../../property-site/img/map-icons/golf.svg';
 import gondolaMarkerIcon from '../../../property-site/img/map-icons/gondola.svg';
 import groceriesMarkerIcon from '../../../property-site/img/map-icons/groceries.svg';
 import hikingMarkerIcon from '../../../property-site/img/map-icons/hiking.svg';
 import kayakMarkerIcon from '../../../property-site/img/map-icons/kayak.svg';
 import locationMarkerIcon from '../../../property-site/img/map-icons/location.svg';
+import familyMarkerIcon from '../../../property-site/img/map-icons/family.svg';
+import nightlifeMarkerIcon from '../../../property-site/img/map-icons/nightlife.svg';
 import offroadMarkerIcon from '../../../property-site/img/map-icons/offroad.svg';
 import restaurantMarkerIcon from '../../../property-site/img/map-icons/restaurant.svg';
 import shoppingMarkerIcon from '../../../property-site/img/map-icons/shopping.svg';
@@ -70,6 +73,15 @@ const CATEGORY_COLORS = {
   shop:       '#FDF4FF',
   services:   '#F9FAFB',
 };
+
+const AUDIENCE_OPTIONS = [
+  { value: 'hikers', label: 'Hikers', guestLabel: 'For you hikers', asset: hikingMarkerIcon },
+  { value: 'climbers', label: 'Climbers', guestLabel: 'For you climbers', asset: climbingMarkerIcon },
+  { value: 'offroaders', label: 'Off-roaders', guestLabel: 'For you off-roaders', asset: offroadMarkerIcon },
+  { value: 'golfers', label: 'Golfers', guestLabel: 'For golfers', asset: golfMarkerIcon },
+  { value: 'families', label: 'Families', guestLabel: 'For families', asset: familyMarkerIcon },
+  { value: 'nightlife', label: 'Nightlife', guestLabel: 'For nightlife', asset: nightlifeMarkerIcon },
+];
 
 const MAP_ICON_OPTIONS = [
   { value: '', label: 'Automatic' },
@@ -152,7 +164,7 @@ export default function GuidebookEditor({ propertyId, propertyName, property, on
   }
 
   function addFromTemplate(tmpl) {
-    setEditing({ title: tmpl.title, icon: tmpl.icon, sectionType: tmpl.sectionType || 'general', items: [], published: false, aiPublished: false });
+    setEditing({ title: tmpl.title, icon: tmpl.icon, sectionType: tmpl.sectionType || 'general', audiences: [], items: [], published: false, aiPublished: false });
   }
 
   async function updateGuidebookHero(event) {
@@ -204,7 +216,7 @@ export default function GuidebookEditor({ propertyId, propertyName, property, on
           <button style={s.btnSecondary} onClick={downloadKnowledgePdf} disabled={pdfGenerating || sections.length === 0}>
             {pdfGenerating ? 'Generating PDF…' : 'Download AI knowledge PDF'}
           </button>
-          <button style={s.btnPrimary} onClick={() => setEditing({ title: '', icon: '📄', sectionType: 'general', items: [], published: false, aiPublished: false })}>
+          <button style={s.btnPrimary} onClick={() => setEditing({ title: '', icon: '📄', sectionType: 'general', audiences: [], items: [], published: false, aiPublished: false })}>
             + Add Section
           </button>
         </div>
@@ -263,7 +275,7 @@ export default function GuidebookEditor({ propertyId, propertyName, property, on
       </DndContext>
 
       {sections.length > 0 && (
-        <button style={s.addMoreBtn} onClick={() => setEditing({ title: '', icon: '📄', sectionType: 'general', items: [], published: false, aiPublished: false })}>
+        <button style={s.addMoreBtn} onClick={() => setEditing({ title: '', icon: '📄', sectionType: 'general', audiences: [], items: [], published: false, aiPublished: false })}>
           + Add another section
         </button>
       )}
@@ -302,6 +314,7 @@ function SortableSection({ section, onEdit, onDelete }) {
           {(section.aiPublished ?? section.published) && ' · 🤖 Available to AI'}
           {section.aiContext && ' · AI context added'}
         </div>
+        {section.audiences?.length > 0 && <AudienceBadges values={section.audiences} />}
       </div>
       <div style={s.sectionActions}>
         <button style={s.btnSecondary} onClick={onEdit}>Edit</button>
@@ -408,6 +421,12 @@ function SectionModal({ section, saving, propertyId, onSave, onClose }) {
                 Public agent feed. Do not include private access details or host-only notes.
               </div>
             </div>
+          </div>
+
+          <div style={s.audienceBox}>
+            <label style={s.label}>Who is this section for?</label>
+            <p style={s.audienceHint}>Optional. Tag a whole practical guide—such as a hiking packing list—so it appears with matching recommendations in the guest’s “For you” filter.</p>
+            <AudiencePicker value={data.audiences || []} onChange={audiences => set('audiences', audiences)} />
           </div>
 
           {/* AI context for section */}
@@ -528,6 +547,7 @@ function GenericAddForm({ newItem, setNI, onAdd }) {
           <label style={s.labelSm}>Type</label>
           <select style={s.input} value={newItem.type} onChange={e => setNI('type', e.target.value)}>
             <option value="text">Text</option>
+            <option value="guide">Formatted guide (Markdown)</option>
             <option value="image">Image</option>
             <option value="video">Video</option>
             <option value="map">Map link</option>
@@ -543,7 +563,7 @@ function GenericAddForm({ newItem, setNI, onAdd }) {
         <label style={s.labelSm}>Content / URL</label>
         <textarea style={{ ...s.input, height: 72, resize: 'vertical' }}
           value={newItem.content} onChange={e => setNI('content', e.target.value)}
-          placeholder={newItem.type === 'text' ? 'Enter instructions…' : 'Enter URL…'} />
+          placeholder={newItem.type === 'guide' ? 'Use short paragraphs, - bullets, and [link text](https://example.com)…' : newItem.type === 'text' ? 'Enter instructions…' : 'Enter URL…'} />
       </div>
       <div style={s.formGroup}>
         <label style={s.labelSm}>🤖 AI context (hidden from guests)</label>
@@ -584,6 +604,7 @@ function PlaceItemRow({ item, onRemove, onUpdate }) {
             {p.rating && ` · ⭐ ${p.rating}`}
           </div>
           {item.aiContext && <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>🤖 {item.aiContext.slice(0, 60)}</div>}
+          {item.audiences?.length > 0 && <AudienceBadges values={item.audiences} />}
         </div>
         <button style={s.expandBtn} onClick={() => setExpanded(!expanded)} title="Edit details">{expanded ? '▲' : '✏️'}</button>
         <button style={s.btnDangerSm} onClick={onRemove}>✕</button>
@@ -607,6 +628,10 @@ function PlaceItemRow({ item, onRemove, onUpdate }) {
           <div style={s.formGroup}>
             <label style={s.labelSm}>Map marker</label>
             <MapIconPicker value={p.mapIcon || ''} onChange={mapIcon => onUpdate({ place: { ...p, mapIcon } })} />
+          </div>
+          <div style={s.formGroup}>
+            <label style={s.labelSm}>Best for</label>
+            <AudiencePicker value={item.audiences || []} onChange={audiences => onUpdate({ audiences })} />
           </div>
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, margin: '12px 0', padding: '12px 14px', border: '1px solid #E2E8EC', borderRadius: 10, background: '#fff', cursor: 'pointer' }}>
             <input type="checkbox" checked={Boolean(item.featured)} onChange={e => onUpdate({ featured: e.target.checked })} style={{ width: 17, height: 17, marginTop: 1, accentColor: '#D1614D' }} />
@@ -676,6 +701,7 @@ function PlaceAddForm({ propertyId, onAdd }) {
       hostNotes:   '',
       featured:    false,
       websiteVisible: true,
+      audiences:   [],
       place:       confirmedPlace,
     });
     setUrl('');
@@ -801,6 +827,40 @@ function MapIconPicker({ value, onChange }) {
   );
 }
 
+function AudiencePicker({ value = [], onChange }) {
+  const selected = new Set(value);
+  return (
+    <div style={s.audienceGrid}>
+      {AUDIENCE_OPTIONS.map(option => {
+        const active = selected.has(option.value);
+        return (
+          <button
+            key={option.value}
+            type="button"
+            aria-pressed={active}
+            style={{ ...s.audienceOption, ...(active ? s.audienceOptionSelected : {}) }}
+            onClick={() => onChange(active ? value.filter(item => item !== option.value) : [...value, option.value])}
+          >
+            <img src={option.asset} alt="" aria-hidden="true" style={{ ...s.audienceIcon, ...(active ? s.audienceIconSelected : {}) }} />
+            <span>{option.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function AudienceBadges({ values = [] }) {
+  return (
+    <div style={s.audienceBadges}>
+      {values.map(value => {
+        const option = AUDIENCE_OPTIONS.find(candidate => candidate.value === value);
+        return option ? <span key={value} style={s.audienceBadge}>{option.label}</span> : null;
+      })}
+    </div>
+  );
+}
+
 function IconPicker({ value, onChange }) {
   const [open, setOpen] = useState(false);
 
@@ -907,4 +967,13 @@ const s = {
   savedInline:        { marginLeft: 12, color: '#2F735D', fontSize: 13, fontWeight: 600 },
   welcomeBox:         { marginTop: 24, padding: 18, border: '1px solid #DCE3E7', borderRadius: 12, background: '#F3F6F7' },
   welcomeHint:        { margin: '-1px 0 10px', color: '#637180', fontSize: 12, lineHeight: 1.5 },
+  audienceBox:        { margin: '4px 0 16px', padding: 15, border: '1px solid #DCE3E7', borderRadius: 12, background: '#F8FAFB' },
+  audienceHint:       { margin: '-1px 0 11px', color: '#637180', fontSize: 12, lineHeight: 1.5 },
+  audienceGrid:       { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8 },
+  audienceOption:     { minHeight: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '8px 10px', border: '1px solid #DCE3E7', borderRadius: 10, background: '#fff', color: '#52606D', cursor: 'pointer', fontSize: 12, fontWeight: 600 },
+  audienceOptionSelected: { borderColor: '#1D3557', background: '#1D3557', color: '#fff', boxShadow: '0 5px 14px rgba(29,53,87,.14)' },
+  audienceIcon:       { width: 22, height: 22, objectFit: 'contain' },
+  audienceIconSelected: { filter: 'brightness(0) invert(1)' },
+  audienceBadges:     { display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 6 },
+  audienceBadge:      { padding: '3px 7px', borderRadius: 999, background: '#E7EEEB', color: '#35554B', fontSize: 9, fontWeight: 700, letterSpacing: '.05em', textTransform: 'uppercase' },
 };

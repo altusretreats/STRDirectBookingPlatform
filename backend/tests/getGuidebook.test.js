@@ -18,6 +18,7 @@ describe('getGuidebook', () => {
       SK: 'GUIDEBOOK#SECTION#010#welcome',
       sectionId: 'welcome',
       title: 'Welcome',
+      audiences: ['hikers'],
       published: true,
       aiContext: 'Use this when greeting a guest.',
       items: [{ itemId: 'welcome-message', type: 'text', content: 'Welcome!', aiContext: 'Be warm.', hostNotes: 'Private note.' }],
@@ -44,6 +45,7 @@ describe('getGuidebook', () => {
     expect(body.sections[0].items[0]).not.toHaveProperty('aiContext');
     expect(body.sections[0].items[0]).not.toHaveProperty('hostNotes');
     expect(body.sections[0].items[0]).toMatchObject({ content: 'Welcome!', type: 'text' });
+    expect(body.sections[0].audiences).toEqual(['hikers']);
   });
 
   test('returns empty sections array when no content exists', async () => {
@@ -55,6 +57,24 @@ describe('getGuidebook', () => {
 
     expect(result.statusCode).toBe(200);
     expect(JSON.parse(result.body).sections).toEqual([]);
+  });
+
+  test('includes audience context in the agent feed without host notes', async () => {
+    mockDdb.get.mockResolvedValueOnce({ Item: SAMPLE_PROPERTY });
+    mockDdb.query.mockResolvedValueOnce({ Items: SAMPLE_SECTIONS });
+
+    const event = makeEvent({
+      pathParameters: { propertyId: 'kentucky' },
+      resource: '/properties/{propertyId}/guidebook/agent-context',
+    });
+    const result = await handler(event, makeContext());
+
+    expect(result.statusCode).toBe(200);
+    expect(result.headers['Content-Type']).toBe('text/markdown; charset=utf-8');
+    expect(result.body).toContain('Best for: hikers');
+    expect(result.body).toContain('**AI guidance:** Be warm.');
+    expect(result.body).not.toContain('Private note.');
+    expect(result.body).not.toContain('House Rules');
   });
 
   test('returns 404 for unknown property', async () => {

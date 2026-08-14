@@ -161,6 +161,8 @@ Search or guest intent
 - Images and video
 - Maps and external links
 - Google Place recommendation cards and detail dialogs
+- Audience filters for Hikers, Climbers, Off-roaders, Golfers, Families, and Nightlife
+- Longer formatted guides using paragraphs, bullets, and clearly labeled external links
 - Search and section deep links
 
 Placeholder values such as `REPLACE_ME` must never be printed literally to guests. Show a neutral “available when ready for your stay” state instead.
@@ -214,6 +216,9 @@ Placeholder values such as `REPLACE_ME` must never be printed literally to guest
 - Prefer “What do you need?” over software language such as “Search knowledge base.”
 - Keep instructions short enough to scan while standing at the relevant appliance or entry point.
 - Local recommendations should explain why the host chose the place, not simply repeat Google metadata.
+- Audience labels are editorial tags, not separate copies of the same content. Tag a complete guide when every item serves that audience; tag individual places when a mixed recommendation section serves several audiences.
+- Only show audience filter chips that have published matches. Use the conversational “For…” labels and keep the mobile row horizontally scrollable instead of wrapping into a dense control wall.
+- Product recommendations may use affiliate links when they remain genuinely useful. Place a plain-language commission disclosure immediately before the linked recommendations; never rely on “affiliate link” alone, obscure the destination, display unverified prices, or make the guide feel like a storefront. When Amazon Associates links are present, also place Amazon's required associate-identification statement clearly and prominently on the guide.
 - Checkout instructions should be mercifully short and clearly prioritized.
 
 ---

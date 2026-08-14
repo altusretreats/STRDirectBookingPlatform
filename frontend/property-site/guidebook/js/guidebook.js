@@ -58,6 +58,14 @@ const CATEGORY_ICON_NAMES = {
   shop: 'shopping-bag',
   services: 'fuel',
 };
+const INTERESTS = {
+  hikers: { label: 'For you hikers', shortLabel: 'Hikers', icon: 'hiking' },
+  climbers: { label: 'For you climbers', shortLabel: 'Climbers', icon: 'climbing' },
+  offroaders: { label: 'For you off-roaders', shortLabel: 'Off-roaders', icon: 'offroad' },
+  golfers: { label: 'For golfers', shortLabel: 'Golfers', icon: 'golf' },
+  families: { label: 'For families', shortLabel: 'Families', icon: 'family' },
+  nightlife: { label: 'For nightlife', shortLabel: 'Nightlife', icon: 'nightlife' },
+};
 
 const state = {
   sections: [],
@@ -65,6 +73,7 @@ const state = {
   hospitable: null,
   groups: { arriving: [], staying: [], eating: [], exploring: [], leaving: [] },
   activeJourney: 'arriving',
+  activeInterest: 'all',
   searchIndex: [],
   places: new Map(),
 };
@@ -130,6 +139,7 @@ function sectionJourney(section) {
   const text = normalize(`${section.sectionId} ${section.title} ${section.sectionType}`);
   const placeItems = items.filter(item => item.type === 'place');
   if (placeItems.length && placeItems.every(item => item.place?.category === 'restaurant')) return 'eating';
+  if ((section.audiences || []).some(audience => INTERESTS[audience])) return 'exploring';
   if (section.sectionType === 'recommendations' || items.some(item => item.type === 'place')) return 'exploring';
   if (/checkout|check out|departure|leaving|before you go/.test(text)) return 'leaving';
   if (/welcome|checkin|check in|arrival|arriving|parking|direction|entry|access/.test(text)) return 'arriving';
@@ -139,6 +149,7 @@ function sectionJourney(section) {
 
 function sectionIconName(section) {
   if (section.guideJourney === 'eating') return 'utensils';
+  if (section.audiences?.length === 1 && INTERESTS[section.audiences[0]]) return INTERESTS[section.audiences[0]].icon;
   const text = normalize(`${section.sectionId} ${section.title}`);
   if (/welcome|hello/.test(text)) return 'heart-home';
   if (/wifi|tech|internet/.test(text)) return 'wifi';
@@ -232,6 +243,7 @@ function groupSections() {
 
 function renderJourney(journey, options = {}) {
   if (!JOURNEYS[journey]) return;
+  if (state.activeJourney !== journey) state.activeInterest = 'all';
   state.activeJourney = journey;
   const copy = JOURNEYS[journey];
 
@@ -246,7 +258,11 @@ function renderJourney(journey, options = {}) {
   $('#mobile-detail-label').textContent = copy.label;
   $('#mobile-detail-title').textContent = copy.mobileTitle;
 
-  const sections = state.groups[journey];
+  const sourceSections = state.groups[journey];
+  renderInterestFilter(journey, sourceSections);
+  const sections = journey === 'exploring' && state.activeInterest !== 'all'
+    ? sourceSections.map(section => filterSectionByInterest(section, state.activeInterest)).filter(Boolean)
+    : sourceSections;
   const container = $('#guide-sections');
   if (!sections.length) {
     container.innerHTML = `<div class="empty-journey"><strong>Nothing needed here yet.</strong><span>This part of the stay guide will appear when content is added.</span></div>`;
@@ -265,6 +281,43 @@ function renderJourney(journey, options = {}) {
   } else if (options.scrollTop) {
     requestAnimationFrame(() => $('#guide-workspace').scrollIntoView({ behavior: 'smooth', block: 'start' }));
   }
+}
+
+function filterSectionByInterest(section, interest) {
+  if ((section.audiences || []).includes(interest)) return section;
+  const matchingItems = (section.items || []).filter(item => (item.audiences || []).includes(interest));
+  return matchingItems.length ? { ...section, items: matchingItems } : null;
+}
+
+function renderInterestFilter(journey, sections) {
+  const root = $('#interest-filter');
+  if (journey !== 'exploring') {
+    root.hidden = true;
+    root.innerHTML = '';
+    return;
+  }
+
+  const available = Object.keys(INTERESTS).filter(interest => sections.some(section =>
+    (section.audiences || []).includes(interest)
+      || (section.items || []).some(item => (item.audiences || []).includes(interest))
+  ));
+  if (!available.length) {
+    root.hidden = true;
+    root.innerHTML = '';
+    return;
+  }
+
+  root.hidden = false;
+  root.innerHTML = `
+    <div class="interest-filter__heading"><small>Make it yours</small><strong>What sounds like you?</strong></div>
+    <div class="interest-filter__options" role="group" aria-label="Filter recommendations by interest">
+      <button type="button" data-interest="all" aria-pressed="${state.activeInterest === 'all'}">${icon('compass')}<span>Everything nearby</span></button>
+      ${available.map(interest => `<button type="button" data-interest="${escapeHtml(interest)}" aria-pressed="${state.activeInterest === interest}">${icon(INTERESTS[interest].icon)}<span>${escapeHtml(INTERESTS[interest].label)}</span></button>`).join('')}
+    </div>`;
+  $$('[data-interest]', root).forEach(button => button.addEventListener('click', () => {
+    state.activeInterest = button.dataset.interest;
+    renderJourney('exploring');
+  }));
 }
 
 function renderSection(section, index, requestedSectionId) {
@@ -312,7 +365,11 @@ function renderItem(item) {
   const label = item.label ? `<div class="guide-item__label">${escapeHtml(item.label)}</div>` : '';
   let body = '';
 
-  if (item.type === 'text' || item.type === 'highlight' || !item.type) {
+  if (item.type === 'guide') {
+    body = isPlaceholder(item.content)
+      ? '<div class="guide-item__placeholder">Guide details coming soon.</div>'
+      : `<div class="guide-item__guide">${renderGuideMarkdown(item.content)}</div>`;
+  } else if (item.type === 'text' || item.type === 'highlight' || !item.type) {
     if (isPlaceholder(item.content)) {
       body = `<div class="guide-item__placeholder">${icon('lock')}<span>This detail will appear when it is ready for your stay.</span></div>`;
     } else {
@@ -354,6 +411,52 @@ function renderItem(item) {
   return element;
 }
 
+function renderGuideMarkdown(content) {
+  const lines = String(content || '').replace(/\r\n?/g, '\n').split('\n');
+  let html = '';
+  let listOpen = false;
+  const closeList = () => {
+    if (listOpen) html += '</ul>';
+    listOpen = false;
+  };
+
+  lines.forEach(rawLine => {
+    const line = rawLine.trim();
+    if (!line) {
+      closeList();
+      return;
+    }
+    const bullet = line.match(/^[-*]\s+(.+)/);
+    if (bullet) {
+      if (!listOpen) html += '<ul>';
+      listOpen = true;
+      html += `<li>${renderInlineGuideMarkdown(bullet[1])}</li>`;
+    } else {
+      closeList();
+      html += `<p>${renderInlineGuideMarkdown(line)}</p>`;
+    }
+  });
+  closeList();
+  return html;
+}
+
+function renderInlineGuideMarkdown(value) {
+  const source = String(value || '');
+  const pattern = /\[([^\]]+)\]\(([^)]+)\)/g;
+  let html = '';
+  let cursor = 0;
+  let match;
+  while ((match = pattern.exec(source))) {
+    html += escapeHtml(source.slice(cursor, match.index));
+    const url = safeUrl(match[2]);
+    html += url
+      ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener sponsored">${escapeHtml(match[1])}</a>`
+      : escapeHtml(match[1]);
+    cursor = match.index + match[0].length;
+  }
+  return html + escapeHtml(source.slice(cursor));
+}
+
 function renderPlaces(items, container) {
   if (!items.length) return;
   const grouped = {};
@@ -393,6 +496,7 @@ function renderPlaceCard(item) {
     <div class="place-card__body">
       <small>${escapeHtml(CATEGORY_LABELS[place.category] || 'Local favorite')}</small>
       <strong>${escapeHtml(place.name || item.label || 'Local place')}</strong>
+      ${renderAudienceLabels(item.audiences)}
       ${item.description ? `<p>${escapeHtml(item.description)}</p>` : ''}
       <div class="place-card__meta">
         ${place.rating ? `<span>${escapeHtml(place.rating)} ★</span>` : ''}
@@ -423,6 +527,7 @@ function openPlaceDialog(item) {
           ${item.featured ? '<span class="place-dialog__badge">Our Pick</span>' : ''}
           <small>${escapeHtml(CATEGORY_LABELS[place.category] || 'Local favorite')}</small>
           <h2 id="place-dialog-title">${escapeHtml(place.name || item.label || 'Local place')}</h2>
+          ${renderAudienceLabels(item.audiences, 'place-dialog__audiences')}
           ${item.description ? `<p>${escapeHtml(item.description)}</p>` : ''}
           <div class="place-chips">
             ${place.rating ? `<span>${escapeHtml(place.rating)} ★${place.totalRatings ? ` · ${Number(place.totalRatings).toLocaleString()} reviews` : ''}</span>` : ''}
@@ -442,6 +547,11 @@ function openPlaceDialog(item) {
   $('[data-close-place]', root).addEventListener('click', closePlaceDialog);
   dialog.addEventListener('click', event => { if (event.target === dialog) closePlaceDialog(); });
   $('[data-close-place]', root).focus();
+}
+
+function renderAudienceLabels(audiences = [], className = 'place-card__audiences') {
+  const labels = audiences.filter(value => INTERESTS[value]).map(value => INTERESTS[value].shortLabel);
+  return labels.length ? `<div class="${className}">${labels.map(label => `<span>${escapeHtml(label)}</span>`).join('')}</div>` : '';
 }
 
 function closePlaceDialog() {
@@ -503,13 +613,13 @@ function buildSearchIndex() {
       iconName: sectionIconName(section),
       title: section.title,
       subtitle: sectionSummary(section),
-      haystack: normalize(`${section.title} ${section.sectionId}`),
+      haystack: normalize(`${section.title} ${section.sectionId} ${(section.audiences || []).join(' ')}`),
     });
     (section.items || []).forEach(item => {
       const place = item.place || {};
       const itemJourney = item.type === 'place' && place.category === 'restaurant' ? 'eating' : journey;
       const title = place.name || item.label || section.title;
-      const searchable = [title, item.content, item.description, place.category, place.address, section.title]
+      const searchable = [title, item.content, item.description, place.category, place.address, section.title, ...(item.audiences || []), ...(section.audiences || [])]
         .filter(Boolean).join(' ');
       state.searchIndex.push({
         sectionId: section.sectionId,
@@ -574,6 +684,7 @@ function revealSection(sectionId, shouldScroll = true) {
 function navigateToSection(sectionId, options = {}) {
   const section = state.sections.find(candidate => candidate.sectionId === sectionId);
   if (!section) return;
+  state.activeInterest = 'all';
   renderJourney(options.journey || sectionJourney(section), {
     mobile: window.matchMedia('(max-width: 760px)').matches,
     sectionId,
