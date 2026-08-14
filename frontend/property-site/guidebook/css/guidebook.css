@@ -214,13 +214,16 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
   transition: transform 170ms ease, border-color 170ms ease, background 170ms ease;
 }
 .journey-card:hover { transform: translateY(-3px); border-color: var(--guide-accent); }
-.journey-card > svg { color: var(--guide-accent); }
+.journey-card > svg,
+.journey-card > .material-symbols-outlined { color: var(--guide-accent); }
+.journey-card > .material-symbols-outlined { font-size: 22px; }
 .journey-card strong,
 .journey-card small { display: block; }
 .journey-card strong { margin-bottom: 3px; font-family: var(--guide-serif); font-size: 19px; font-weight: 500; }
 .journey-card small { color: var(--guide-muted); font-size: 12px; line-height: 1.35; }
 .journey-card.is-active { border-color: var(--guide-primary); background: var(--guide-primary); color: #fff; }
-.journey-card.is-active > svg { color: #f1b2a7; }
+.journey-card.is-active > svg,
+.journey-card.is-active > .material-symbols-outlined { color: #f1b2a7; }
 .journey-card.is-active small { color: rgba(255, 255, 255, 0.68); }
 
 .mobile-home,
@@ -843,6 +846,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
   .mobile-journeys > button:last-child { border-bottom: 0; }
   .mobile-journey__icon { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 11px; background: var(--guide-background); color: var(--guide-primary); }
   .mobile-journey__icon svg { width: 18px; }
+  .mobile-journey__icon .material-symbols-outlined { font-size: 18px; }
   .mobile-journeys strong,
   .mobile-journeys small { display: block; }
   .mobile-journeys strong { margin-bottom: 2px; font-size: 15px; font-weight: 600; }

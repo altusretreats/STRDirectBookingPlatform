@@ -610,25 +610,28 @@ function findSection(pattern) {
 }
 
 function renderEssentials() {
+  // Quick essentials always shows each section's own admin-configured icon
+  // (a saved Material Symbol, or the title/journey fallback) rather than a
+  // generic icon hardcoded per category.
   const preferred = [
-    { pattern: /wifi|wi fi|tech|internet/, iconRef: { sprite: 'wifi' }, note: 'Network and devices' },
-    { pattern: /hot tub|sauna|pool/, iconRef: { sprite: 'waves' }, note: 'Controls and care' },
-    { pattern: /checkin|check in|entry|access/, iconRef: { sprite: 'key' }, note: 'Arrival and access' },
-    { pattern: /emergency|safety|contact/, iconRef: { sprite: 'shield' }, note: 'Help when it matters' },
+    { pattern: /wifi|wi fi|tech|internet/, note: 'Network and devices' },
+    { pattern: /hot tub|sauna|pool/, note: 'Controls and care' },
+    { pattern: /checkin|check in|entry|access/, note: 'Arrival and access' },
+    { pattern: /emergency|safety|contact/, note: 'Help when it matters' },
   ];
   const used = new Set();
   const links = [];
   state.sections.filter(section => section.important).forEach(section => {
     if (links.length >= 4) return;
     used.add(section.sectionId);
-    links.push({ section, iconRef: { sprite: 'alert-circle' }, note: 'Important for your stay' });
+    links.push({ section, iconRef: sectionIconRef(section), note: 'Important for your stay' });
   });
   preferred.forEach(preference => {
     const section = state.sections.find(candidate => !used.has(candidate.sectionId)
       && preference.pattern.test(normalize(`${candidate.sectionId} ${candidate.title}`)));
     if (section) {
       used.add(section.sectionId);
-      links.push({ section, iconRef: preference.iconRef, note: preference.note });
+      links.push({ section, iconRef: sectionIconRef(section), note: preference.note });
     }
   });
   state.sections.forEach(section => {
