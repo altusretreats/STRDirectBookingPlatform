@@ -430,11 +430,27 @@ function SortableSection({ section, onEdit, onDelete }) {
 }
 
 // ── Section modal ─────────────────────────────────────────────────────────────
+const DEFAULT_NEW_ITEM = { type: 'text', label: '', content: '', aiContext: '', hostNotes: '' };
+
+const GENERIC_ITEM_TYPES = [
+  { value: 'text', label: 'Text', icon: 'notes' },
+  { value: 'guide', label: 'Guide', icon: 'menu_book' },
+  { value: 'image', label: 'Image', icon: 'image' },
+  { value: 'video', label: 'Video', icon: 'movie' },
+  { value: 'map', label: 'Map Link', icon: 'map' },
+  { value: 'link', label: 'Web Link', icon: 'link' },
+];
+
 function SectionModal({ section, saving, propertyId, onSave, onClose }) {
   const [data, setData] = useState({ ...section });
-  const [newItem, setNewItem] = useState({ type: 'text', label: '', content: '', aiContext: '', hostNotes: '' });
+  const [view, setView] = useState('section'); // 'section' | 'add-item'
+  const [newItem, setNewItem] = useState(DEFAULT_NEW_ITEM);
+  const [addItemError, setAddItemError] = useState('');
   const [showAiFields, setShowAiFields] = useState(false);
   const [itemNotice, setItemNotice] = useState('');
+  const [lastAddedItemId, setLastAddedItemId] = useState(null);
+  const addItemBtnRef = useRef(null);
+  const addItemHeadingRef = useRef(null);
 
   const isRecs = data.sectionType === 'recommendations';
   const isWelcome = data.sectionType === 'welcome';
@@ -442,17 +458,62 @@ function SectionModal({ section, saving, propertyId, onSave, onClose }) {
   const set   = (k, v) => setData(d => ({ ...d, [k]: v }));
   const setNI = (k, v) => setNewItem(i => ({ ...i, [k]: v }));
 
-  function addItem() {
+  const prevViewRef = useRef(view);
+
+  useEffect(() => {
+    if (view === 'add-item') addItemHeadingRef.current?.focus();
+    // Returning from the subview: restore focus to the trigger button.
+    // (Not requestAnimationFrame — it isn't reliably scheduled in every host
+    // environment this admin renders in, whereas a plain effect after commit is.)
+    if (prevViewRef.current === 'add-item' && view === 'section') addItemBtnRef.current?.focus();
+    prevViewRef.current = view;
+  }, [view]);
+
+  useEffect(() => {
+    if (view !== 'section' || !lastAddedItemId) return;
+    document.getElementById(`guidebook-item-${lastAddedItemId}`)?.scrollIntoView({ block: 'nearest' });
+  }, [view, lastAddedItemId]);
+
+  function openAddItem() {
+    setAddItemError('');
+    setView('add-item');
+  }
+
+  function closeAddItem() {
+    setNewItem(DEFAULT_NEW_ITEM);
+    setAddItemError('');
+    setView('section');
+  }
+
+  function finishAdd(itemId, name) {
+    setNewItem(DEFAULT_NEW_ITEM);
+    setAddItemError('');
+    setView('section');
+    setLastAddedItemId(itemId);
+    setItemNotice(`${name} was added to this draft. Save the section to keep this change.`);
+  }
+
+  function handleModalKeyDown(e) {
+    if (e.key === 'Escape' && view === 'add-item') {
+      e.preventDefault();
+      closeAddItem();
+    }
+  }
+
+  function addGenericItem() {
     const content = newItem.content.trim();
     const label = newItem.label.trim() || (newItem.type === 'map' ? 'View on Google Maps' : newItem.type === 'link' ? 'Open link' : '');
-    if (!label || !content) {
-      setItemNotice(content ? 'Add a label for this item.' : 'Add the content or URL before adding this item.');
-      return;
-    }
+    if (!content) { setAddItemError('Add the content or URL before adding this item.'); return; }
+    if (!label) { setAddItemError('Add a label for this item.'); return; }
     const item = { ...newItem, label, content, itemId: `item-${Date.now()}`, order: ((data.items?.length || 0) + 1) * 10 };
     setData(current => ({ ...current, items: [...(current.items || []), item] }));
-    setNewItem({ type: newItem.type, label: '', content: '', aiContext: '', hostNotes: '' });
-    setItemNotice(`${label} added. Save the section to keep this change.`);
+    finishAdd(item.itemId, label);
+  }
+
+  function addPlaceItem(placeItem) {
+    const item = { ...placeItem, itemId: `item-${Date.now()}`, type: 'place', order: ((data.items?.length || 0) + 1) * 10 };
+    setData(current => ({ ...current, items: [...(current.items || []), item] }));
+    finishAdd(item.itemId, placeItem.place?.name || placeItem.label || 'Place');
   }
 
   function removeItem(itemId) {
@@ -483,139 +544,208 @@ function SectionModal({ section, saving, propertyId, onSave, onClose }) {
   }
 
   return (
-    <div style={s.modalOverlay} onClick={e => e.target === e.currentTarget && onClose()}>
+    <div style={s.modalOverlay} onClick={e => e.target === e.currentTarget && view === 'section' && onClose()} onKeyDown={handleModalKeyDown}>
       <div style={s.modal}>
         <div style={s.modalHeader}>
           <h2 style={{ fontSize: 20, fontWeight: 700 }}>{section.sectionId ? 'Edit Section' : 'New Section'}</h2>
-          <button style={s.closeBtn} onClick={onClose}>✕</button>
+          {view === 'section' && <button style={s.closeBtn} onClick={onClose} aria-label="Close section editor">✕</button>}
         </div>
 
         <div style={s.modalBody}>
-          {/* Section metadata */}
-          <div style={s.formRow}>
-            <div style={s.formGroup}>
-              <label style={s.label}>Icon</label>
-              <MaterialIconPicker value={data.icon} onChange={v => set('icon', v)} />
-            </div>
-            <div style={{ ...s.formGroup, flex: 3 }}>
-              <label style={s.label}>Section title *</label>
-              <input style={s.input} value={data.title} onChange={e => set('title', e.target.value)} placeholder="e.g. Check-In Instructions" />
-            </div>
-          </div>
+          {view === 'add-item' ? (
+            <div key="add-item" className="section-editor-pane">
+              <button type="button" style={s.addItemBack} onClick={closeAddItem}>
+                <span className="material-symbols-outlined msi" aria-hidden="true" style={{ fontSize: 18 }}>arrow_back</span>
+                Back to section
+              </button>
+              <h3 ref={addItemHeadingRef} tabIndex={-1} style={s.addItemHeading}>
+                {isRecs ? 'Add a place' : 'Add an item'}
+              </h3>
+              <p style={s.addItemHint}>
+                {isRecs
+                  ? "Paste a Google Maps link — we'll pull in the name, photo, rating, and calculate driving distance automatically."
+                  : 'Choose what you want guests to see.'}
+              </p>
 
-          <div style={s.formRow}>
-            <div style={s.formGroup}>
-              <label style={s.label}>Section type</label>
-              <select style={s.input} value={data.sectionType || 'general'} onChange={e => set('sectionType', e.target.value)}>
-                <option value="general">General</option>
-                <option value="welcome">Welcome message</option>
-                <option value="recommendations">Local Recommendations</option>
-              </select>
+              {isRecs ? (
+                <PlaceAddForm propertyId={propertyId} onAdd={addPlaceItem} />
+              ) : (
+                <>
+                  <div style={s.itemTypeGrid} role="radiogroup" aria-label="Item type">
+                    {GENERIC_ITEM_TYPES.map(t => {
+                      const selected = newItem.type === t.value;
+                      return (
+                        <button
+                          key={t.value}
+                          type="button"
+                          role="radio"
+                          aria-checked={selected}
+                          style={{ ...s.itemTypeCard, ...(selected ? s.itemTypeCardSelected : {}) }}
+                          onClick={() => setNI('type', t.value)}
+                        >
+                          <span className="material-symbols-outlined msi" aria-hidden="true" style={{ fontSize: 22 }}>{t.icon}</span>
+                          <span>{t.label}</span>
+                          {selected && <span style={s.itemTypeCheck} aria-hidden="true">✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div style={s.formGroup}>
+                    <label style={s.labelSm}>Label</label>
+                    <input style={s.input} value={newItem.label} onChange={e => setNI('label', e.target.value)} placeholder="e.g. Door code" />
+                  </div>
+                  <div style={s.formGroup}>
+                    <label style={s.labelSm}>Content / URL{newItem.type === 'guide' && <MarkdownHelp />}</label>
+                    <textarea style={{ ...s.input, height: 72, resize: 'vertical' }}
+                      value={newItem.content} onChange={e => setNI('content', e.target.value)}
+                      placeholder={newItem.type === 'guide' ? 'Use short paragraphs, - bullets, and [link text](https://example.com)…' : newItem.type === 'text' ? 'Enter instructions…' : 'Enter URL…'} />
+                  </div>
+                  <div style={s.formGroup}>
+                    <label style={s.labelSm}>🤖 AI context (hidden from guests)</label>
+                    <textarea style={{ ...s.input, height: 56, resize: 'vertical', fontSize: 13 }}
+                      value={newItem.aiContext} onChange={e => setNI('aiContext', e.target.value)}
+                      placeholder="Any context an AI concierge should know about this item…" />
+                  </div>
+                  {addItemError && <div role="alert" style={s.addItemError}>{addItemError}</div>}
+                </>
+              )}
             </div>
-            <div style={s.formGroup}>
-              <label style={s.label}>Visibility</label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginTop: 8 }}>
-                <input type="checkbox" checked={data.published} onChange={e => set('published', e.target.checked)} style={{ width: 16, height: 16 }} />
-                <span style={{ fontSize: 14, color: '#374151' }}>Visible to guests</span>
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginTop: 10 }}>
-                <input type="checkbox" checked={data.aiPublished ?? data.published ?? false} onChange={e => set('aiPublished', e.target.checked)} style={{ width: 16, height: 16 }} />
-                <span style={{ fontSize: 14, color: '#374151' }}>Available to AI agents</span>
-              </label>
-              <div style={{ fontSize: 12, color: '#6B7280', marginTop: 6, lineHeight: 1.4 }}>
-                Public agent feed. Do not include private access details or host-only notes.
+          ) : (
+            <div key="section" className="section-editor-pane">
+              {/* Section metadata */}
+              <div style={s.formRow}>
+                <div style={s.formGroup}>
+                  <label style={s.label}>Icon</label>
+                  <MaterialIconPicker value={data.icon} onChange={v => set('icon', v)} />
+                </div>
+                <div style={{ ...s.formGroup, flex: 3 }}>
+                  <label style={s.label}>Section title *</label>
+                  <input style={s.input} value={data.title} onChange={e => set('title', e.target.value)} placeholder="e.g. Check-In Instructions" />
+                </div>
               </div>
-            </div>
-          </div>
 
-          <div style={s.audienceBox}>
-            <label style={s.label}>Who is this section for?</label>
-            <p style={s.audienceHint}>Optional. Tag a whole practical guide—such as a hiking packing list—so it appears with matching recommendations in the guest’s “For you” filter.</p>
-            <AudiencePicker value={data.audiences || []} onChange={audiences => set('audiences', audiences)} />
-          </div>
-
-          <div style={{ ...s.importantBox, ...(data.important ? s.importantBoxSelected : {}) }}>
-            <label style={s.importantToggle}>
-              <input
-                type="checkbox"
-                checked={data.important === true}
-                onChange={e => set('important', e.target.checked)}
-                style={{ width: 17, height: 17, accentColor: '#BD503E' }}
-              />
-              <span style={s.importantIcon} aria-hidden="true">!</span>
-              <span>
-                <strong style={s.importantTitle}>Highlight as important</strong>
-                <small style={s.importantHint}>Adds an Important label and emphasis in the guest guide, opens this section by default, and places it first in Quick essentials.</small>
-              </span>
-            </label>
-          </div>
-
-          {/* AI context for section */}
-          <div style={s.aiBox}>
-            <button style={s.aiToggle} onClick={() => setShowAiFields(!showAiFields)}>
-              🤖 AI Context {showAiFields ? '▲' : '▼'}
-              <span style={s.aiToggleSub}>Hidden from guests — used by AI concierge</span>
-            </button>
-            {showAiFields && (
-              <div style={{ marginTop: 10 }}>
-                <label style={s.labelSm}>Section context for AI (e.g., "Guests commonly ask about…", "Key things to know…")</label>
-                <textarea style={{ ...s.input, height: 80, resize: 'vertical', marginTop: 4 }}
-                  value={data.aiContext || ''}
-                  onChange={e => set('aiContext', e.target.value)}
-                  placeholder="Add context that would help an AI answer guest questions about this section…" />
+              <div style={s.formRow}>
+                <div style={s.formGroup}>
+                  <label style={s.label}>Section type</label>
+                  <select style={s.input} value={data.sectionType || 'general'} onChange={e => set('sectionType', e.target.value)}>
+                    <option value="general">General</option>
+                    <option value="welcome">Welcome message</option>
+                    <option value="recommendations">Local Recommendations</option>
+                  </select>
+                </div>
+                <div style={s.formGroup}>
+                  <label style={s.label}>Visibility</label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginTop: 8 }}>
+                    <input type="checkbox" checked={data.published} onChange={e => set('published', e.target.checked)} style={{ width: 16, height: 16 }} />
+                    <span style={{ fontSize: 14, color: '#374151' }}>Visible to guests</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginTop: 10 }}>
+                    <input type="checkbox" checked={data.aiPublished ?? data.published ?? false} onChange={e => set('aiPublished', e.target.checked)} style={{ width: 16, height: 16 }} />
+                    <span style={{ fontSize: 14, color: '#374151' }}>Available to AI agents</span>
+                  </label>
+                  <div style={{ fontSize: 12, color: '#6B7280', marginTop: 6, lineHeight: 1.4 }}>
+                    Public agent feed. Do not include private access details or host-only notes.
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
 
-          {/* Welcome message */}
-          {isWelcome && (
-            <div style={s.welcomeBox}>
-              <label style={s.label}>Welcome message</label>
-              <p style={s.welcomeHint}>This text appears directly beneath the “Welcome to” title in the guidebook hero.</p>
-              <textarea
-                style={{ ...s.input, minHeight: 110, resize: 'vertical' }}
-                value={(data.items || []).find(item => item.type === 'text')?.content || ''}
-                onChange={e => updateWelcomeMessage(e.target.value)}
-                placeholder="We're so glad you're here."
-              />
+              <div style={s.audienceBox}>
+                <label style={s.label}>Who is this section for?</label>
+                <p style={s.audienceHint}>Optional. Tag a whole practical guide—such as a hiking packing list—so it appears with matching recommendations in the guest’s “For you” filter.</p>
+                <AudiencePicker value={data.audiences || []} onChange={audiences => set('audiences', audiences)} />
+              </div>
+
+              <div style={{ ...s.importantBox, ...(data.important ? s.importantBoxSelected : {}) }}>
+                <label style={s.importantToggle}>
+                  <input
+                    type="checkbox"
+                    checked={data.important === true}
+                    onChange={e => set('important', e.target.checked)}
+                    style={{ width: 17, height: 17, accentColor: '#BD503E' }}
+                  />
+                  <span style={s.importantIcon} aria-hidden="true">!</span>
+                  <span>
+                    <strong style={s.importantTitle}>Highlight as important</strong>
+                    <small style={s.importantHint}>Adds an Important label and emphasis in the guest guide, opens this section by default, and places it first in Quick essentials.</small>
+                  </span>
+                </label>
+              </div>
+
+              {/* AI context for section */}
+              <div style={s.aiBox}>
+                <button style={s.aiToggle} onClick={() => setShowAiFields(!showAiFields)}>
+                  🤖 AI Context {showAiFields ? '▲' : '▼'}
+                  <span style={s.aiToggleSub}>Hidden from guests — used by AI concierge</span>
+                </button>
+                {showAiFields && (
+                  <div style={{ marginTop: 10 }}>
+                    <label style={s.labelSm}>Section context for AI (e.g., "Guests commonly ask about…", "Key things to know…")</label>
+                    <textarea style={{ ...s.input, height: 80, resize: 'vertical', marginTop: 4 }}
+                      value={data.aiContext || ''}
+                      onChange={e => set('aiContext', e.target.value)}
+                      placeholder="Add context that would help an AI answer guest questions about this section…" />
+                  </div>
+                )}
+              </div>
+
+              {/* Welcome message */}
+              {isWelcome && (
+                <div style={s.welcomeBox}>
+                  <label style={s.label}>Welcome message</label>
+                  <p style={s.welcomeHint}>This text appears directly beneath the “Welcome to” title in the guidebook hero.</p>
+                  <textarea
+                    style={{ ...s.input, minHeight: 110, resize: 'vertical' }}
+                    value={(data.items || []).find(item => item.type === 'text')?.content || ''}
+                    onChange={e => updateWelcomeMessage(e.target.value)}
+                    placeholder="We're so glad you're here."
+                  />
+                </div>
+              )}
+
+              {/* Items */}
+              {!isWelcome && <div style={{ marginTop: 24 }}>
+                <div style={s.itemsHeader}>
+                  <label style={{ ...s.label, marginBottom: 0 }}>
+                    {isRecs ? 'Places' : 'Content items'}
+                  </label>
+                  <button type="button" ref={addItemBtnRef} style={s.btnAddItem} onClick={openAddItem}>
+                    + Add Item
+                  </button>
+                </div>
+
+                {(data.items || []).map(item => (
+                  <div key={item.itemId} id={`guidebook-item-${item.itemId}`}>
+                    {item.type === 'place'
+                      ? <PlaceItemRow item={item} onRemove={() => removeItem(item.itemId)} onUpdate={u => updateItem(item.itemId, u)} />
+                      : <GenericItemRow item={item} onRemove={() => removeItem(item.itemId)} onUpdate={u => updateItem(item.itemId, u)} />}
+                  </div>
+                ))}
+
+                {itemNotice && (
+                  <div role="status" style={s.itemNotice}>
+                    {itemNotice}
+                  </div>
+                )}
+              </div>}
             </div>
           )}
-
-          {/* Items */}
-          {!isWelcome && <div style={{ marginTop: 24 }}>
-            <label style={s.label}>
-              {isRecs ? 'Places' : 'Content items'}
-            </label>
-
-            {(data.items || []).map(item =>
-              item.type === 'place'
-                ? <PlaceItemRow key={item.itemId} item={item} onRemove={() => removeItem(item.itemId)} onUpdate={u => updateItem(item.itemId, u)} />
-                : <GenericItemRow key={item.itemId} item={item} onRemove={() => removeItem(item.itemId)} onUpdate={u => updateItem(item.itemId, u)} />
-            )}
-
-            {/* Add item form */}
-            {isRecs ? (
-              <PlaceAddForm propertyId={propertyId} onAdd={placeItem => {
-                const item = { ...placeItem, itemId: `item-${Date.now()}`, type: 'place', order: ((data.items?.length || 0) + 1) * 10 };
-                setData(current => ({ ...current, items: [...(current.items || []), item] }));
-                setItemNotice(`${placeItem.place?.name || placeItem.label || 'Place'} added. Save the section to keep this change.`);
-              }} />
-            ) : (
-              <GenericAddForm newItem={newItem} setNI={setNI} onAdd={addItem} />
-            )}
-            {itemNotice && (
-              <div role="status" style={{ ...s.itemNotice, ...(itemNotice.startsWith('Add ') ? s.itemNoticeError : {}) }}>
-                {itemNotice}
-              </div>
-            )}
-          </div>}
         </div>
 
         <div style={s.modalFooter}>
-          <button style={s.btnSecondary} onClick={onClose}>Cancel</button>
-          <button style={{ ...s.btnPrimary, opacity: saving ? 0.6 : 1 }} onClick={() => onSave(data)} disabled={saving}>
-            {saving ? 'Saving…' : 'Save Section'}
-          </button>
+          {view === 'add-item' ? (
+            <>
+              <button style={s.btnSecondary} onClick={closeAddItem}>Cancel</button>
+              {!isRecs && <button style={s.btnPrimary} onClick={addGenericItem}>Add to Section</button>}
+            </>
+          ) : (
+            <>
+              <button style={s.btnSecondary} onClick={onClose}>Cancel</button>
+              <button style={{ ...s.btnPrimary, opacity: saving ? 0.6 : 1 }} onClick={() => onSave(data)} disabled={saving}>
+                {saving ? 'Saving…' : 'Save Section'}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -713,45 +843,6 @@ function GenericItemRow({ item, onRemove, onUpdate }) {
             placeholder="Private notes just for you…" />
         </div>
       )}
-    </div>
-  );
-}
-
-// ── Generic add-item form ─────────────────────────────────────────────────────
-function GenericAddForm({ newItem, setNI, onAdd }) {
-  return (
-    <div style={s.addItemBox}>
-      <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 10 }}>Add item</p>
-      <div style={s.formRow}>
-        <div style={s.formGroup}>
-          <label style={s.labelSm}>Type</label>
-          <select style={s.input} value={newItem.type} onChange={e => setNI('type', e.target.value)}>
-            <option value="text">Text</option>
-            <option value="guide">Formatted guide (Markdown)</option>
-            <option value="image">Image</option>
-            <option value="video">Video</option>
-            <option value="map">Map link</option>
-            <option value="link">Link</option>
-          </select>
-        </div>
-        <div style={{ ...s.formGroup, flex: 2 }}>
-          <label style={s.labelSm}>Label</label>
-          <input style={s.input} value={newItem.label} onChange={e => setNI('label', e.target.value)} placeholder="e.g. Door code" />
-        </div>
-      </div>
-      <div style={s.formGroup}>
-        <label style={s.labelSm}>Content / URL{newItem.type === 'guide' && <MarkdownHelp />}</label>
-        <textarea style={{ ...s.input, height: 72, resize: 'vertical' }}
-          value={newItem.content} onChange={e => setNI('content', e.target.value)}
-          placeholder={newItem.type === 'guide' ? 'Use short paragraphs, - bullets, and [link text](https://example.com)…' : newItem.type === 'text' ? 'Enter instructions…' : 'Enter URL…'} />
-      </div>
-      <div style={s.formGroup}>
-        <label style={s.labelSm}>🤖 AI context (hidden from guests)</label>
-        <textarea style={{ ...s.input, height: 56, resize: 'vertical', fontSize: 13 }}
-          value={newItem.aiContext} onChange={e => setNI('aiContext', e.target.value)}
-          placeholder="Any context an AI concierge should know about this item…" />
-      </div>
-      <button style={s.btnSecondary} onClick={onAdd}>Add item</button>
     </div>
   );
 }
@@ -858,9 +949,10 @@ function PlaceAddForm({ propertyId, onAdd }) {
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState('');
   const [preview, setPreview]   = useState(null); // enriched place data from API
+  const [submitting, setSubmitting] = useState(false);
 
   async function handleLookup() {
-    if (!url.trim()) return;
+    if (!url.trim() || loading) return;
     setLoading(true); setError(''); setPreview(null);
     try {
       const res = await adminApi.lookupPlace(propertyId, url.trim());
@@ -873,7 +965,8 @@ function PlaceAddForm({ propertyId, onAdd }) {
   }
 
   function handleAdd(confirmedPlace = preview) {
-    if (!confirmedPlace) return;
+    if (!confirmedPlace || submitting) return;
+    setSubmitting(true);
     onAdd({
       label:       confirmedPlace.name,
       description: '',
@@ -889,10 +982,7 @@ function PlaceAddForm({ propertyId, onAdd }) {
   }
 
   return (
-    <div style={s.addItemBox}>
-      <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>Add place from Google Maps</p>
-      <p style={{ fontSize: 12, color: '#6B7280', marginBottom: 12 }}>Paste any Google Maps link — we'll pull in the name, photo, rating, and calculate driving distance automatically.</p>
-
+    <div>
       <div style={{ display: 'flex', gap: 8 }}>
         <input
           style={{ ...s.input, flex: 1, fontSize: 13 }}
@@ -900,6 +990,7 @@ function PlaceAddForm({ propertyId, onAdd }) {
           onChange={e => setUrl(e.target.value)}
           placeholder="https://maps.google.com/place/..."
           onKeyDown={e => e.key === 'Enter' && handleLookup()}
+          autoFocus
         />
         <button style={{ ...s.btnPrimary, whiteSpace: 'nowrap', opacity: loading ? 0.6 : 1 }}
           onClick={handleLookup} disabled={loading || !url.trim()}>
@@ -907,17 +998,17 @@ function PlaceAddForm({ propertyId, onAdd }) {
         </button>
       </div>
 
-      {error && <div style={{ marginTop: 8, fontSize: 13, color: '#DC2626' }}>{error}</div>}
+      {error && <div role="alert" style={{ marginTop: 8, fontSize: 13, color: '#DC2626' }}>{error}</div>}
 
       {preview && (
-        <PlacePreview place={preview} onAdd={handleAdd} onDismiss={() => { setPreview(null); setUrl(''); }} />
+        <PlacePreview place={preview} onAdd={handleAdd} onDismiss={() => { setPreview(null); setUrl(''); }} submitting={submitting} />
       )}
     </div>
   );
 }
 
 // ── Place preview card (after lookup, before adding) ──────────────────────────
-function PlacePreview({ place: initialPlace, onAdd, onDismiss }) {
+function PlacePreview({ place: initialPlace, onAdd, onDismiss, submitting }) {
   const [p, setP] = useState(initialPlace);
   const update    = (k, v) => setP(prev => ({ ...prev, [k]: v }));
 
@@ -971,8 +1062,10 @@ function PlacePreview({ place: initialPlace, onAdd, onDismiss }) {
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-        <button style={s.btnSecondary} onClick={onDismiss}>Dismiss</button>
-        <button style={s.btnPrimary} onClick={() => onAdd(p)}>Add to section</button>
+        <button style={s.btnSecondary} onClick={onDismiss} disabled={submitting}>Dismiss</button>
+        <button style={{ ...s.btnPrimary, opacity: submitting ? 0.6 : 1 }} onClick={() => onAdd(p)} disabled={submitting}>
+          {submitting ? 'Adding…' : 'Add to section'}
+        </button>
       </div>
     </div>
   );
@@ -1279,14 +1372,22 @@ const s = {
   labelSm:       { display: 'block', fontSize: 12, fontWeight: 600, color: '#6B7280', marginBottom: 4 },
   input:         { width: '100%', padding: '9px 12px', border: '1px solid #D1D5DB', borderRadius: 7, fontSize: 14, fontFamily: 'inherit', color: '#111827', background: '#fff', outline: 'none' },
   itemRow:       { display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', background: '#F9FAFB', borderRadius: 8, marginBottom: 8, fontSize: 13, flexWrap: 'wrap' },
-  addItemBox:    { border: '1px dashed #D1D5DB', borderRadius: 8, padding: 16, marginTop: 12 },
   aiBox:         { background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 8, padding: 14, marginBottom: 0 },
   aiToggle:      { background: 'none', border: 'none', fontFamily: 'inherit', fontSize: 13, fontWeight: 600, color: '#16A34A', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, padding: 0 },
   aiToggleSub:   { fontSize: 11, color: '#6B7280', fontWeight: 400 },
   placePreview:       { marginTop: 14, padding: 14, background: '#F9FAFB', borderRadius: 10, border: '1px solid #E5E7EB' },
   mockWarning:        { marginTop: 10, padding: '8px 12px', background: '#FFFBEB', border: '1px solid #FCD34D', borderRadius: 6, fontSize: 12, color: '#92400E' },
   itemNotice:         { marginTop: 10, padding: '9px 12px', border: '1px solid #A7D7C7', borderRadius: 7, background: '#EFFAF6', color: '#23614D', fontSize: 12, fontWeight: 600 },
-  itemNoticeError:    { borderColor: '#F5B8AE', background: '#FFF4F1', color: '#A33F31' },
+  itemsHeader:        { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 10 },
+  btnAddItem:         { padding: '8px 14px', background: '#fff', color: '#1D3557', border: '1px solid #1D3557', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
+  addItemBack:        { display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 16, padding: '4px 2px', border: 'none', background: 'none', color: '#1D3557', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
+  addItemHeading:     { margin: '0 0 4px', color: '#1D3557', fontSize: 20, fontWeight: 700, outline: 'none' },
+  addItemHint:        { margin: '0 0 18px', color: '#6B7280', fontSize: 13, lineHeight: 1.5 },
+  addItemError:       { marginTop: 4, marginBottom: 16, padding: '9px 12px', border: '1px solid #F5B8AE', borderRadius: 7, background: '#FFF4F1', color: '#A33F31', fontSize: 12, fontWeight: 600 },
+  itemTypeGrid:       { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 8, marginBottom: 20 },
+  itemTypeCard:       { position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '14px 10px', border: '1px solid #E5E7EB', borderRadius: 10, background: '#fff', color: '#374151', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 600 },
+  itemTypeCardSelected: { borderColor: '#BD503E', background: '#FFF6F3', color: '#BD503E', boxShadow: '0 0 0 1px #BD503E' },
+  itemTypeCheck:      { position: 'absolute', top: 6, right: 8, color: '#BD503E', fontSize: 13, fontWeight: 800, lineHeight: 1 },
   mapIconGrid:        { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(105px, 1fr))', gap: 7 },
   mapIconOption:      { display: 'flex', minWidth: 0, alignItems: 'center', gap: 7, padding: '7px 8px', border: '1px solid #D7DEE3', borderRadius: 8, background: '#fff', color: '#374151', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' },
   mapIconOptionSelected: { borderColor: '#1D3557', background: '#EEF3F7', boxShadow: '0 0 0 1px #1D3557' },

@@ -257,6 +257,15 @@ input:focus, textarea:focus, select:focus {
 .material-symbols-outlined { opacity: 0; }
 .symbols-ready .material-symbols-outlined { opacity: 1; }
 
+/* Guidebook Section editor: subtle transition between the section view and
+   the Add Item subview, within the same modal container. */
+.section-editor-pane { animation: sectionPaneIn 160ms ease; }
+@keyframes sectionPaneIn {
+  from { opacity: 0; transform: translateX(8px); }
+  to { opacity: 1; transform: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+  .section-editor-pane { animation: none; }
 }
