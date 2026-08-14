@@ -25,6 +25,8 @@ window.ALTUS_MAPS_CONFIG = Object.freeze({
 });
 "@ | Set-Content -Encoding utf8 frontend\property-site\js\maps-config.js
 aws s3 sync frontend\property-site\ s3://altus-retreats-frontend-dev-817760095908/ --profile altus
+aws s3 cp frontend\property-site\shop-your-stay\js\shop.js s3://altus-retreats-frontend-dev-817760095908/shop-your-stay/js/shop.js --content-type "application/javascript" --metadata-directive REPLACE --profile altus
+aws s3 cp frontend\property-site\shop-your-stay\css\shop.css s3://altus-retreats-frontend-dev-817760095908/shop-your-stay/css/shop.css --content-type "text/css" --metadata-directive REPLACE --profile altus
 aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/*" --profile altus
 ```
 

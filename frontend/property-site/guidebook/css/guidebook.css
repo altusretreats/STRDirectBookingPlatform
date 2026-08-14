@@ -610,6 +610,22 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
   color: #fff;
   cursor: pointer;
 }
+.guide-footer__actions { display: flex; align-items: center; gap: 9px; }
+.guide-footer__actions a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 17px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--guide-primary);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.guide-footer__actions svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.mobile-shop-link { display: none; }
 
 .search-dialog,
 .place-dialog {
@@ -840,6 +856,25 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
   .mobile-now strong { margin-bottom: 2px; font-family: var(--guide-serif); font-size: 18px; font-weight: 500; }
   .mobile-now em { color: rgba(255, 255, 255, 0.68); font-size: 11px; font-style: normal; line-height: 1.35; }
   .mobile-now > svg { width: 40px; height: 40px; padding: 10px; border: 1px solid rgba(255, 255, 255, 0.26); border-radius: 50%; }
+  .mobile-shop-link {
+    min-height: 64px;
+    display: grid;
+    grid-template-columns: 35px 1fr 17px;
+    align-items: center;
+    gap: 10px;
+    margin-top: 13px;
+    padding: 10px 13px;
+    border: 1px solid var(--guide-line);
+    border-radius: 15px;
+    background: var(--guide-surface);
+    color: var(--guide-ink);
+    text-decoration: none;
+  }
+  .mobile-shop-link > svg:first-child { width: 20px; height: 20px; margin: auto; color: var(--guide-primary); fill: none; stroke: currentColor; stroke-width: 1.8; }
+  .mobile-shop-link strong, .mobile-shop-link small { display: block; }
+  .mobile-shop-link strong { margin-bottom: 2px; font-size: 12px; }
+  .mobile-shop-link small { color: var(--guide-muted); font-size: 10px; }
+  .mobile-shop-link .chevron { width: 16px; color: var(--guide-muted); }
 
   .guide-workspace { display: none; width: 100%; padding: 0 0 28px; }
   body.mobile-content-open .guide-hero,

@@ -9,6 +9,7 @@ import LocationEditor from '../components/LocationEditor';
 import MediaPanel from '../components/MediaPanel';
 import AmenitiesPanel from '../components/AmenitiesPanel';
 import ReviewsEditor from '../components/ReviewsEditor';
+import ShopEditor from '../components/ShopEditor';
 
 const TABS = [
   { id: 'reviews',   label: 'Reviews',   icon: '★' },
@@ -19,6 +20,7 @@ const TABS = [
   { id: 'location',  label: 'Location',  icon: '📍' },
   { id: 'sync',      label: 'Sync',      icon: '🔄' },
   { id: 'guidebook', label: 'Guidebook', icon: '📖' },
+  { id: 'shop',      label: 'Shop Your Stay', icon: '🛍' },
   { id: 'bookings',  label: 'Bookings',  icon: '📅' },
 ];
 
@@ -103,6 +105,7 @@ export default function PropertyDetail({ propertyId, tab, property: propFromPare
         {activeTab === 'location'  && <LocationEditor property={property} cached={cached} onSaved={handlePropertyUpdate} />}
         {activeTab === 'sync'      && <SyncPanel property={property} onSynced={handlePropertyUpdate} />}
         {activeTab === 'guidebook' && <GuidebookEditor propertyId={propertyId} propertyName={property.name} property={property} onPropertySaved={handlePropertyUpdate} />}
+        {activeTab === 'shop'      && <ShopEditor propertyId={propertyId} propertyName={property.name} propertyDomain={property.domain} />}
         {activeTab === 'bookings'  && <BookingsList propertyId={propertyId} />}
       </div>
     </div>

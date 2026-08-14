@@ -51,6 +51,14 @@ export const adminApi = {
   upsertReview:   (propertyId, id, data) => request('PUT',    `/admin/properties/${propertyId}/reviews/${id}`, data),
   deleteReview:   (propertyId, id)       => request('DELETE', `/admin/properties/${propertyId}/reviews/${id}`),
 
+  // Shop Your Stay
+  getShop:            (propertyId)           => request('GET',    `/admin/properties/${propertyId}/shop`),
+  upsertShopCategory: (propertyId, id, data) => request('PUT',    `/admin/properties/${propertyId}/shop/categories/${id}`, data),
+  deleteShopCategory: (propertyId, id)       => request('DELETE', `/admin/properties/${propertyId}/shop/categories/${id}`),
+  upsertShopProduct:  (propertyId, id, data) => request('PUT',    `/admin/properties/${propertyId}/shop/products/${id}`, data),
+  deleteShopProduct:  (propertyId, id)       => request('DELETE', `/admin/properties/${propertyId}/shop/products/${id}`),
+  importShopImage:    (propertyId, imageUrl) => request('POST',   `/admin/properties/${propertyId}/shop/import-image`, { imageUrl }),
+
   // Places (Google Maps lookup for local recommendations)
   lookupPlace: (propertyId, googleUrl)   => request('POST',   `/admin/properties/${propertyId}/places/lookup`, { googleUrl }),
 

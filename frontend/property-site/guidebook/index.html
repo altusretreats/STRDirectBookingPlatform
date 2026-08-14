@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/guidebook.css?v=20260814-1">
+  <link rel="stylesheet" href="css/guidebook.css?v=20260814-2">
 </head>
 <body class="loading">
   <svg class="icon-sprite" aria-hidden="true">
@@ -113,6 +113,7 @@
         <span><small>Good to know</small><strong id="mobile-now-title">Everything you need to settle in</strong><em id="mobile-now-copy">House essentials and helpful stay details are ready when you need them.</em></span>
         <svg><use href="#icon-arrow"></use></svg>
       </button>
+      <a class="mobile-shop-link" href="../shop-your-stay/"><svg><use href="#icon-shopping-bag"></use></svg><span><strong>Like something in the house?</strong><small>Browse Shop Your Stay</small></span><svg class="chevron"><use href="#icon-chevron"></use></svg></a>
     </section>
 
     <section class="guide-workspace" id="guide-workspace" aria-live="polite">
@@ -147,7 +148,10 @@
 
   <footer class="guide-footer">
     <div><strong>Need to contact your host?</strong><span>Reply to the booking message in the app or email you used to reserve your stay.</span></div>
-    <button type="button" data-open-help><svg><use href="#icon-message"></use></svg>Contact instructions</button>
+    <div class="guide-footer__actions">
+      <a href="../shop-your-stay/"><svg><use href="#icon-shopping-bag"></use></svg>Shop Your Stay</a>
+      <button type="button" data-open-help><svg><use href="#icon-message"></use></svg>Contact instructions</button>
+    </div>
   </footer>
 
   <nav class="mobile-tabs" aria-label="Guide navigation">

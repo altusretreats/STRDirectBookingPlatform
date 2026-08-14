@@ -1,6 +1,6 @@
 # DynamoDB Single-Table Design — Altus Retreats
 
-Last reviewed: 2026-08-12. The current property-site widget and navigation release is frontend-only and introduces no table-schema or record-shape changes.
+Last reviewed: 2026-08-14. Shop Your Stay adds property-scoped category and product record types without changing the table key schema.
 
 Table name: `altus-retreats-{env}`
 
@@ -227,7 +227,24 @@ Only published records are returned by the public reviews endpoint. Featured rec
 
 ---
 
-### 5. Property Cache (Hospitable data)
+### 5. Shop Your Stay
+
+Shop categories and products are independent property-scoped records. Category order is an ordinary numeric attribute, not part of the sort key, so reordering never creates duplicate logical records.
+
+| Entity | PK | SK |
+|--------|----|----|
+| Category | `PROPERTY#{propertyId}` | `SHOP#CATEGORY#{categoryId}` |
+| Product | `PROPERTY#{propertyId}` | `SHOP#PRODUCT#{productId}` |
+
+**Category attributes:** `categoryId`, `name`, numeric `order`, `active`, `createdAt`, `updatedAt`.
+
+**Product attributes:** `productId`, `name`, `description`, `categoryId`, optional `room`, HTTPS `affiliateUrl`, HTTPS `imageUrl`, `favorite`, `active`, `createdAt`, `updatedAt`.
+
+The public catalog returns only active products belonging to active categories. Categories sort by `order` then name; products sort favorites first and then alphabetically. Public responses omit DynamoDB keys, timestamps, and internal entity metadata. Inactive products have no individual public route and disappear from the catalog completely.
+
+---
+
+### 6. Property Cache (Hospitable data)
 
 Caches property info fetched from Hospitable so the frontend doesn't hit Hospitable on every request.
 
@@ -273,6 +290,7 @@ Caches property info fetched from Hospitable so the frontend doesn't hit Hospita
 | Get Hospitable cache | Query | `PK=PROPERTY#kentucky, SK=CACHE#HOSPITABLE` |
 | Get guidebook records for guest projection | Query + published filter | `PK=PROPERTY#kentucky, SK begins_with GUIDEBOOK#SECTION#` |
 | Get published managed reviews | Query + published filter | `PK=PROPERTY#kentucky, SK begins_with REVIEW#MANUAL#` |
+| Get Shop Your Stay catalog | Query + active projection | `PK=PROPERTY#kentucky, SK begins_with SHOP#` |
 | Get booking by ID | Query | `PK=BOOKING#bk_01J4X` |
 | List bookings by property | GSI1 Query | `GSI1PK=PROPERTY#kentucky` + date range on GSI1SK |
 | Resolve legacy payment record | GSI2 Query | `GSI2PK=STRIPE#pi_3P...` |
@@ -287,3 +305,4 @@ Caches property info fetched from Hospitable so the frontend doesn't hit Hospita
 - Items within a section are stored as an attribute array (not separate records) since they're always fetched together and the count is small.
 - Section-level and item-level `aiContext` may be consumed by a future agent feed. Item `hostNotes` remain private administrative data.
 - Hospitable Direct is the merchant of record. Stripe-shaped booking attributes and GSI2 are legacy schema/code paths, not the active guest payment architecture.
+- Shop category order is stored as a numeric attribute because category keys are immutable; changing order updates one record and cannot leave duplicate sort keys.

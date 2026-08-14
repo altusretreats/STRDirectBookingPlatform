@@ -53,6 +53,7 @@ scripts/          Seed scripts (minimal — Hospitable is source of truth for co
 | getGuidebook | GET /properties/{id}/guidebook | Public. Returns sanitized guest guidebook sections |
 | getGuidebook | GET /properties/{id}/guidebook/agent-context | Public Markdown feed. Returns explicitly agent-available guest content + `aiContext`; never `hostNotes` |
 | getReviews | GET /properties/{id}/reviews | Public. Returns published admin-managed reviews; no third-party channel imports |
+| getShop | GET /properties/{id}/shop | Public. Returns active Shop Your Stay categories and products only |
 | adminProperties | GET+POST+PUT /admin/properties | CRUD for property records |
 | syncProperty | POST /admin/properties/{id}/sync | Fetches Hospitable listing → stores in hospitable.cached on METADATA |
 | adminGuidebook | GET+PUT+DELETE /admin/properties/{id}/guidebook/{sectionId} | Guidebook section CRUD |
@@ -61,6 +62,7 @@ scripts/          Seed scripts (minimal — Hospitable is source of truth for co
 | adminPlaceLookup | POST /admin/properties/{id}/places/lookup | Google Places API v2 lookup → distance calc |
 | adminBookings | GET /admin/properties/{id}/bookings | List bookings |
 | adminReviews | GET /admin/properties/{id}/reviews; PUT+DELETE /admin/properties/{id}/reviews/{reviewId} | Property-scoped manual review CRUD; drafts remain private |
+| adminShop | GET /admin/properties/{id}/shop; category/product PUT+DELETE; POST image import | Property-scoped Shop Your Stay CRUD and guarded HTTPS image import |
 | waitlist | POST /waitlist, GET /admin/waitlist | Waitlist capture |
 
 ## AWS Profile
@@ -107,6 +109,8 @@ window.ALTUS_MAPS_CONFIG = Object.freeze({
 aws s3 sync frontend\property-site\ s3://altus-retreats-frontend-dev-817760095908/ --profile altus
 aws s3 cp frontend\property-site\guidebook\js\guidebook.js s3://altus-retreats-frontend-dev-817760095908/guidebook/js/guidebook.js --content-type "application/javascript" --metadata-directive REPLACE --profile altus
 aws s3 cp frontend\property-site\guidebook\css\guidebook.css s3://altus-retreats-frontend-dev-817760095908/guidebook/css/guidebook.css --content-type "text/css" --metadata-directive REPLACE --profile altus
+aws s3 cp frontend\property-site\shop-your-stay\js\shop.js s3://altus-retreats-frontend-dev-817760095908/shop-your-stay/js/shop.js --content-type "application/javascript" --metadata-directive REPLACE --profile altus
+aws s3 cp frontend\property-site\shop-your-stay\css\shop.css s3://altus-retreats-frontend-dev-817760095908/shop-your-stay/css/shop.css --content-type "text/css" --metadata-directive REPLACE --profile altus
 aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/*" --profile altus
 ```
 
@@ -142,6 +146,7 @@ aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/*" 
 - Guidebook section SK: `GUIDEBOOK#SECTION#{order_padded}#{sectionId}` — zero-padded order for correct lexicographic sort
 - Guidebook section upserts atomically delete prior sort keys for the same `sectionId` before writing the new order. This is required because order is embedded in the SK; a plain put on reorder creates duplicate logical sections.
 - Manually managed review SK: `REVIEW#MANUAL#{reviewId}`. Records include reviewer name, exact review text, 1–5 rating, optional stay date/source label, `featured`, and `published`.
+- Shop category SK: `SHOP#CATEGORY#{categoryId}`; shop product SK: `SHOP#PRODUCT#{productId}`. Category order is a numeric attribute, never embedded in the key. Product IDs and category IDs remain immutable after creation.
 - Property METADATA record holds `hospitable.cached` (full synced listing), `content` (admin overrides), `location` (admin overrides), `branding`
 
 ## Data architecture — key decisions
@@ -150,6 +155,7 @@ aws cloudfront create-invalidation --distribution-id EP3TSR36W3F7N --paths "/*" 
 - **syncProperty** stores the full Hospitable listing under `property.hospitable.cached` and `lastSyncedAt`. Run from admin → Sync tab or daily at 2am EST via EventBridge.
 - **Guidebook place items** (`type: 'place'`) store Google Places v2 data under `item.place`. `item.featured` is the admin-managed **Our Pick** flag; featured places sort first within their food/activity group and receive a restrained guest-facing badge on the Guidebook and property page. `item.websiteVisible` controls whether a published Guidebook place also appears in the property-page map and recommendation preview; missing values default to visible for backward compatibility, while the complete Guidebook remains unchanged. When published recommendations are intentionally withheld from the property page, the Location section automatically ends with an open-ended “And there’s much more” guest-guide teaser that deliberately avoids a finite recommendation count. `item.place.mapIcon` is an optional admin-selected homepage marker glyph (`food`, `arch`, `climber`, `carabiner`, `hiking`, `trail`, `bridge`, `paddle`, `offroad`, `shopping`, `services`, or `pin`); blank values use the place-category default. Outdoor activities default to the clearer hiking-boot glyph. `aiContext` is hidden from guests and available only through the curated agent feed; `hostNotes` remains admin-only.
 - **Reviews are independent records, not listing content.** The admin Reviews tab manages authentic guest feedback. The public reviews endpoint returns only published admin-managed records and sorts featured reviews first. Third-party channel reviews are intentionally not imported, and Hospitable sync never overwrites reviews.
+- **Shop Your Stay is property-scoped curated commerce.** One permanent property URL (`/shop-your-stay/`) holds the complete catalog; there are no per-product pages or QR codes. Active categories act as ordered groups and filters. Active products appear only when their category is active, favorites sort first, and all other products sort alphabetically. Each card contains one image, a subtle room/location, description, and sponsored seller link. Product images can be uploaded or imported from an authorized HTTPS image URL into the Media bucket; Amazon pages must not be scraped, and Amazon catalog images require an approved Amazon API source. The public page carries both a general affiliate disclosure and the Amazon Associates statement.
 
 ## Guidebook — place items
 Place items in a recommendations section (`sectionType: 'recommendations'`) render as a card grid grouped by category (Restaurants / Attractions / Activities / Shopping). Clicking a card opens a detail modal with Directions button (uses lat/lng coordinates for reliable Google Maps routing).
@@ -182,6 +188,7 @@ Place items in a recommendations section (`sectionType: 'recommendations'`) rend
 - **Section structure in `frame-scroll`:** Each content section (reviews, location, promise) uses `frame-section > frame-section__wrap > frame-section__inner` (frosted glass panel). The property section uses `frame-section > frame-section__inner--property` (no wrap — full bleed photo grid).
 - **`book.html`** — Booking page. Nav + hero strip (first photo) + 2-column layout: property details left (stats, about, amenities, house rules), Hospitable widget right (sticky). `css/book.css` + `js/book.js`.
 - **`js/app.js`** — Fetches `/properties/{id}`, populates hero slides, pills, title blocks, frame sections (photos, description, amenities, reviews, location, promise).
+- **`shop-your-stay/`** — Responsive property-scoped affiliate catalog at `/shop-your-stay/`. It is intentionally absent from the main booking navigation and linked discreetly from the guest Guidebook on desktop and mobile. One property-level QR code will eventually point to this stable landing URL.
 - **Homepage location explorer** — The Location section fetches the public guidebook alongside the property record and plots every published guidebook `place` item with valid coordinates. Category filters, nearby cards, directions links, and map markers are derived from that shared guidebook data, so attractions are added or changed in the admin Guidebook rather than duplicated in homepage code. Beneath the map, restaurant cards are separated into **Eat nearby** and all other places into **Things to do nearby**; each group shows up to three cards and receives its own View All modal trigger when needed. Odd-count View All grids use the otherwise empty final slot for a branded deep-blue “And so much more” route graphic. Wheel zoom is repeatedly re-anchored on the property through Google's zoom animation; marker/card selection and zoom controls can still focus nearby places. The map saves its exact initial all-places camera; closing a selected place's info window clears the selection and restores that original center and zoom without recalculating the bounds.
 - **Homepage place marker icons** — Admin-selectable place glyphs are bundled as local SVG assets under `frontend/property-site/img/map-icons/`: restaurant, coffee, bar, climbing, hiking, trailhead, bridge, kayak, off-road, gondola, zipline, shopping, groceries, gas, scenic/photo, and general location. The admin uses those same source assets in a visual radio-grid picker when adding or editing a place, so the saved choice matches the map artwork. Existing stored icon keys remain backward-compatible, and the sandstone arch and carabiner remain available. The Overhang's branded property marker is separate and unchanged.
 - **Property map** — Uses the Maps JavaScript API with a vector Map ID, a property-branded Advanced Marker, fixed north-up view, and lazy initialization near the Location section. The Map ID's `Altus Retreats — Property Map` cloud style hides all Google-supplied POI labels so nearby rentals and retreat businesses are not promoted; roads and geographic context remain. The page falls back to the legacy iframe if browser map configuration is absent or the loader fails. Browser configuration lives in ignored `js/maps-config.js`, generated from Secrets Manager during deployment.
@@ -208,7 +215,8 @@ Place items in a recommendations section (`sectionType: 'recommendations'`) rend
 ## Properties (future)
 - **The Lazy Palm** — Bradenton FL, coastal/tropical, family-friendly, pool. Domain: staythelazypalm.com (registered, no infrastructure yet). Adding a property is a data operation only — no code changes needed.
 
-## Current state (as of 2026-08-12)
+## Current state (as of 2026-08-14)
+- Shop Your Stay was deployed 2026-08-14 across SAM, DynamoDB access, admin SPA, public property frontend, and Guidebook navigation. No products are seeded; the live catalog intentionally shows its empty state until content is added through admin. Admins can manage ordered active/inactive categories and active/inactive favorite products, upload or safely import one authorized image, and preview the permanent property shop URL. The public catalog groups and filters products, keeps favorites first, opens sponsored seller links in a new tab, and includes the required affiliate disclosures.
 - Admin panel fully functional at admin.altusretreats.net (PropertySettings, ContentEditor, Guidebook, Sync, Waitlist tabs)
 - Admin SPA facelift deployed 2026-08-12: responsive Deep Blue/Canyon Red/Mist workspace styling aligned with the property guide, expanded editors for every editorial homepage section, content saves that preserve media and other tab-owned fields, a first-class Welcome guidebook section type, and a dedicated guidebook hero image uploader.
 - Property-scoped review management added 2026-08-12: the admin Reviews tab supports draft/published reviews, featured placement, reviewer name, rating, stay date, source label, and exact review text. Published reviews feed the existing homepage review wall; featured reviews display first.

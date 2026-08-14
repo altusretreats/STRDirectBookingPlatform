@@ -308,6 +308,27 @@ Resources:
             Auth:
               Authorizer: NONE   # public endpoint
 
+  # ── Lambda: getShop ───────────────────────
+  GetShopFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub altus-retreats-getShop-${Environment}
+      CodeUri: ../backend/functions/getShop
+      Handler: index.handler
+      Description: Returns the active property-scoped Shop Your Stay catalog (public endpoint)
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref MainTable
+      Events:
+        GetShop:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /properties/{propertyId}/shop
+            Method: GET
+            Auth:
+              Authorizer: NONE
+
   # ── Lambda: adminProperties ───────────────
   AdminPropertiesFunction:
     Type: AWS::Serverless::Function
@@ -377,6 +398,63 @@ Resources:
             RestApiId: !Ref ApiGateway
             Path: /admin/properties/{propertyId}/reviews/{reviewId}
             Method: DELETE
+
+  # ── Lambda: adminShop ──────────────────────
+  AdminShopFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub altus-retreats-adminShop-${Environment}
+      CodeUri: ../backend/functions/adminShop
+      Handler: index.handler
+      Timeout: 20
+      Description: CRUD for property-scoped Shop Your Stay categories and products
+      Environment:
+        Variables:
+          MEDIA_BUCKET: !Ref MediaBucket
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MainTable
+        - Statement:
+            - Effect: Allow
+              Action: s3:PutObject
+              Resource: !Sub "${MediaBucket.Arn}/properties/*"
+      Events:
+        GetShopAdmin:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/properties/{propertyId}/shop
+            Method: GET
+        UpsertShopCategory:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/properties/{propertyId}/shop/categories/{categoryId}
+            Method: PUT
+        DeleteShopCategory:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/properties/{propertyId}/shop/categories/{categoryId}
+            Method: DELETE
+        UpsertShopProduct:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/properties/{propertyId}/shop/products/{productId}
+            Method: PUT
+        DeleteShopProduct:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/properties/{propertyId}/shop/products/{productId}
+            Method: DELETE
+        ImportShopImage:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGateway
+            Path: /admin/properties/{propertyId}/shop/import-image
+            Method: POST
 
   # ── Lambda: syncProperty ──────────────────
   SyncPropertyFunction:

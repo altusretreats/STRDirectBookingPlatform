@@ -43,6 +43,8 @@ The redesigned property page is the live root. Do not re-pin the retired coming-
 ```powershell
 cd C:\STRProjects\STRDirectBookingPlatform
 aws s3 sync frontend\property-site\ s3://altus-retreats-frontend-dev-817760095908/ --profile altus
+aws s3 cp frontend\property-site\shop-your-stay\js\shop.js s3://altus-retreats-frontend-dev-817760095908/shop-your-stay/js/shop.js --content-type "application/javascript" --metadata-directive REPLACE --profile altus
+aws s3 cp frontend\property-site\shop-your-stay\css\shop.css s3://altus-retreats-frontend-dev-817760095908/shop-your-stay/css/shop.css --content-type "text/css" --metadata-directive REPLACE --profile altus
 aws s3 cp frontend\property-site\index.html s3://altus-retreats-frontend-dev-817760095908/index.html --content-type "text/html; charset=utf-8" --cache-control "no-cache" --metadata-directive REPLACE --profile altus
 aws s3 cp frontend\property-site\css\main.css s3://altus-retreats-frontend-dev-817760095908/css/main.css --content-type "text/css; charset=utf-8" --cache-control "no-cache" --metadata-directive REPLACE --profile altus
 aws s3 cp frontend\property-site\js\app.js s3://altus-retreats-frontend-dev-817760095908/js/app.js --content-type "application/javascript; charset=utf-8" --cache-control "no-cache" --metadata-directive REPLACE --profile altus
