@@ -7,6 +7,8 @@ Hub: **altusretreats.net**
 
 Design tokens and guest-experience rules: [STYLE-GUIDE.md](STYLE-GUIDE.md)
 
+Guest recommendation copy and AI context: [docs/guest-guide-knowledge-base.md](docs/guest-guide-knowledge-base.md)
+
 ---
 
 ## Live URLs & AWS Resources (dev)
@@ -55,7 +57,7 @@ frontend/
   property-site/       Vanilla JS booking site (per-property)
   admin-spa/           React admin panel (Vite)
   hub-site/            altusretreats.net aggregate view (coming soon)
-docs/                  Architecture decisions
+docs/                  Architecture decisions and guest-guide editorial knowledge
 scripts/               Seed data + deploy helpers
 ```
 
