@@ -322,16 +322,17 @@ function renderInterestFilter(journey, sections) {
 
 function renderSection(section, index, requestedSectionId) {
   const article = document.createElement('article');
-  article.className = 'guide-topic';
+  article.className = `guide-topic${section.important ? ' guide-topic--important' : ''}`;
   article.id = `section-${section.sectionId}`;
   article.dataset.sectionId = section.sectionId;
   const expanded = section.sectionId === requestedSectionId
+    || section.important
     || (!window.matchMedia('(max-width: 760px)').matches && index === 0);
   const panelId = `topic-panel-${section.sectionId}`;
   article.innerHTML = `
     <button type="button" class="topic-toggle" aria-expanded="${expanded}" aria-controls="${escapeHtml(panelId)}">
       <span class="topic-icon">${icon(sectionIconName(section))}</span>
-      <span><strong>${escapeHtml(section.title)}</strong><small>${escapeHtml(sectionSummary(section))}</small></span>
+      <span>${section.important ? `<em class="topic-important">${icon('alert-circle')}Important</em>` : ''}<strong>${escapeHtml(section.title)}</strong><small>${escapeHtml(sectionSummary(section))}</small></span>
       ${icon('down', 'topic-chevron')}
     </button>
     <div class="topic-body" id="${escapeHtml(panelId)}"${expanded ? '' : ' hidden'}>
@@ -581,6 +582,11 @@ function renderEssentials() {
   ];
   const used = new Set();
   const links = [];
+  state.sections.filter(section => section.important).forEach(section => {
+    if (links.length >= 4) return;
+    used.add(section.sectionId);
+    links.push({ section, icon: 'alert-circle', note: 'Important for your stay' });
+  });
   preferred.forEach(preference => {
     const section = state.sections.find(candidate => !used.has(candidate.sectionId)
       && preference.pattern.test(normalize(`${candidate.sectionId} ${candidate.title}`)));
@@ -596,7 +602,7 @@ function renderEssentials() {
   });
 
   $('#essential-links').innerHTML = links.map(({ section, icon: iconName, note }) => `
-    <button type="button" class="essential-link" data-section-link="${escapeHtml(section.sectionId)}">
+    <button type="button" class="essential-link${section.important ? ' essential-link--important' : ''}" data-section-link="${escapeHtml(section.sectionId)}">
       <span class="essential-link__icon">${icon(iconName)}</span>
       <span><strong>${escapeHtml(section.title)}</strong><small>${escapeHtml(note)}</small></span>
       ${icon('chevron')}

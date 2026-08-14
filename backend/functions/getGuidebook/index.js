@@ -15,6 +15,7 @@ function sanitizeSection(section = {}) {
     icon: section.icon ?? null,
     order: section.order,
     sectionType: section.sectionType ?? 'general',
+    important: section.important === true,
     audiences: Array.isArray(section.audiences) ? section.audiences : [],
     items: (section.items ?? []).map(sanitizeItem),
   };

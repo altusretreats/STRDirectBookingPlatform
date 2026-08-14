@@ -164,7 +164,7 @@ export default function GuidebookEditor({ propertyId, propertyName, property, on
   }
 
   function addFromTemplate(tmpl) {
-    setEditing({ title: tmpl.title, icon: tmpl.icon, sectionType: tmpl.sectionType || 'general', audiences: [], items: [], published: false, aiPublished: false });
+    setEditing({ title: tmpl.title, icon: tmpl.icon, sectionType: tmpl.sectionType || 'general', audiences: [], important: false, items: [], published: false, aiPublished: false });
   }
 
   async function updateGuidebookHero(event) {
@@ -216,7 +216,7 @@ export default function GuidebookEditor({ propertyId, propertyName, property, on
           <button style={s.btnSecondary} onClick={downloadKnowledgePdf} disabled={pdfGenerating || sections.length === 0}>
             {pdfGenerating ? 'Generating PDF…' : 'Download AI knowledge PDF'}
           </button>
-          <button style={s.btnPrimary} onClick={() => setEditing({ title: '', icon: '📄', sectionType: 'general', audiences: [], items: [], published: false, aiPublished: false })}>
+          <button style={s.btnPrimary} onClick={() => setEditing({ title: '', icon: '📄', sectionType: 'general', audiences: [], important: false, items: [], published: false, aiPublished: false })}>
             + Add Section
           </button>
         </div>
@@ -275,7 +275,7 @@ export default function GuidebookEditor({ propertyId, propertyName, property, on
       </DndContext>
 
       {sections.length > 0 && (
-        <button style={s.addMoreBtn} onClick={() => setEditing({ title: '', icon: '📄', sectionType: 'general', audiences: [], items: [], published: false, aiPublished: false })}>
+        <button style={s.addMoreBtn} onClick={() => setEditing({ title: '', icon: '📄', sectionType: 'general', audiences: [], important: false, items: [], published: false, aiPublished: false })}>
           + Add another section
         </button>
       )}
@@ -307,6 +307,7 @@ function SortableSection({ section, onEdit, onDelete }) {
       <div style={s.sectionInfo}>
         <div style={s.sectionTitle}>
           {section.title}
+          {section.important && <span style={s.importantBadge}>⚠ Important</span>}
           {isRec && <span style={s.recsBadge}>📍 Local Recs</span>}
         </div>
         <div style={s.sectionMeta}>
@@ -427,6 +428,22 @@ function SectionModal({ section, saving, propertyId, onSave, onClose }) {
             <label style={s.label}>Who is this section for?</label>
             <p style={s.audienceHint}>Optional. Tag a whole practical guide—such as a hiking packing list—so it appears with matching recommendations in the guest’s “For you” filter.</p>
             <AudiencePicker value={data.audiences || []} onChange={audiences => set('audiences', audiences)} />
+          </div>
+
+          <div style={{ ...s.importantBox, ...(data.important ? s.importantBoxSelected : {}) }}>
+            <label style={s.importantToggle}>
+              <input
+                type="checkbox"
+                checked={data.important === true}
+                onChange={e => set('important', e.target.checked)}
+                style={{ width: 17, height: 17, accentColor: '#BD503E' }}
+              />
+              <span style={s.importantIcon} aria-hidden="true">!</span>
+              <span>
+                <strong style={s.importantTitle}>Highlight as important</strong>
+                <small style={s.importantHint}>Adds an Important label and emphasis in the guest guide, opens this section by default, and places it first in Quick essentials.</small>
+              </span>
+            </label>
           </div>
 
           {/* AI context for section */}
@@ -919,6 +936,7 @@ const s = {
   sectionMeta:   { fontSize: 13, color: '#6B7280', marginTop: 2 },
   sectionActions: { display: 'flex', gap: 8, flexShrink: 0 },
   recsBadge:     { fontSize: 12, background: '#E8F4ED', color: '#16A34A', padding: '2px 8px', borderRadius: 20, fontWeight: 600 },
+  importantBadge: { fontSize: 11, background: '#FFF0EC', color: '#A33F31', padding: '3px 8px', borderRadius: 20, fontWeight: 700, letterSpacing: '.03em' },
   templates:     { background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: 12, padding: 24, marginBottom: 32 },
   templatesLabel: { fontSize: 14, fontWeight: 600, color: '#374151', marginBottom: 14 },
   templateGrid:  { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10 },
@@ -976,4 +994,10 @@ const s = {
   audienceIconSelected: { filter: 'brightness(0) invert(1)' },
   audienceBadges:     { display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 6 },
   audienceBadge:      { padding: '3px 7px', borderRadius: 999, background: '#E7EEEB', color: '#35554B', fontSize: 9, fontWeight: 700, letterSpacing: '.05em', textTransform: 'uppercase' },
+  importantBox:       { margin: '0 0 16px', padding: 15, border: '1px solid #E2E6E9', borderRadius: 12, background: '#FAFBFC' },
+  importantBoxSelected: { borderColor: '#E4A99E', background: '#FFF6F3', boxShadow: '0 0 0 1px rgba(189,80,62,.08)' },
+  importantToggle:    { display: 'flex', alignItems: 'flex-start', gap: 11, cursor: 'pointer' },
+  importantIcon:      { display: 'grid', width: 29, height: 29, flex: '0 0 auto', placeItems: 'center', borderRadius: 9, background: '#BD503E', color: '#fff', fontSize: 17, fontWeight: 800, lineHeight: 1 },
+  importantTitle:     { display: 'block', marginBottom: 3, color: '#1D3557', fontSize: 13 },
+  importantHint:      { display: 'block', color: '#637180', fontSize: 11, lineHeight: 1.45 },
 };

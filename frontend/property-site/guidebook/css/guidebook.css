@@ -319,6 +319,29 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
   background: var(--guide-surface);
   scroll-margin-top: calc(var(--guide-header-height) + 20px);
 }
+.guide-topic--important {
+  border-color: color-mix(in srgb, var(--guide-accent) 58%, #fff);
+  background: color-mix(in srgb, var(--guide-accent) 6%, var(--guide-surface));
+  box-shadow: 0 9px 26px rgba(189, 80, 62, 0.1);
+}
+.guide-topic--important .topic-icon {
+  background: var(--guide-accent);
+  color: #fff;
+}
+.topic-important {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+  color: var(--guide-accent);
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: .11em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.topic-important svg { width: 13px; height: 13px; stroke-width: 2.2; }
 .topic-toggle {
   width: 100%;
   min-height: 74px;
@@ -550,6 +573,10 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
   border-radius: 11px;
   background: var(--guide-background);
   color: var(--guide-primary);
+}
+.essential-link--important .essential-link__icon {
+  background: color-mix(in srgb, var(--guide-accent) 12%, #fff);
+  color: var(--guide-accent);
 }
 .essential-link strong,
 .essential-link small { display: block; }

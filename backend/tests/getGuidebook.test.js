@@ -18,6 +18,7 @@ describe('getGuidebook', () => {
       SK: 'GUIDEBOOK#SECTION#010#welcome',
       sectionId: 'welcome',
       title: 'Welcome',
+      important: true,
       audiences: ['hikers'],
       published: true,
       aiContext: 'Use this when greeting a guest.',
@@ -46,6 +47,8 @@ describe('getGuidebook', () => {
     expect(body.sections[0].items[0]).not.toHaveProperty('hostNotes');
     expect(body.sections[0].items[0]).toMatchObject({ content: 'Welcome!', type: 'text' });
     expect(body.sections[0].audiences).toEqual(['hikers']);
+    expect(body.sections[0].important).toBe(true);
+    expect(body.sections[1].important).toBe(false);
   });
 
   test('returns empty sections array when no content exists', async () => {

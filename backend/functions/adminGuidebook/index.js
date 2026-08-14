@@ -28,7 +28,7 @@ exports.handler = async (event) => {
 
     // PUT — upsert section
     if (method === 'PUT' && sectionId) {
-      const { title, icon, order, items, published, aiPublished, sectionType, aiContext, audiences } = body;
+      const { title, icon, order, items, published, aiPublished, sectionType, aiContext, audiences, important } = body;
       if (!title || order == null) return badRequest('title and order are required');
 
       const orderPadded = String(order).padStart(3, '0');
@@ -46,6 +46,7 @@ exports.handler = async (event) => {
         sectionType: sectionType ?? 'general',
         aiContext: aiContext ?? '',
         audiences: Array.isArray(audiences) ? audiences : [],
+        important: important === true,
         items: items ?? [],
         published: published ?? false,
         // Preserve the migration default shown in admin: existing guest-visible
