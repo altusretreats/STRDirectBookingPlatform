@@ -576,6 +576,7 @@ function PlaceItemRow({ item, onRemove, onUpdate }) {
           <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 7 }}>
             <span style={{ fontWeight: 600, fontSize: 14 }}>{p.name || item.label}</span>
             {item.featured && <span style={{ padding: '3px 7px', borderRadius: 999, background: '#FBEAE6', color: '#A54132', fontSize: 9, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' }}>Our Pick</span>}
+            {item.websiteVisible === false && <span style={{ padding: '3px 7px', borderRadius: 999, background: '#EEF1F3', color: '#52606D', fontSize: 9, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' }}>Guidebook only</span>}
           </div>
           <div style={{ fontSize: 12, color: '#6B7280' }}>
             {CATEGORY_LABELS[p.category] || '📍 Place'}
@@ -610,6 +611,10 @@ function PlaceItemRow({ item, onRemove, onUpdate }) {
           <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, margin: '12px 0', padding: '12px 14px', border: '1px solid #E2E8EC', borderRadius: 10, background: '#fff', cursor: 'pointer' }}>
             <input type="checkbox" checked={Boolean(item.featured)} onChange={e => onUpdate({ featured: e.target.checked })} style={{ width: 17, height: 17, marginTop: 1, accentColor: '#D1614D' }} />
             <span><strong style={{ display: 'block', color: '#1D3557', fontSize: 13 }}>Our Pick</strong><small style={{ display: 'block', marginTop: 2, color: '#6B7280', fontSize: 11, lineHeight: 1.4 }}>Show this place first and give it a subtle recommendation badge on guest pages.</small></span>
+          </label>
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, margin: '12px 0', padding: '12px 14px', border: '1px solid #E2E8EC', borderRadius: 10, background: '#fff', cursor: 'pointer' }}>
+            <input type="checkbox" checked={item.websiteVisible !== false} onChange={e => onUpdate({ websiteVisible: e.target.checked })} style={{ width: 17, height: 17, marginTop: 1, accentColor: '#1D3557' }} />
+            <span><strong style={{ display: 'block', color: '#1D3557', fontSize: 13 }}>Show on property website</strong><small style={{ display: 'block', marginTop: 2, color: '#6B7280', fontSize: 11, lineHeight: 1.4 }}>Turn this off to keep the recommendation in the complete Guidebook without showing it in the property-page preview.</small></span>
           </label>
           <div style={s.formGroup}>
             <label style={s.labelSm}>Guest-facing description</label>
@@ -670,6 +675,7 @@ function PlaceAddForm({ propertyId, onAdd }) {
       aiContext:   '',
       hostNotes:   '',
       featured:    false,
+      websiteVisible: true,
       place:       confirmedPlace,
     });
     setUrl('');

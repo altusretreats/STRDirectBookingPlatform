@@ -1887,6 +1887,25 @@ h2 {
   padding-top: 28px;
   border-top: 1px solid rgba(29, 53, 87, 0.1);
 }
+.location-more-places {
+  margin-top: 32px;
+  padding: 24px 27px;
+  border: 1px solid rgba(29, 53, 87, 0.11);
+  border-left: 4px solid var(--property-canyon);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(238, 243, 247, 0.88));
+}
+.location-more-places[hidden] { display: none; }
+.location-more-places .section-kicker { margin-bottom: 5px; }
+.location-more-places h3 {
+  margin: 0 0 7px;
+  color: var(--property-navy);
+  font-family: var(--font-display);
+  font-size: 29px;
+  font-weight: 600;
+}
+.location-more-places p:last-child { max-width: 690px; margin: 0; color: var(--property-muted); font-size: 13px; line-height: 1.65; }
+.location-more-places strong { color: var(--property-navy); font-weight: 700; }
 .location-places-heading .section-kicker { margin-bottom: 4px; }
 .location-places-heading h3 {
   margin: 0;
@@ -1993,6 +2012,8 @@ h2 {
   .location-explorer .frame-location-map { height: 340px; border-radius: 16px; }
   .location-places-heading { margin-top: 22px; }
   .location-place-group + .location-place-group { margin-top: 18px; padding-top: 18px; }
+  .location-more-places { margin-top: 22px; padding: 20px 19px; }
+  .location-more-places h3 { font-size: 26px; }
   .location-places-heading h3 { font-size: 28px; }
   .location-place-cards {
     display: flex;

@@ -171,6 +171,7 @@ function extractGuidebookPlaces(guidebook) {
         lng,
         category: normalizePlaceCategory(place),
         featured: Boolean(item.featured),
+        websiteVisible: item.websiteVisible !== false,
         description: item.description || '',
         sectionTitle: section.title || '',
       };
@@ -790,7 +791,7 @@ function initLightbox() {
 }
 
 // ── Frame: populate sections ──────────────────────────
-function initFrameSections({ photos, amenities, description, bedrooms, bathrooms, maxGuests, location, propertyName, places = [], content = {} }) {
+function initFrameSections({ photos, amenities, description, bedrooms, bathrooms, maxGuests, location, propertyName, places = [], totalPlaceCount = places.length, content = {} }) {
 
   // ── Photo grid: large main left + 2×2 thumbnails right ──
   const photoGrid = document.getElementById('frame-photo-grid');
@@ -1076,6 +1077,14 @@ function initFrameSections({ photos, amenities, description, bedrooms, bathrooms
     if (mapLink && location.pinLat && location.pinLng) {
       mapLink.href = `https://www.google.com/maps?q=${location.pinLat},${location.pinLng}`;
       mapLink.style.display = '';
+    }
+
+    const morePlaces = document.getElementById('location-more-places');
+    const hiddenPlaceCount = Math.max(0, totalPlaceCount - places.length);
+    if (morePlaces && hiddenPlaceCount > 0) {
+      const count = morePlaces.querySelector('[data-location-more-count]');
+      if (count) count.textContent = `${hiddenPlaceCount} more local ${hiddenPlaceCount === 1 ? 'favorite' : 'favorites'}`;
+      morePlaces.hidden = false;
     }
   }
 }
@@ -1368,7 +1377,8 @@ async function loadProperty() {
     const amenities   = h.amenities || [];
     const photos      = h.photos    || [];
     const location    = p.location  || null;
-    const places      = extractGuidebookPlaces(guidebook);
+    const allPlaces   = extractGuidebookPlaces(guidebook);
+    const places      = allPlaces.filter(place => place.websiteVisible);
     const houseRules         = h.houseRules         || [];
     const cancellationPolicy = h.cancellationPolicy || null;
     const heroPhoto   = c.heroPhoto || null;
@@ -1445,7 +1455,7 @@ async function loadProperty() {
     initHouseRules(houseRules, cancellationPolicy);
 
     // Frame sections
-    initFrameSections({ photos, amenities, description, bedrooms, bathrooms, maxGuests, location, propertyName: name, places, content: c });
+    initFrameSections({ photos, amenities, description, bedrooms, bathrooms, maxGuests, location, propertyName: name, places, totalPlaceCount: allPlaces.length, content: c });
     initEditorialDetails({
       description,
       summary: h.summary,
