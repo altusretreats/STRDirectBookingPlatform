@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/main.css?v=20260813-9">
+  <link rel="stylesheet" href="css/main.css?v=20260813-11">
 </head>
 <body>
 
@@ -225,14 +225,28 @@
         <div class="location-explorer" id="location-explorer">
           <div class="location-filter-bar" id="location-filter-bar" aria-label="Filter nearby places"></div>
           <div class="frame-location-map" id="frame-location-map"></div>
-          <div class="location-places-heading" id="location-places-heading" hidden>
-            <div>
-              <p class="section-kicker">Worth the short drive</p>
-              <h3>Nearby favorites</h3>
-            </div>
-            <button class="location-view-all" id="location-view-all" type="button" hidden>View all places</button>
+          <div class="location-place-groups" id="location-place-groups" hidden>
+            <section class="location-place-group" id="location-food-group" hidden>
+              <div class="location-places-heading">
+                <div>
+                  <p class="section-kicker">Local flavor</p>
+                  <h3>Eat nearby</h3>
+                </div>
+                <button class="location-view-all" id="location-food-view-all" type="button" hidden>View all restaurants</button>
+              </div>
+              <div class="location-place-cards" id="location-food-cards"></div>
+            </section>
+            <section class="location-place-group" id="location-explore-group" hidden>
+              <div class="location-places-heading">
+                <div>
+                  <p class="section-kicker">Make a day of it</p>
+                  <h3>Things to do nearby</h3>
+                </div>
+                <button class="location-view-all" id="location-explore-view-all" type="button" hidden>View all things to do</button>
+              </div>
+              <div class="location-place-cards" id="location-explore-cards"></div>
+            </section>
           </div>
-          <div class="location-place-cards" id="location-place-cards"></div>
         </div>
         <p class="frame-location-directions"></p>
         <a class="frame-map-link" id="frame-map-link" target="_blank" rel="noopener" style="display:none">
@@ -352,7 +366,7 @@
   <div class="modal places-modal">
     <div class="modal__header places-modal__header">
       <div>
-        <p class="section-kicker">Explore the Gorge</p>
+        <p class="section-kicker" id="places-modal-kicker">Explore the Gorge</p>
         <h2 class="modal__title" id="places-modal-title">All nearby favorites</h2>
       </div>
       <button class="modal__close" id="places-modal-close" aria-label="Close nearby places">&times;</button>
@@ -404,7 +418,7 @@
 <script src="js/config.js"></script>
 <script src="js/maps-config.js"></script>
 <script src="js/api.js?v=20260813-1"></script>
-<script src="js/app.js?v=20260813-12"></script>
+<script src="js/app.js?v=20260813-15"></script>
 
 </body>
 </html>

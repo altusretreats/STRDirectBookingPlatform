@@ -170,6 +170,7 @@ function extractGuidebookPlaces(guidebook) {
         lat,
         lng,
         category: normalizePlaceCategory(place),
+        featured: Boolean(item.featured),
         description: item.description || '',
         sectionTitle: section.title || '',
       };
@@ -213,7 +214,7 @@ function createPlaceMarker(place) {
 
 function createPlaceCard(place, onSelect) {
   const card = document.createElement('article');
-  card.className = 'location-place-card';
+  card.className = `location-place-card${place.featured ? ' is-featured' : ''}`;
   card.dataset.placeKey = place.key;
 
   const photoUrl = safeExternalUrl(place.photoUrl);
@@ -227,7 +228,10 @@ function createPlaceCard(place, onSelect) {
   card.innerHTML = `
     ${photoUrl ? `<img class="location-place-card__photo" src="${escapeHtml(photoUrl)}" alt="" loading="lazy">` : `<div class="location-place-card__photo location-place-card__photo--empty">${placeMarkerIcon(place)}</div>`}
     <div class="location-place-card__body">
-      <span class="location-place-card__category">${escapeHtml(PLACE_CATEGORY_META[place.category]?.singular || 'Local favorite')}</span>
+      <div class="location-place-card__eyebrow">
+        <span class="location-place-card__category">${escapeHtml(PLACE_CATEGORY_META[place.category]?.singular || 'Local favorite')}</span>
+        ${place.featured ? '<span class="location-place-card__badge">Our Pick</span>' : ''}
+      </div>
       <h4>${escapeHtml(place.name || 'Nearby favorite')}</h4>
       <div class="location-place-card__facts">
         ${Number.isFinite(rating) ? `<span><strong>★ ${rating.toFixed(1)}</strong>${place.totalRatings ? ` <small>(${Number(place.totalRatings).toLocaleString()})</small>` : ''}</span>` : ''}
@@ -302,26 +306,46 @@ function initPropertyMap({ mapEl, location, propertyName, places = [] }) {
   }
 
   const filterBar = document.getElementById('location-filter-bar');
-  const cardsEl = document.getElementById('location-place-cards');
-  const placesHeading = document.getElementById('location-places-heading');
-  const viewAllButton = document.getElementById('location-view-all');
+  const placeGroups = document.getElementById('location-place-groups');
+  const foodGroup = document.getElementById('location-food-group');
+  const exploreGroup = document.getElementById('location-explore-group');
+  const foodCards = document.getElementById('location-food-cards');
+  const exploreCards = document.getElementById('location-explore-cards');
+  const foodViewAll = document.getElementById('location-food-view-all');
+  const exploreViewAll = document.getElementById('location-explore-view-all');
   const placesModal = document.getElementById('places-modal');
   const placesModalBody = document.getElementById('places-modal-body');
-  const featuredPlaces = places.slice(0, 6);
+  const placesModalTitle = document.getElementById('places-modal-title');
+  const placesModalKicker = document.getElementById('places-modal-kicker');
+  const featuredFirst = (a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured));
+  const restaurants = places.filter(place => place.category === 'restaurant').sort(featuredFirst);
+  const thingsToDo = places.filter(place => place.category !== 'restaurant').sort(featuredFirst);
   let activeCategory = 'all';
   let focusPlace = () => {};
 
   const visiblePlaces = () => places.filter(place => activeCategory === 'all' || place.category === activeCategory);
-  const visibleFeaturedPlaces = () => featuredPlaces.filter(place => activeCategory === 'all' || place.category === activeCategory);
-
-  const renderCards = () => {
-    if (!cardsEl) return;
-    cardsEl.replaceChildren(...visibleFeaturedPlaces().map(place => createPlaceCard(place, selected => focusPlace(selected))));
-    cardsEl.hidden = visibleFeaturedPlaces().length === 0;
+  const updateFilterState = () => {
+    filterBar?.querySelectorAll('.location-filter').forEach(item => {
+      const active = item.dataset.category === activeCategory;
+      item.classList.toggle('is-active', active);
+      item.setAttribute('aria-pressed', String(active));
+    });
+  };
+  const selectPlaceFromCard = place => {
+    activeCategory = place.category;
+    updateFilterState();
+    focusPlace(place);
+  };
+  const renderPlaceGroup = (group, container, section) => {
+    if (!container || !section || !group.length) return;
+    section.hidden = false;
+    container.replaceChildren(...group.slice(0, 3).map(place => createPlaceCard(place, selectPlaceFromCard)));
   };
 
   if (places.length) {
-    if (placesHeading) placesHeading.hidden = false;
+    if (placeGroups) placeGroups.hidden = false;
+    renderPlaceGroup(restaurants, foodCards, foodGroup);
+    renderPlaceGroup(thingsToDo, exploreCards, exploreGroup);
     const categories = [...new Set(places.map(place => place.category))];
     const filters = [{ key: 'all', label: 'All places' }, ...categories.map(key => ({ key, label: PLACE_CATEGORY_META[key]?.label || 'Local favorites' }))];
     filterBar?.replaceChildren(...filters.map(filter => {
@@ -333,17 +357,11 @@ function initPropertyMap({ mapEl, location, propertyName, places = [] }) {
       button.setAttribute('aria-pressed', String(filter.key === 'all'));
       button.addEventListener('click', () => {
         activeCategory = filter.key;
-        filterBar.querySelectorAll('.location-filter').forEach(item => {
-          const active = item.dataset.category === activeCategory;
-          item.classList.toggle('is-active', active);
-          item.setAttribute('aria-pressed', String(active));
-        });
-        renderCards();
+        updateFilterState();
         focusPlace(null);
       });
       return button;
     }));
-    renderCards();
   } else if (filterBar) {
     filterBar.hidden = true;
   }
@@ -353,21 +371,38 @@ function initPropertyMap({ mapEl, location, propertyName, places = [] }) {
     placesModal.style.display = 'none';
     document.body.style.overflow = '';
   };
-  if (places.length > featuredPlaces.length && viewAllButton && placesModalBody) {
-    viewAllButton.hidden = false;
-    viewAllButton.textContent = `View all ${places.length} places`;
-    placesModalBody.replaceChildren(...places.map(place => createPlaceCard(place, selected => {
+  const openPlacesModal = (group, { kicker, title }) => {
+    if (!placesModal || !placesModalBody) return;
+    if (placesModalKicker) placesModalKicker.textContent = kicker;
+    if (placesModalTitle) placesModalTitle.textContent = title;
+    placesModalBody.replaceChildren(...group.map(place => createPlaceCard(place, selected => {
       closePlacesModal();
-      focusPlace(selected);
+      selectPlaceFromCard(selected);
     })));
-    viewAllButton.addEventListener('click', () => {
-      placesModal.style.display = 'flex';
-      document.body.style.overflow = 'hidden';
-      document.getElementById('places-modal-close')?.focus();
+    placesModal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    document.getElementById('places-modal-close')?.focus();
+  };
+  if (restaurants.length > 3 && foodViewAll) {
+    foodViewAll.hidden = false;
+    foodViewAll.textContent = `View all ${restaurants.length} restaurants`;
+    foodViewAll.addEventListener('click', () => {
+      openPlacesModal(restaurants, { kicker: 'Local flavor', title: 'Where to eat nearby' });
     });
+  }
+  if (thingsToDo.length > 3 && exploreViewAll) {
+    exploreViewAll.hidden = false;
+    exploreViewAll.textContent = `View all ${thingsToDo.length} places`;
+    exploreViewAll.addEventListener('click', () => {
+      openPlacesModal(thingsToDo, { kicker: 'Explore the Gorge', title: 'Things to do nearby' });
+    });
+  }
+  if (places.length) {
     document.getElementById('places-modal-close')?.addEventListener('click', closePlacesModal);
     placesModal?.addEventListener('click', event => { if (event.target === placesModal) closePlacesModal(); });
-    document.addEventListener('keydown', event => { if (event.key === 'Escape' && placesModal?.style.display !== 'none') closePlacesModal(); });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && placesModal?.style.display !== 'none') closePlacesModal();
+    });
   }
 
   mapEl.innerHTML = `
@@ -1122,15 +1157,20 @@ function initSiteScroll() {
 
   // Nav links → smooth-scroll to a precise point below the compact header.
   function scrollToSection(id) {
-    // The overview begins with the photo story; the other links land on their
-    // corresponding content heading below the compact header.
+    // "Overview" is the property story, not the gallery above it. The active
+    // nav state still treats the gallery as part of Overview, but clicking the
+    // link should reveal the title and useful property details immediately.
     const target = id === 'overview'
-      ? document.getElementById('frame-photo-grid')
+      ? document.getElementById('section-property')
       : document.getElementById('section-' + id);
     if (target) {
-      const headerClearance = window.matchMedia('(max-width: 900px)').matches ? 64 : 84;
+      const rootClearance = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--content-clear')) || 0;
+      const headerClearance = nav?.classList.contains('is-scrolled')
+        ? nav.getBoundingClientRect().height + 16
+        : rootClearance;
       const targetTop = target.getBoundingClientRect().top + window.scrollY - headerClearance;
-      window.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      window.scrollTo({ top: Math.max(0, targetTop), behavior: reduceMotion ? 'auto' : 'smooth' });
     }
   }
   triggers.forEach(btn => btn.addEventListener('click', () => scrollToSection(btn.dataset.section)));

@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/guidebook.css?v=20260813-1">
+  <link rel="stylesheet" href="css/guidebook.css?v=20260813-4">
 </head>
 <body class="loading">
   <svg class="icon-sprite" aria-hidden="true">
@@ -82,8 +82,11 @@
       <button type="button" class="journey-card" data-journey="staying" aria-pressed="false">
         <svg><use href="#icon-home"></use></svg><span><strong>At the house</strong><small>Wi-Fi, amenities and how-tos</small></span>
       </button>
+      <button type="button" class="journey-card" data-journey="eating" aria-pressed="false">
+        <svg><use href="#icon-utensils"></use></svg><span><strong>Where to eat</strong><small>Restaurants and local favorites</small></span>
+      </button>
       <button type="button" class="journey-card" data-journey="exploring" aria-pressed="false">
-        <svg><use href="#icon-map"></use></svg><span><strong>Let’s explore</strong><small>Food, trails and local favorites</small></span>
+        <svg><use href="#icon-map"></use></svg><span><strong>Let’s explore</strong><small>Trails, attractions and local favorites</small></span>
       </button>
       <button type="button" class="journey-card" data-journey="leaving" aria-pressed="false">
         <svg><use href="#icon-luggage"></use></svg><span><strong>Checking out</strong><small>Departure details in one place</small></span>
@@ -95,7 +98,8 @@
       <div class="mobile-journeys">
         <button type="button" data-mobile-journey="arriving"><span class="mobile-journey__icon"><svg><use href="#icon-key"></use></svg></span><span><strong>I’m arriving</strong><small>Directions, parking and entry</small></span><svg class="chevron"><use href="#icon-chevron"></use></svg></button>
         <button type="button" data-mobile-journey="staying"><span class="mobile-journey__icon"><svg><use href="#icon-home"></use></svg></span><span><strong>I’m at the house</strong><small>Wi-Fi, amenities and how-tos</small></span><svg class="chevron"><use href="#icon-chevron"></use></svg></button>
-        <button type="button" data-mobile-journey="exploring"><span class="mobile-journey__icon"><svg><use href="#icon-map"></use></svg></span><span><strong>I want to explore</strong><small>Food, trails and local favorites</small></span><svg class="chevron"><use href="#icon-chevron"></use></svg></button>
+        <button type="button" data-mobile-journey="eating"><span class="mobile-journey__icon"><svg><use href="#icon-utensils"></use></svg></span><span><strong>I’m hungry</strong><small>Restaurants and local favorites</small></span><svg class="chevron"><use href="#icon-chevron"></use></svg></button>
+        <button type="button" data-mobile-journey="exploring"><span class="mobile-journey__icon"><svg><use href="#icon-map"></use></svg></span><span><strong>I want to explore</strong><small>Trails, attractions and local favorites</small></span><svg class="chevron"><use href="#icon-chevron"></use></svg></button>
         <button type="button" data-mobile-journey="leaving"><span class="mobile-journey__icon"><svg><use href="#icon-luggage"></use></svg></span><span><strong>I’m checking out</strong><small>Departure details in one place</small></span><svg class="chevron"><use href="#icon-chevron"></use></svg></button>
       </div>
       <button type="button" class="mobile-now" data-mobile-journey="arriving">
@@ -141,7 +145,7 @@
   <nav class="mobile-tabs" aria-label="Guide navigation">
     <button type="button" data-mobile-home aria-current="page"><svg><use href="#icon-home"></use></svg><span>Home</span></button>
     <button type="button" data-open-search><svg><use href="#icon-search"></use></svg><span>Search</span></button>
-    <button type="button" data-mobile-journey="exploring"><svg><use href="#icon-compass"></use></svg><span>Explore</span></button>
+    <button type="button" data-mobile-journey="eating"><svg><use href="#icon-utensils"></use></svg><span>Food</span></button>
     <button type="button" data-open-help><svg><use href="#icon-message"></use></svg><span>Help</span></button>
   </nav>
 
@@ -173,6 +177,6 @@
   </div>
 
   <div id="place-dialog-root"></div>
-  <script src="js/guidebook.js"></script>
+  <script src="js/guidebook.js?v=20260813-2"></script>
 </body>
 </html>

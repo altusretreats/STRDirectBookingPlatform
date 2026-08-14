@@ -193,7 +193,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
   z-index: 5;
   width: min(1180px, calc(100% - 48px));
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 12px;
   margin: -62px auto 0;
 }
@@ -426,7 +426,25 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
   transition: transform 170ms ease, box-shadow 170ms ease;
 }
 .place-card:hover { transform: translateY(-2px); box-shadow: var(--guide-shadow); }
-.place-card__photo { aspect-ratio: 16 / 10; overflow: hidden; background: var(--guide-background); }
+.place-card.is-featured { border-color: rgba(209, 97, 77, 0.42); box-shadow: inset 0 3px 0 var(--guide-accent); }
+.place-card__photo { position: relative; aspect-ratio: 16 / 10; overflow: hidden; background: var(--guide-background); }
+.place-card__badge,
+.place-dialog__badge {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: var(--guide-accent);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.place-card__badge { position: absolute; top: 10px; left: 10px; z-index: 1; }
+.place-dialog__badge { margin-bottom: 7px; }
 .place-card__photo img { width: 100%; height: 100%; object-fit: cover; transition: transform 250ms ease; }
 .place-card:hover .place-card__photo img { transform: scale(1.03); }
 .place-card__placeholder { width: 100%; height: 100%; display: grid; place-items: center; color: var(--guide-primary); }
@@ -656,7 +674,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .guide-error button { margin-top: 13px; padding: 10px 15px; border: 1px solid var(--guide-primary); border-radius: 10px; background: var(--guide-primary); color: #fff; cursor: pointer; }
 
 @media (max-width: 900px) {
-  .desktop-journeys { grid-template-columns: repeat(2, 1fr); }
+  .desktop-journeys { grid-template-columns: repeat(3, 1fr); }
   .workspace-layout { grid-template-columns: minmax(0, 1fr) 260px; }
 }
 

@@ -1880,7 +1880,13 @@ h2 {
   gap: 20px;
   margin: 28px 0 14px;
 }
-.location-places-heading[hidden] { display: none; }
+.location-place-groups[hidden],
+.location-place-group[hidden] { display: none; }
+.location-place-group + .location-place-group {
+  margin-top: 30px;
+  padding-top: 28px;
+  border-top: 1px solid rgba(29, 53, 87, 0.1);
+}
 .location-places-heading .section-kicker { margin-bottom: 4px; }
 .location-places-heading h3 {
   margin: 0;
@@ -1923,16 +1929,31 @@ h2 {
   box-shadow: 0 12px 32px rgba(29, 53, 87, 0.12);
   transform: translateY(-2px);
 }
+.location-place-card.is-featured {
+  border-color: rgba(209, 97, 77, 0.38);
+  box-shadow: inset 0 3px 0 var(--property-canyon), 0 9px 26px rgba(29, 53, 87, 0.07);
+}
 .location-place-card__photo { width: 110px; height: 100%; min-height: 142px; object-fit: cover; }
 .location-place-card__photo--empty { display: grid; place-items: center; background: var(--property-surface-deep); color: var(--property-canyon); }
 .location-place-card__photo--empty svg { width: 30px; fill: none; stroke: currentColor; stroke-width: 1.6; }
 .location-place-card__body { display: flex; min-width: 0; flex-direction: column; padding: 14px 13px 12px; }
+.location-place-card__eyebrow { display: flex; min-width: 0; align-items: center; flex-wrap: wrap; gap: 5px 7px; margin-bottom: 4px; }
 .location-place-card__category {
-  margin-bottom: 4px;
   color: var(--property-canyon);
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.location-place-card__badge {
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: var(--property-canyon);
+  color: #fff;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1;
   text-transform: uppercase;
 }
 .location-place-card h4 {
@@ -1965,6 +1986,7 @@ h2 {
   .location-explorer { margin-top: 18px; }
   .location-explorer .frame-location-map { height: 340px; border-radius: 16px; }
   .location-places-heading { margin-top: 22px; }
+  .location-place-group + .location-place-group { margin-top: 18px; padding-top: 18px; }
   .location-places-heading h3 { font-size: 28px; }
   .location-place-cards {
     display: flex;

@@ -23,6 +23,12 @@ const JOURNEYS = {
     mobileTitle: 'Make yourself at home',
     context: 'Property essentials and how-tos',
   },
+  eating: {
+    label: 'Eat nearby',
+    title: 'Good food, close by.',
+    mobileTitle: 'Find something delicious',
+    context: 'Restaurants and local favorites',
+  },
   exploring: {
     label: 'Explore nearby',
     title: 'Make a day of it.',
@@ -57,7 +63,7 @@ const state = {
   sections: [],
   property: null,
   hospitable: null,
-  groups: { arriving: [], staying: [], exploring: [], leaving: [] },
+  groups: { arriving: [], staying: [], eating: [], exploring: [], leaving: [] },
   activeJourney: 'arriving',
   searchIndex: [],
   places: new Map(),
@@ -122,6 +128,8 @@ function searchAlternatives(term) {
 function sectionJourney(section) {
   const items = section.items || [];
   const text = normalize(`${section.sectionId} ${section.title} ${section.sectionType}`);
+  const placeItems = items.filter(item => item.type === 'place');
+  if (placeItems.length && placeItems.every(item => item.place?.category === 'restaurant')) return 'eating';
   if (section.sectionType === 'recommendations' || items.some(item => item.type === 'place')) return 'exploring';
   if (/checkout|check out|departure|leaving|before you go/.test(text)) return 'leaving';
   if (/welcome|checkin|check in|arrival|arriving|parking|direction|entry|access/.test(text)) return 'arriving';
@@ -130,6 +138,7 @@ function sectionJourney(section) {
 }
 
 function sectionIconName(section) {
+  if (section.guideJourney === 'eating') return 'utensils';
   const text = normalize(`${section.sectionId} ${section.title}`);
   if (/welcome|hello/.test(text)) return 'heart-home';
   if (/wifi|tech|internet/.test(text)) return 'wifi';
@@ -192,8 +201,33 @@ function applyPropertyPresentation(guideData, propertyData) {
 }
 
 function groupSections() {
-  state.groups = { arriving: [], staying: [], exploring: [], leaving: [] };
-  state.sections.forEach(section => state.groups[sectionJourney(section)].push(section));
+  state.groups = { arriving: [], staying: [], eating: [], exploring: [], leaving: [] };
+  state.sections.forEach(section => {
+    const items = section.items || [];
+    const foodPlaces = items.filter(item => item.type === 'place' && item.place?.category === 'restaurant');
+    const explorePlaces = items.filter(item => item.type === 'place' && item.place?.category !== 'restaurant');
+    const regularItems = items.filter(item => item.type !== 'place');
+
+    if (!foodPlaces.length && !explorePlaces.length) {
+      state.groups[sectionJourney(section)].push(section);
+      return;
+    }
+
+    if (foodPlaces.length) {
+      state.groups.eating.push({
+        ...section,
+        guideJourney: 'eating',
+        items: [...(explorePlaces.length ? [] : regularItems), ...foodPlaces],
+      });
+    }
+    if (explorePlaces.length || (!foodPlaces.length && regularItems.length)) {
+      state.groups.exploring.push({
+        ...section,
+        guideJourney: 'exploring',
+        items: [...regularItems, ...explorePlaces],
+      });
+    }
+  });
 }
 
 function renderJourney(journey, options = {}) {
@@ -223,7 +257,7 @@ function renderJourney(journey, options = {}) {
 
   if (options.mobile) {
     document.body.classList.add('mobile-content-open');
-    setMobileTab(journey === 'exploring' ? 'explore' : '');
+    setMobileTab(journey === 'eating' ? 'food' : '');
   }
 
   if (options.sectionId) {
@@ -336,7 +370,9 @@ function renderPlaces(items, container) {
     section.className = 'place-category';
     section.innerHTML = `<h3>${escapeHtml(CATEGORY_LABELS[category] || 'Places')}</h3><div class="place-grid"></div>`;
     const grid = $('.place-grid', section);
-    grouped[category].forEach(item => grid.appendChild(renderPlaceCard(item)));
+    grouped[category]
+      .sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)))
+      .forEach(item => grid.appendChild(renderPlaceCard(item)));
     container.appendChild(section);
   });
 }
@@ -345,13 +381,15 @@ function renderPlaceCard(item) {
   const place = item.place || {};
   const button = document.createElement('button');
   button.type = 'button';
-  button.className = 'place-card';
+  button.className = `place-card${item.featured ? ' is-featured' : ''}`;
   button.dataset.placeId = item.itemId;
   const photo = safeUrl(place.photoUrl);
   button.innerHTML = `
     <div class="place-card__photo">${photo
       ? `<img src="${escapeHtml(photo)}" alt="${escapeHtml(place.name || item.label || '')}" loading="lazy">`
-      : `<div class="place-card__placeholder">${icon(CATEGORY_ICON_NAMES[place.category] || 'pin')}</div>`}</div>
+      : `<div class="place-card__placeholder">${icon(CATEGORY_ICON_NAMES[place.category] || 'pin')}</div>`}
+      ${item.featured ? '<span class="place-card__badge">Our Pick</span>' : ''}
+    </div>
     <div class="place-card__body">
       <small>${escapeHtml(CATEGORY_LABELS[place.category] || 'Local favorite')}</small>
       <strong>${escapeHtml(place.name || item.label || 'Local place')}</strong>
@@ -382,6 +420,7 @@ function openPlaceDialog(item) {
           <button type="button" class="dialog-close" data-close-place aria-label="Close place details">${icon('close')}</button>
         </div>
         <div class="place-dialog__body">
+          ${item.featured ? '<span class="place-dialog__badge">Our Pick</span>' : ''}
           <small>${escapeHtml(CATEGORY_LABELS[place.category] || 'Local favorite')}</small>
           <h2 id="place-dialog-title">${escapeHtml(place.name || item.label || 'Local place')}</h2>
           ${item.description ? `<p>${escapeHtml(item.description)}</p>` : ''}
@@ -468,12 +507,13 @@ function buildSearchIndex() {
     });
     (section.items || []).forEach(item => {
       const place = item.place || {};
+      const itemJourney = item.type === 'place' && place.category === 'restaurant' ? 'eating' : journey;
       const title = place.name || item.label || section.title;
       const searchable = [title, item.content, item.description, place.category, place.address, section.title]
         .filter(Boolean).join(' ');
       state.searchIndex.push({
         sectionId: section.sectionId,
-        journey,
+        journey: itemJourney,
         iconName: item.type === 'place'
           ? (CATEGORY_ICON_NAMES[place.category] || 'pin')
           : sectionIconName(section),
@@ -516,7 +556,7 @@ function renderSearchResults(query) {
     return;
   }
   results.innerHTML = matches.map(match => `
-    <button type="button" class="search-result" data-search-section="${escapeHtml(match.sectionId)}">
+    <button type="button" class="search-result" data-search-section="${escapeHtml(match.sectionId)}" data-search-journey="${escapeHtml(match.journey)}">
       <span class="search-result__icon">${icon(match.iconName)}</span>
       <span><strong>${escapeHtml(match.title)}</strong><small>${escapeHtml(match.subtitle)}</small></span>
       ${icon('chevron')}
@@ -534,7 +574,7 @@ function revealSection(sectionId, shouldScroll = true) {
 function navigateToSection(sectionId, options = {}) {
   const section = state.sections.find(candidate => candidate.sectionId === sectionId);
   if (!section) return;
-  renderJourney(sectionJourney(section), {
+  renderJourney(options.journey || sectionJourney(section), {
     mobile: window.matchMedia('(max-width: 760px)').matches,
     sectionId,
     scroll: options.scroll !== false,
@@ -561,7 +601,7 @@ function showMobileHome() {
 
 function setMobileTab(name) {
   $$('.mobile-tabs button').forEach(button => button.removeAttribute('aria-current'));
-  const selector = name === 'home' ? '[data-mobile-home]' : name === 'explore' ? '[data-mobile-journey="exploring"]' : null;
+  const selector = name === 'home' ? '[data-mobile-home]' : name === 'food' ? '[data-mobile-journey="eating"]' : null;
   if (selector) $(selector, $('.mobile-tabs'))?.setAttribute('aria-current', 'page');
 }
 
@@ -584,7 +624,7 @@ function installEvents() {
     const button = event.target.closest('[data-search-section]');
     if (!button) return;
     closeSearch();
-    navigateToSection(button.dataset.searchSection);
+    navigateToSection(button.dataset.searchSection, { journey: button.dataset.searchJourney });
   });
   $('#essential-links').addEventListener('click', event => {
     const button = event.target.closest('[data-section-link]');

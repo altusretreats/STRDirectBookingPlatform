@@ -573,7 +573,10 @@ function PlaceItemRow({ item, onRemove, onUpdate }) {
             </div>
         }
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 600, fontSize: 14 }}>{p.name || item.label}</div>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 7 }}>
+            <span style={{ fontWeight: 600, fontSize: 14 }}>{p.name || item.label}</span>
+            {item.featured && <span style={{ padding: '3px 7px', borderRadius: 999, background: '#FBEAE6', color: '#A54132', fontSize: 9, fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' }}>Our Pick</span>}
+          </div>
           <div style={{ fontSize: 12, color: '#6B7280' }}>
             {CATEGORY_LABELS[p.category] || '📍 Place'}
             {p.distanceMiles && ` · ${p.distanceMiles} mi · ~${p.travelMinutes} min`}
@@ -604,6 +607,10 @@ function PlaceItemRow({ item, onRemove, onUpdate }) {
             <label style={s.labelSm}>Map marker</label>
             <MapIconPicker value={p.mapIcon || ''} onChange={mapIcon => onUpdate({ place: { ...p, mapIcon } })} />
           </div>
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, margin: '12px 0', padding: '12px 14px', border: '1px solid #E2E8EC', borderRadius: 10, background: '#fff', cursor: 'pointer' }}>
+            <input type="checkbox" checked={Boolean(item.featured)} onChange={e => onUpdate({ featured: e.target.checked })} style={{ width: 17, height: 17, marginTop: 1, accentColor: '#D1614D' }} />
+            <span><strong style={{ display: 'block', color: '#1D3557', fontSize: 13 }}>Our Pick</strong><small style={{ display: 'block', marginTop: 2, color: '#6B7280', fontSize: 11, lineHeight: 1.4 }}>Show this place first and give it a subtle recommendation badge on guest pages.</small></span>
+          </label>
           <div style={s.formGroup}>
             <label style={s.labelSm}>Guest-facing description</label>
             <textarea style={{ ...s.input, height: 64, resize: 'vertical', marginTop: 4 }}
@@ -662,6 +669,7 @@ function PlaceAddForm({ propertyId, onAdd }) {
       description: '',
       aiContext:   '',
       hostNotes:   '',
+      featured:    false,
       place:       confirmedPlace,
     });
     setUrl('');
