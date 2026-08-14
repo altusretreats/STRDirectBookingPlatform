@@ -13,6 +13,22 @@ Guest recommendation copy and AI context: [`docs/guest-guide-knowledge-base.md`]
 ## You have full autonomy on this project
 Run any bash command needed. Install packages. Deploy. Don't ask for permission on individual steps — complete the full task and report back when done.
 
+## Git workflow — required
+Every completed task must be committed before reporting completion.
+
+- Inspect `git status` before making changes.
+- Preserve all pre-existing and unrelated changes.
+- Stage only files changed for the current task; never use `git add .` or `git add -A`.
+- Make a commit after each coherent, working milestone—not after every tiny edit.
+- Run the relevant tests or build before committing.
+- Use a concise imperative commit message describing the completed change.
+- After committing, run `git status --short` and report:
+  - the commit hash
+  - the commit message
+  - any remaining uncommitted files and why they were not included
+- Do not claim the task is complete without a successful commit.
+- If Git prevents committing, stop and clearly report the exact error.
+
 ## Stack
 - **Runtime:** Node.js 22.x (arm64 Lambda)
 - **IaC:** AWS SAM (`infrastructure/template.yaml`)
