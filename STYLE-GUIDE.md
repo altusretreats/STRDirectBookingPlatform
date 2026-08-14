@@ -48,7 +48,6 @@ The small difference between property-page Canyon Red and guidebook Canyon Red i
 
 - Property page: `frontend/property-site/css/main.css`, especially `--property-*` tokens.
 - Guest guide: `frontend/property-site/guidebook/css/guidebook.css`, using `--guide-*` tokens.
-- Booking page: `frontend/property-site/css/book.css`; this still uses the earlier Altus green/gold system and has not yet been migrated.
 - Admin SPA: `frontend/admin-spa/src/admin.css` owns the shared workspace tokens and shell. The admin borrows the guidebook's Deep Blue, Canyon Red, Mist, Fraunces, and DM Sans language while keeping forms denser and operationally focused.
 
 Never use a master-brand token merely because it already exists. Choose the token family belonging to the surface being changed.

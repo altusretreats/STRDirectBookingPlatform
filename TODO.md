@@ -43,7 +43,6 @@ Shared running list. Add items with priority (🔴 critical / 🟡 soon / 🟢 n
 ## 🟢 Nice-to-Have / Future
 
 - [x] **The Overhang property logo** — transparent PNG is live in the landing header and property-title lockup ✅
-- [ ] **Remaining logo rollout** — update `book.html` and any other surfaces still using text or placeholder marks
 - [ ] **hub.html → index.html swap** — when The Lazy Palm launches, replace hub coming soon with full hub site
 - [x] **www.staytheoverhang.com** — redesigned property site is live at the CloudFront-backed `www` domain ✅
 - [ ] **The Lazy Palm** — set up DynamoDB property record + S3/CloudFront for staythelazypalm.com

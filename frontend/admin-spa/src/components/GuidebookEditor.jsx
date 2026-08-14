@@ -518,6 +518,65 @@ function SectionModal({ section, saving, propertyId, onSave, onClose }) {
   );
 }
 
+// ── Markdown reference popover (for "Formatted guide" content fields) ─────────
+const MARKDOWN_HELP_ITEMS = [
+  { sample: '## Title',            desc: 'Section title' },
+  { sample: '### Subtitle',        desc: 'Smaller subtitle' },
+  { sample: '**bold text**',       desc: 'Bold' },
+  { sample: '_italic text_',       desc: 'Italic' },
+  { sample: '- list item',         desc: 'Bulleted list (one per line)' },
+  { sample: '[link text](https://example.com)', desc: 'Link' },
+];
+
+function MarkdownHelp() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDocClick(e) {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    }
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [open]);
+
+  return (
+    <span ref={ref} style={{ position: 'relative', display: 'inline-block', marginLeft: 6 }}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        title="Formatting reference"
+        style={{
+          width: 16, height: 16, borderRadius: '50%', border: '1px solid #9CA3AF',
+          background: '#fff', color: '#6B7280', fontSize: 10, fontWeight: 700,
+          lineHeight: '14px', padding: 0, cursor: 'pointer', verticalAlign: 'middle',
+        }}
+      >?</button>
+      {open && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, zIndex: 20, marginTop: 4,
+          background: '#fff', border: '1px solid #E5E7EB', borderRadius: 10,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.12)', padding: 12, width: 260,
+        }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: '#374151', margin: '0 0 8px' }}>Formatting reference</p>
+          <div style={{ display: 'grid', gap: 8 }}>
+            {MARKDOWN_HELP_ITEMS.map(({ sample, desc }) => (
+              <div key={sample}>
+                <code style={{
+                  display: 'block', fontSize: 12, background: '#F9FAFB', border: '1px solid #E5E7EB',
+                  borderRadius: 5, padding: '3px 6px', color: '#111827', fontFamily: 'monospace',
+                }}>{sample}</code>
+                <span style={{ fontSize: 11, color: '#6B7280' }}>{desc}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </span>
+  );
+}
+
 // ── Generic item row (existing item types) ────────────────────────────────────
 function GenericItemRow({ item, onRemove, onUpdate }) {
   const [expanded, setExpanded] = useState(false);
@@ -536,7 +595,7 @@ function GenericItemRow({ item, onRemove, onUpdate }) {
           <input style={{ ...s.input, marginTop: 4, marginBottom: 8, fontSize: 13 }}
             value={item.label || ''} onChange={e => onUpdate({ label: e.target.value })}
             placeholder="Item label" />
-          <label style={s.labelSm}>Guest-facing content</label>
+          <label style={s.labelSm}>Guest-facing content{item.type === 'guide' && <MarkdownHelp />}</label>
           <textarea style={{ ...s.input, height: 82, resize: 'vertical', marginTop: 4, marginBottom: 8, fontSize: 13 }}
             value={item.content || ''} onChange={e => onUpdate({ content: e.target.value })}
             placeholder="What guests should see…" />
@@ -577,7 +636,7 @@ function GenericAddForm({ newItem, setNI, onAdd }) {
         </div>
       </div>
       <div style={s.formGroup}>
-        <label style={s.labelSm}>Content / URL</label>
+        <label style={s.labelSm}>Content / URL{newItem.type === 'guide' && <MarkdownHelp />}</label>
         <textarea style={{ ...s.input, height: 72, resize: 'vertical' }}
           value={newItem.content} onChange={e => setNI('content', e.target.value)}
           placeholder={newItem.type === 'guide' ? 'Use short paragraphs, - bullets, and [link text](https://example.com)…' : newItem.type === 'text' ? 'Enter instructions…' : 'Enter URL…'} />

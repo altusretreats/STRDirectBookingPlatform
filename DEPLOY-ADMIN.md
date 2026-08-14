@@ -15,6 +15,15 @@ Step-by-step instructions to publish changes to the admin SPA (`frontend/admin-s
 
 This is a React + Vite app, so unlike the property site, it needs a **build step** before deploying.
 
+## Fast path
+
+```powershell
+cd C:\STRProjects\STRDirectBookingPlatform\frontend\admin-spa
+npm run deploy
+```
+
+This runs `deploy.ps1`, which does steps 3–7 below (build, sync, JS content-type fix, CloudFront invalidation) in one go. Use the manual steps only if you need to debug a failure or don't have PowerShell.
+
 ## Prerequisites (one-time setup)
 
 1. **AWS CLI installed and configured** — see [DEPLOY-FRONTEND.md](DEPLOY-FRONTEND.md) prerequisites (same setup, same `altus` profile).

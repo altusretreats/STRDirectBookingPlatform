@@ -1193,7 +1193,7 @@ h2 {
     flex-direction: column;
   }
 
-  /* On mobile, hide the widget column — user taps Book Now in nav to go to book.html */
+  /* On mobile, hide the widget column — Book Now scrolls to the on-page widget instead */
   .frame-widget-col {
     display: none;
   }

@@ -70,16 +70,16 @@ See [DEPLOY-GUIDEBOOK.md](DEPLOY-GUIDEBOOK.md) for privacy verification and addi
 
 ## Admin SPA
 
+Always use the deploy script — this machine's registry maps `.js` to `text/plain`, so a plain `aws s3 sync` uploads every JS asset with the wrong Content-Type and breaks the app (blank screen / MIME error in console). The script builds, syncs, force-fixes every `.js` asset's Content-Type, and invalidates CloudFront in one step:
+
 ```powershell
 cd C:\STRProjects\STRDirectBookingPlatform\frontend\admin-spa
-npm run build
-aws s3 sync dist/ s3://altus-retreats-admin-dev-817760095908/ --delete --profile altus
-aws cloudfront create-invalidation --distribution-id E6XS2Y3HPS1YG --paths "/*" --profile altus
+npm run deploy
 ```
 
-If JavaScript is served with the wrong MIME type, re-upload the exact generated `dist\assets\index-*.js` file with `--content-type "application/javascript" --metadata-directive REPLACE`.
+Never run `aws s3 sync dist/ ...` directly for the admin SPA without the content-type fix step that follows it.
 
-See [DEPLOY-ADMIN.md](DEPLOY-ADMIN.md) for the complete procedure.
+See [DEPLOY-ADMIN.md](DEPLOY-ADMIN.md) for the complete manual procedure the script automates.
 
 ## Hub
 
@@ -140,4 +140,4 @@ cd C:\STRProjects\STRDirectBookingPlatform
 node scripts\smoke-test.js
 ```
 
-For visual frontend changes, also verify at approximately `390px` and `1280px`, check keyboard operation, and confirm no horizontal overflow. For property-site releases, confirm mobile Book Now scrolls to the on-page widget and does not navigate to `book.html`.
+For visual frontend changes, also verify at approximately `390px` and `1280px`, check keyboard operation, and confirm no horizontal overflow. For property-site releases, confirm mobile Book Now scrolls to the on-page widget.

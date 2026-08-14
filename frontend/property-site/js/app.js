@@ -1185,22 +1185,27 @@ function initSiteScroll() {
     { key: 'location', target: document.getElementById('section-location') },
   ].filter(section => section.target);
 
+  // Tunable clearance for the Overview link, in px. The photo grid's CSS
+  // scroll-margin-top (88px) stacks with html's scroll-padding-top (140px)
+  // per spec, landing ~228px below the nav — way more than the compact nav
+  // actually needs. Adjust this number directly if the gap above the
+  // gallery looks off; it's independent of that CSS scroll-margin math.
+  const OVERVIEW_NAV_CLEARANCE = 105;
+
   // Nav links → smooth-scroll to a precise point below the compact header.
   function scrollToSection(id) {
-    // "Overview" is the property story, not the gallery above it. The active
-    // nav state still treats the gallery as part of Overview, but clicking the
-    // link should reveal the title and useful property details immediately.
     const target = id === 'overview'
-      ? document.getElementById('section-property')
+      ? document.getElementById('frame-photo-grid')
       : document.getElementById('section-' + id);
     if (target) {
-      const rootClearance = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--content-clear')) || 0;
-      const headerClearance = nav?.classList.contains('is-scrolled')
-        ? nav.getBoundingClientRect().height + 16
-        : rootClearance;
-      const targetTop = target.getBoundingClientRect().top + window.scrollY - headerClearance;
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      window.scrollTo({ top: Math.max(0, targetTop), behavior: reduceMotion ? 'auto' : 'smooth' });
+      const behavior = reduceMotion ? 'auto' : 'smooth';
+      if (id === 'overview') {
+        const targetTop = target.getBoundingClientRect().top + window.scrollY - OVERVIEW_NAV_CLEARANCE;
+        window.scrollTo({ top: Math.max(0, targetTop), behavior });
+      } else {
+        target.scrollIntoView({ behavior, block: 'start' });
+      }
     }
   }
   triggers.forEach(btn => btn.addEventListener('click', () => scrollToSection(btn.dataset.section)));

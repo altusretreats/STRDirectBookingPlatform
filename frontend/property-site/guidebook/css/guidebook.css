@@ -400,10 +400,22 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 }
 .guide-item__guide p { margin: 0 0 12px; }
 .guide-item__guide p:last-child { margin-bottom: 0; }
-.guide-item__guide ul { display: grid; gap: 10px; margin: 0; padding: 0 0 0 20px; }
+.guide-item__guide ul { display: grid; gap: 10px; margin: 0 0 12px; padding: 0 0 0 20px; }
+.guide-item__guide ul:last-child { margin-bottom: 0; }
 .guide-item__guide li { padding-left: 2px; }
 .guide-item__guide a { color: var(--guide-primary); font-weight: 600; text-decoration-color: rgba(189,80,62,.55); text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .guide-item__guide a:hover { color: var(--guide-accent); }
+.guide-item__guide strong { font-weight: 700; }
+.guide-item__guide em { font-style: italic; }
+.guide-item__guide h3, .guide-item__guide h4 {
+  margin: 0 0 10px;
+  font-family: var(--guide-serif, inherit);
+  color: var(--guide-ink, inherit);
+  line-height: 1.3;
+}
+.guide-item__guide h3 + p, .guide-item__guide h4 + p { margin-top: -2px; }
+.guide-item__guide h3 { font-size: 19px; }
+.guide-item__guide h4 { font-size: 16px; }
 .guide-item__placeholder {
   display: flex;
   align-items: center;

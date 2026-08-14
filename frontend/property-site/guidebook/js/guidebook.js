@@ -427,6 +427,13 @@ function renderGuideMarkdown(content) {
       closeList();
       return;
     }
+    const heading = line.match(/^(#{2,3})\s+(.+)/);
+    if (heading) {
+      closeList();
+      const tag = heading[1].length === 2 ? 'h3' : 'h4';
+      html += `<${tag}>${renderInlineGuideMarkdown(heading[2])}</${tag}>`;
+      return;
+    }
     const bullet = line.match(/^[-*]\s+(.+)/);
     if (bullet) {
       if (!listOpen) html += '<ul>';
@@ -443,16 +450,22 @@ function renderGuideMarkdown(content) {
 
 function renderInlineGuideMarkdown(value) {
   const source = String(value || '');
-  const pattern = /\[([^\]]+)\]\(([^)]+)\)/g;
+  const pattern = /\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|_([^_]+)_/g;
   let html = '';
   let cursor = 0;
   let match;
   while ((match = pattern.exec(source))) {
     html += escapeHtml(source.slice(cursor, match.index));
-    const url = safeUrl(match[2]);
-    html += url
-      ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener sponsored">${escapeHtml(match[1])}</a>`
-      : escapeHtml(match[1]);
+    if (match[1] !== undefined) {
+      const url = safeUrl(match[2]);
+      html += url
+        ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener sponsored">${escapeHtml(match[1])}</a>`
+        : escapeHtml(match[1]);
+    } else if (match[3] !== undefined) {
+      html += `<strong>${escapeHtml(match[3])}</strong>`;
+    } else if (match[4] !== undefined) {
+      html += `<em>${escapeHtml(match[4])}</em>`;
+    }
     cursor = match.index + match[0].length;
   }
   return html + escapeHtml(source.slice(cursor));
