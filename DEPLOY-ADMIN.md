@@ -72,6 +72,13 @@ Get-ChildItem dist\assets\*.js | ForEach-Object {
 }
 ```
 
+**6b. Fix the self-hosted Material Symbols font's content type** (the same guessing problem affects `.woff2`; this asset is present since the 2026-08-14 Guidebook icon picker release):
+```powershell
+Get-ChildItem dist\assets\*.woff2 -ErrorAction SilentlyContinue | ForEach-Object {
+  aws s3 cp $_.FullName "s3://altus-retreats-admin-dev-817760095908/assets/$($_.Name)" --content-type "font/woff2" --metadata-directive REPLACE --profile altus
+}
+```
+
 **7. Clear CloudFront's cache:**
 ```powershell
 aws cloudfront create-invalidation --distribution-id E6XS2Y3HPS1YG --paths "/*" --profile altus

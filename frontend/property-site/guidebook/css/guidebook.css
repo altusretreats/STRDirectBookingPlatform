@@ -366,6 +366,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
   color: var(--guide-primary);
 }
 .topic-icon svg { width: 20px; height: 20px; stroke-width: 1.9; }
+.topic-icon .material-symbols-outlined { font-size: 20px; }
 .topic-toggle strong { display: block; margin-bottom: 3px; font-family: var(--guide-serif); font-size: 21px; font-weight: 500; }
 .topic-toggle small { display: block; color: var(--guide-muted); font-size: 12px; }
 .topic-toggle .topic-chevron { color: var(--guide-muted); transition: transform 180ms ease; }
@@ -586,6 +587,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
   background: var(--guide-background);
   color: var(--guide-primary);
 }
+.essential-link__icon .material-symbols-outlined { font-size: 20px; }
 .essential-link--important .essential-link__icon {
   background: color-mix(in srgb, var(--guide-accent) 12%, #fff);
   color: var(--guide-accent);
@@ -718,6 +720,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .search-result:last-child { border-bottom: 0; }
 .search-result__icon { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 11px; background: var(--guide-background); color: var(--guide-primary); }
 .search-result__icon svg { width: 18px; height: 18px; stroke-width: 1.9; }
+.search-result__icon .material-symbols-outlined { font-size: 18px; }
 .search-result strong,
 .search-result small { display: block; }
 .search-result strong { margin-bottom: 2px; font-weight: 600; }

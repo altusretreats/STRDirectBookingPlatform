@@ -254,6 +254,9 @@ input:focus, textarea:focus, select:focus {
   .shop-modal__panel { max-height: 92vh; overflow-y: auto; border-radius: 20px 20px 0 0; }
 }
 
+.material-symbols-outlined { opacity: 0; }
+.symbols-ready .material-symbols-outlined { opacity: 1; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
 }

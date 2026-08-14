@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { adminApi } from '../lib/api';
+import { MATERIAL_SYMBOL_NAMES, materialSymbolLabel, isValidMaterialSymbol } from '../data/materialSymbolsCatalog';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
 } from '@dnd-kit/core';
@@ -45,18 +46,121 @@ const ICON_OPTIONS = [
 ];
 
 const SECTION_TEMPLATES = [
-  { icon: '👋', title: 'Welcome', sectionType: 'welcome' },
-  { icon: '🔑', title: 'Check-In' },
-  { icon: '🌐', title: 'WiFi & Tech' },
-  { icon: '📋', title: 'House Rules' },
-  { icon: '🍽️', title: 'Kitchen & Appliances' },
-  { icon: '♨️', title: 'Hot Tub' },
-  { icon: '🗺️', title: 'Local Recommendations', sectionType: 'recommendations' },
-  { icon: '🚨', title: 'Emergency Contacts' },
-  { icon: '🚗', title: 'Parking & Directions' },
-  { icon: '🧺', title: 'Trash & Recycling' },
-  { icon: '💡', title: 'Tips & Tricks' },
+  { icon: 'material-symbols:waving_hand', title: 'Welcome', sectionType: 'welcome' },
+  { icon: 'material-symbols:key', title: 'Check-In' },
+  { icon: 'material-symbols:wifi', title: 'WiFi & Tech' },
+  { icon: 'material-symbols:rule', title: 'House Rules' },
+  { icon: 'material-symbols:kitchen', title: 'Kitchen & Appliances' },
+  { icon: 'material-symbols:hot_tub', title: 'Hot Tub' },
+  { icon: 'material-symbols:map', title: 'Local Recommendations', sectionType: 'recommendations' },
+  { icon: 'material-symbols:emergency', title: 'Emergency Contacts' },
+  { icon: 'material-symbols:local_parking', title: 'Parking & Directions' },
+  { icon: 'material-symbols:recycling', title: 'Trash & Recycling' },
+  { icon: 'material-symbols:lightbulb', title: 'Tips & Tricks' },
 ];
+
+// ── Material Symbols icon format ────────────────────────────────────────────
+// section.icon stores either a legacy emoji string (unchanged, still fully
+// supported) or "material-symbols:<name>" where <name> is a lowercase symbol
+// name validated against the self-hosted catalog. No new DB field is used.
+const MATERIAL_SYMBOL_RE = /^material-symbols:([a-z0-9_]+)$/;
+
+function parseSectionIcon(value) {
+  if (typeof value !== 'string') return null;
+  const m = value.match(MATERIAL_SYMBOL_RE);
+  return m && isValidMaterialSymbol(m[1]) ? m[1] : null;
+}
+
+function normalizeSearchText(str) {
+  return String(str || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+const RECOMMENDED_ICON_GROUPS = [
+  { label: 'Arrival & access', icons: ['key', 'door_open', 'login', 'logout'] },
+  { label: 'House & rooms', icons: ['home', 'bedroom_parent', 'bed', 'bathroom', 'crib', 'deck'] },
+  { label: 'Kitchen & dining', icons: ['kitchen', 'oven', 'microwave', 'coffee_maker', 'local_cafe', 'restaurant', 'outdoor_grill'] },
+  { label: 'Amenities & comfort', icons: ['wifi', 'router', 'hot_tub', 'sauna', 'fireplace', 'thermostat', 'ac_unit', 'local_laundry_service', 'pool', 'pets', 'child_friendly'] },
+  { label: 'Safety & rules', icons: ['warning', 'emergency', 'medical_services', 'shield', 'rule', 'checklist'] },
+  { label: 'Outdoors & recreation', icons: ['local_parking', 'directions_car', 'map', 'hiking', 'attractions'] },
+  { label: 'Checkout & cleaning', icons: ['recycling', 'delete', 'cleaning_services', 'shopping_bag', 'luggage'] },
+];
+
+// Extra search keywords that don't literally appear in a symbol's own name/label.
+const ICON_SEARCH_SYNONYMS = {
+  wifi: ['wi fi', 'internet', 'network'],
+  router: ['wifi', 'internet'],
+  hot_tub: ['jacuzzi', 'spa'],
+  sauna: ['spa', 'steam room'],
+  coffee_maker: ['coffee', 'espresso', 'coffee pot'],
+  local_cafe: ['coffee', 'cafe', 'espresso'],
+  checklist: ['checkout', 'check out'],
+  rule: ['checkout', 'house rules'],
+  logout: ['checkout', 'check out', 'departure'],
+  luggage: ['checkout', 'departure', 'bags', 'suitcase'],
+  cleaning_services: ['checkout', 'housekeeping', 'cleaning'],
+  key: ['check in', 'checkin', 'entry'],
+  login: ['check in', 'checkin', 'arrival'],
+  door_open: ['entry', 'check in'],
+  ac_unit: ['air conditioning', 'ac', 'cooling'],
+  thermostat: ['temperature', 'heat', 'heating'],
+  local_laundry_service: ['laundry', 'washer', 'dryer'],
+  local_parking: ['parking', 'car'],
+  directions_car: ['parking', 'driving'],
+  medical_services: ['first aid', 'emergency'],
+  emergency: ['911', 'urgent', 'sos'],
+  shield: ['safety', 'security'],
+  pets: ['dog', 'cat', 'pet friendly'],
+  child_friendly: ['kids', 'baby', 'family'],
+  crib: ['baby', 'infant', 'nursery'],
+  shopping_bag: ['shop', 'shopping'],
+  attractions: ['things to do', 'activities'],
+  hiking: ['trail', 'hike'],
+};
+
+const ICON_SEARCH_RESULT_LIMIT = 60;
+
+function searchMaterialIcons(query) {
+  const q = normalizeSearchText(query);
+  if (!q) return [];
+  const terms = q.split(' ').filter(Boolean);
+  // "Wi-Fi" normalizes to "wi fi" (two terms), but the symbol is named "wifi"
+  // (one word) — compare space-collapsed forms too so exact matches like that
+  // still rank first instead of losing to compound names that merely contain
+  // "wi" and "fi" as substrings (e.g. the many android_wifi_* icons).
+  const qCompact = q.replace(/ /g, '');
+  const scored = [];
+  for (const name of MATERIAL_SYMBOL_NAMES) {
+    const nameNorm = normalizeSearchText(name);
+    const labelNorm = normalizeSearchText(materialSymbolLabel(name));
+    const synonyms = (ICON_SEARCH_SYNONYMS[name] || []).map(normalizeSearchText);
+    const haystack = [nameNorm, labelNorm, ...synonyms].join(' ');
+    if (!terms.every(t => haystack.includes(t))) continue;
+    const nameCompact = nameNorm.replace(/ /g, '');
+    const isExact = nameNorm === q || nameCompact === qCompact;
+    const isPrefix = nameNorm.startsWith(q) || labelNorm.startsWith(q) || nameCompact.startsWith(qCompact);
+    const score = isExact ? 0 : isPrefix ? 1 : 2;
+    scored.push({ name, score });
+  }
+  scored.sort((a, b) => a.score - b.score || a.name.localeCompare(b.name));
+  return scored.map(r => r.name);
+}
+
+// Best-effort suggestion only — a legacy emoji is never rewritten automatically.
+const EMOJI_TO_MATERIAL = {
+  '🔑': 'key', '🚪': 'door_open', '🛎️': 'login', '🏠': 'home', '🏡': 'home',
+  '📶': 'wifi', '📡': 'router', '💻': 'devices', '📱': 'tablet', '📺': 'tv',
+  '📋': 'rule', '📝': 'edit_note', '📌': 'pin', '📍': 'location_on', '🗓️': 'calendar_month',
+  '🍽️': 'restaurant', '🍳': 'skillet', '☕': 'local_cafe', '🧁': 'cake', '🍕': 'local_pizza',
+  '♨️': 'hot_tub', '🛁': 'bathtub', '🚿': 'shower', '🪥': 'bathroom', '🧼': 'soap',
+  '🗺️': 'map', '🧭': 'explore', '🚗': 'directions_car', '🚶': 'directions_walk', '🚴': 'directions_bike',
+  '🚨': 'emergency', '🆘': 'sos', '📞': 'call', '🏥': 'medical_services', '🔒': 'lock',
+  '🧺': 'local_laundry_service', '🗑️': 'delete', '♻️': 'recycling', '🧹': 'cleaning_services', '🪣': 'cleaning_services',
+  '💡': 'lightbulb', '⚡': 'bolt', '🔧': 'build', '🪟': 'window', '🪑': 'chair',
+  '🌿': 'eco', '🌲': 'park', '🏔️': 'landscape', '🌊': 'waves', '⛺': 'cabin',
+  '🎸': 'music_note', '🎮': 'sports_esports', '🎯': 'sports_score', '🎱': 'sports_bar', '🏋️': 'fitness_center',
+  '🐾': 'pets', '🐕': 'pets', '🐈': 'pets', '🦮': 'pets', '🌸': 'local_florist',
+  '👋': 'waving_hand', '❤️': 'favorite', '⭐': 'star', '✨': 'auto_awesome_motion', '🎉': 'celebration',
+};
 
 const CATEGORY_LABELS = {
   restaurant: '🍽️ Restaurant',
@@ -256,7 +360,7 @@ export default function GuidebookEditor({ propertyId, propertyName, property, on
           <div style={s.templateGrid}>
             {SECTION_TEMPLATES.map(t => (
               <button key={t.title} style={s.templateBtn} onClick={() => addFromTemplate(t)}>
-                <span style={{ fontSize: 20 }}>{t.icon}</span>
+                <IconGlyph value={t.icon} size={20} />
                 <span style={{ fontSize: 13, fontWeight: 500 }}>{t.title}</span>
               </button>
             ))}
@@ -303,7 +407,7 @@ function SortableSection({ section, onEdit, onDelete }) {
   return (
     <div ref={setNodeRef} style={{ ...s.sectionRow, ...style }}>
       <div style={s.dragHandle} {...attributes} {...listeners} title="Drag to reorder">⠿</div>
-      <span style={s.sectionIcon}>{section.icon}</span>
+      <span style={s.sectionIcon}><IconGlyph value={section.icon} size={22} /></span>
       <div style={s.sectionInfo}>
         <div style={s.sectionTitle}>
           {section.title}
@@ -391,7 +495,7 @@ function SectionModal({ section, saving, propertyId, onSave, onClose }) {
           <div style={s.formRow}>
             <div style={s.formGroup}>
               <label style={s.label}>Icon</label>
-              <IconPicker value={data.icon} onChange={v => set('icon', v)} />
+              <MaterialIconPicker value={data.icon} onChange={v => set('icon', v)} />
             </div>
             <div style={{ ...s.formGroup, flex: 3 }}>
               <label style={s.label}>Section title *</label>
@@ -937,46 +1041,203 @@ function AudienceBadges({ values = [] }) {
   );
 }
 
-function IconPicker({ value, onChange }) {
+// Renders a section.icon value as either a Material Symbol glyph or the raw
+// legacy string (emoji, or the neutral default when blank/unrecognized).
+function IconGlyph({ value, size = 20 }) {
+  const symbol = parseSectionIcon(value);
+  if (symbol) {
+    return (
+      <span
+        className="material-symbols-outlined msi"
+        style={{ fontSize: size, lineHeight: 1 }}
+        aria-hidden="true"
+      >
+        {symbol}
+      </span>
+    );
+  }
+  return <span style={{ fontSize: size, lineHeight: 1 }} aria-hidden="true">{value || '📄'}</span>;
+}
+
+function MaterialIconPicker({ value, onChange }) {
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [tab, setTab] = useState('material'); // 'material' | 'emoji'
+  const triggerRef = useRef(null);
+  const searchRef = useRef(null);
+  const dialogRef = useRef(null);
+
+  const currentSymbol = parseSectionIcon(value);
+  const currentLabel = currentSymbol ? materialSymbolLabel(currentSymbol) : (value ? 'Emoji icon' : 'Choose icon');
+  const equivalent = !currentSymbol && value && EMOJI_TO_MATERIAL[value];
+
+  useEffect(() => {
+    if (!open) return;
+    const t = setTimeout(() => searchRef.current?.focus(), 0);
+    return () => clearTimeout(t);
+  }, [open]);
+
+  function close() {
+    setOpen(false);
+    setQuery('');
+    triggerRef.current?.focus();
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === 'Escape') { e.preventDefault(); close(); }
+  }
+
+  function pick(name) {
+    onChange('material-symbols:' + name);
+    close();
+  }
+
+  const results = tab === 'material' ? searchMaterialIcons(query) : [];
+  const visibleResults = results.slice(0, ICON_SEARCH_RESULT_LIMIT);
+  const extraCount = results.length - visibleResults.length;
 
   return (
     <div style={{ position: 'relative' }}>
       <button
+        ref={triggerRef}
         type="button"
         style={s.iconPickerBtn}
         onClick={() => setOpen(o => !o)}
-        title="Choose icon"
+        aria-haspopup="dialog"
+        aria-expanded={open}
       >
-        <span style={{ fontSize: 22 }}>{value || '📄'}</span>
-        <span style={{ fontSize: 11, color: '#9CA3AF', marginLeft: 4 }}>▼</span>
+        <IconGlyph value={value} size={20} />
+        <span style={s.iconPickerBtnLabel}>{currentLabel}</span>
+        <span style={s.iconPickerChevron} aria-hidden="true">▾</span>
       </button>
 
       {open && (
-        <>
-          <div style={s.iconPickerOverlay} onClick={() => setOpen(false)} />
-          <div style={s.iconPickerDropdown}>
-            <div style={s.iconGrid}>
-              {ICON_OPTIONS.map(icon => (
+        <div
+          style={s.iconPickerBackdrop}
+          onClick={e => e.target === e.currentTarget && close()}
+          onKeyDown={handleKeyDown}
+        >
+          <div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Choose a section icon"
+            style={s.iconPickerDialog}
+          >
+            <div style={s.iconPickerHeader}>
+              <div style={s.iconPickerTabs} role="tablist" aria-label="Icon source">
                 <button
-                  key={icon}
                   type="button"
-                  style={{
-                    ...s.iconOption,
-                    background: icon === value ? '#E8F4ED' : 'transparent',
-                    outline: icon === value ? '2px solid #2D3A2E' : 'none',
-                  }}
-                  onClick={() => { onChange(icon); setOpen(false); }}
-                  title={icon}
+                  role="tab"
+                  aria-selected={tab === 'material'}
+                  style={{ ...s.iconPickerTab, ...(tab === 'material' ? s.iconPickerTabActive : {}) }}
+                  onClick={() => setTab('material')}
                 >
-                  {icon}
+                  Material Symbols
                 </button>
-              ))}
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === 'emoji'}
+                  style={{ ...s.iconPickerTab, ...(tab === 'emoji' ? s.iconPickerTabActive : {}) }}
+                  onClick={() => setTab('emoji')}
+                >
+                  Emoji (legacy)
+                </button>
+              </div>
+              <button type="button" style={s.closeBtn} onClick={close} aria-label="Close icon picker">✕</button>
             </div>
+
+            {tab === 'material' ? (
+              <>
+                <input
+                  ref={searchRef}
+                  type="text"
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  placeholder="Search icons — try “hot tub”, “wifi”, “checkout”…"
+                  aria-label="Search Material Symbols"
+                  style={s.iconPickerSearch}
+                />
+
+                {equivalent && (
+                  <button type="button" style={s.iconPickerSuggestion} onClick={() => pick(equivalent)}>
+                    Use the Material equivalent — <strong>{materialSymbolLabel(equivalent)}</strong>
+                  </button>
+                )}
+
+                <div style={s.iconPickerResults}>
+                  {query.trim() ? (
+                    <>
+                      <div style={s.iconPickerGrid} role="listbox" aria-label="Search results">
+                        {visibleResults.map(name => (
+                          <IconOption key={name} name={name} selected={name === currentSymbol} onClick={() => pick(name)} />
+                        ))}
+                      </div>
+                      {visibleResults.length === 0 && (
+                        <p style={s.iconPickerEmpty}>No icons match “{query}”. Try a different word.</p>
+                      )}
+                      {extraCount > 0 && (
+                        <p style={s.iconPickerMore}>+{extraCount} more match{extraCount === 1 ? '' : 'es'} — refine your search to see them.</p>
+                      )}
+                    </>
+                  ) : (
+                    RECOMMENDED_ICON_GROUPS.map(group => (
+                      <div key={group.label} style={s.iconPickerGroup}>
+                        <p style={s.iconPickerGroupLabel}>{group.label}</p>
+                        <div style={s.iconPickerGrid} role="listbox" aria-label={group.label}>
+                          {group.icons.map(name => (
+                            <IconOption key={name} name={name} selected={name === currentSymbol} onClick={() => pick(name)} />
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </>
+            ) : (
+              <div style={s.iconPickerResults}>
+                <div style={s.iconGrid}>
+                  {ICON_OPTIONS.map(icon => (
+                    <button
+                      key={icon}
+                      type="button"
+                      style={{
+                        ...s.iconOption,
+                        background: icon === value ? '#E8F4ED' : 'transparent',
+                        outline: icon === value ? '2px solid #2D3A2E' : 'none',
+                      }}
+                      onClick={() => { onChange(icon); close(); }}
+                      title={icon}
+                    >
+                      {icon}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        </>
+        </div>
       )}
     </div>
+  );
+}
+
+function IconOption({ name, selected, onClick }) {
+  const label = materialSymbolLabel(name);
+  return (
+    <button
+      type="button"
+      role="option"
+      aria-selected={selected}
+      title={label}
+      aria-label={label}
+      style={{ ...s.iconPickerOption, ...(selected ? s.iconPickerOptionSelected : {}) }}
+      onClick={onClick}
+    >
+      <span className="material-symbols-outlined msi" style={{ fontSize: 22 }} aria-hidden="true">{name}</span>
+      <span style={s.iconPickerOptionLabel}>{label}</span>
+    </button>
   );
 }
 
@@ -1033,11 +1294,28 @@ const s = {
   mapIconImage:       { width: 17, height: 17, objectFit: 'contain', filter: 'brightness(0) invert(1)' },
   mapIconLegacy:      { color: '#fff', fontSize: 19, fontWeight: 700, lineHeight: 1 },
   mapIconLabel:       { minWidth: 0, overflow: 'hidden', fontSize: 11, fontWeight: 600, lineHeight: 1.2, textOverflow: 'ellipsis' },
-  iconPickerBtn:      { display: 'flex', alignItems: 'center', padding: '7px 10px', border: '1px solid #D1D5DB', borderRadius: 7, background: '#fff', cursor: 'pointer', fontFamily: 'inherit', width: '100%' },
-  iconPickerOverlay:  { position: 'fixed', inset: 0, zIndex: 10 },
-  iconPickerDropdown: { position: 'absolute', top: '100%', left: 0, zIndex: 20, marginTop: 4, background: '#fff', border: '1px solid #E5E7EB', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', padding: 10, width: 220 },
+  iconPickerBtn:      { display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', border: '1px solid #D1D5DB', borderRadius: 7, background: '#fff', cursor: 'pointer', fontFamily: 'inherit', width: '100%', minWidth: 0 },
+  iconPickerBtnLabel: { flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 13, fontWeight: 600, color: '#374151', textAlign: 'left' },
+  iconPickerChevron:  { fontSize: 11, color: '#9CA3AF', flexShrink: 0 },
   iconGrid:           { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 4 },
   iconOption:         { border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 20, padding: 6, lineHeight: 1, fontFamily: 'inherit' },
+  iconPickerBackdrop: { position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(17,24,39,0.5)', padding: 16 },
+  iconPickerDialog:   { display: 'flex', flexDirection: 'column', width: '100%', maxWidth: 420, maxHeight: '80vh', background: '#fff', borderRadius: 14, boxShadow: '0 24px 64px rgba(0,0,0,0.25)', overflow: 'hidden' },
+  iconPickerHeader:   { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '10px 10px 10px 16px', borderBottom: '1px solid #E5E7EB', flexShrink: 0 },
+  iconPickerTabs:     { display: 'flex', gap: 4 },
+  iconPickerTab:      { padding: '6px 10px', border: 'none', borderRadius: 7, background: 'transparent', color: '#6B7280', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' },
+  iconPickerTabActive: { background: '#EEF3F7', color: '#1D3557' },
+  iconPickerSearch:   { margin: '12px 16px 4px', padding: '10px 12px', border: '1px solid #D1D5DB', borderRadius: 8, fontSize: 14, fontFamily: 'inherit', outline: 'none', width: 'calc(100% - 32px)' },
+  iconPickerSuggestion: { margin: '4px 16px 0', padding: '8px 12px', border: '1px solid #A7D7C7', borderRadius: 8, background: '#EFFAF6', color: '#23614D', fontSize: 12, fontWeight: 600, cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' },
+  iconPickerResults:  { overflowY: 'auto', overflowX: 'hidden', padding: '10px 16px 16px', flex: 1 },
+  iconPickerGroup:    { marginBottom: 14 },
+  iconPickerGroupLabel: { margin: '0 0 8px', fontSize: 11, fontWeight: 700, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '.06em' },
+  iconPickerGrid:     { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(88px, 1fr))', gap: 6 },
+  iconPickerOption:   { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, minWidth: 0, padding: '10px 6px', border: '1px solid #E5E7EB', borderRadius: 9, background: '#fff', color: '#374151', cursor: 'pointer', fontFamily: 'inherit' },
+  iconPickerOptionSelected: { borderColor: '#1D3557', background: '#EEF3F7', boxShadow: '0 0 0 1px #1D3557' },
+  iconPickerOptionLabel: { width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 10, fontWeight: 600, textAlign: 'center', lineHeight: 1.3 },
+  iconPickerEmpty:    { margin: 0, padding: '20px 4px', color: '#6B7280', fontSize: 13, textAlign: 'center' },
+  iconPickerMore:     { margin: '10px 2px 0', color: '#9CA3AF', fontSize: 11, textAlign: 'center' },
   eyebrow:            { margin: '0 0 5px', color: '#BD503E', fontSize: 11, fontWeight: 600, letterSpacing: '.12em', textTransform: 'uppercase' },
   heroSettingsTitle:  { margin: '0 0 7px', color: '#1D3557', fontFamily: 'Fraunces, Georgia, serif', fontSize: 26, fontWeight: 600 },
   heroSettingsCopy:   { margin: '0 0 16px', color: '#637180', fontSize: 13, lineHeight: 1.55 },

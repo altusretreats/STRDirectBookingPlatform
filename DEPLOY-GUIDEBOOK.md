@@ -36,7 +36,10 @@ aws s3 sync frontend\property-site\guidebook\ s3://altus-retreats-frontend-dev-8
 aws s3 cp frontend\property-site\guidebook\index.html s3://altus-retreats-frontend-dev-817760095908/guidebook/index.html --content-type "text/html" --cache-control "no-cache" --metadata-directive REPLACE --profile altus
 aws s3 cp frontend\property-site\guidebook\js\guidebook.js s3://altus-retreats-frontend-dev-817760095908/guidebook/js/guidebook.js --content-type "application/javascript" --cache-control "no-cache" --metadata-directive REPLACE --profile altus
 aws s3 cp frontend\property-site\guidebook\css\guidebook.css s3://altus-retreats-frontend-dev-817760095908/guidebook/css/guidebook.css --content-type "text/css" --cache-control "no-cache" --metadata-directive REPLACE --profile altus
+aws s3 cp frontend\property-site\guidebook\css\material-symbols.css s3://altus-retreats-frontend-dev-817760095908/guidebook/css/material-symbols.css --content-type "text/css" --cache-control "no-cache" --metadata-directive REPLACE --profile altus
+aws s3 cp frontend\property-site\guidebook\fonts\material-symbols-outlined.woff2 s3://altus-retreats-frontend-dev-817760095908/guidebook/fonts/material-symbols-outlined.woff2 --content-type "font/woff2" --metadata-directive REPLACE --profile altus
 ```
+(The self-hosted Material Symbols font/CSS were added 2026-08-14 for the Guidebook section-icon picker — the font itself is large and effectively immutable, so it doesn't need `--cache-control "no-cache"`.)
 
 **4. Clear CloudFront's cache:**
 ```powershell

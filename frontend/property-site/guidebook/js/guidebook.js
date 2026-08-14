@@ -82,6 +82,24 @@ const $ = (selector, scope = document) => scope.querySelector(selector);
 const $$ = (selector, scope = document) => [...scope.querySelectorAll(selector)];
 const icon = (name, className = '') => `<svg${className ? ` class="${className}"` : ''} aria-hidden="true"><use href="#icon-${name}"></use></svg>`;
 
+// section.icon stores either a legacy emoji string or "material-symbols:<name>".
+// A valid Material Symbol always wins; anything else falls back to sectionIconName().
+const MATERIAL_SYMBOL_RE = /^material-symbols:([a-z0-9_]+)$/;
+
+function parseSectionIcon(section) {
+  const value = section?.icon;
+  if (typeof value !== 'string') return null;
+  const m = value.match(MATERIAL_SYMBOL_RE);
+  return m ? m[1] : null;
+}
+
+function iconMarkup(ref, className = '') {
+  if (ref && ref.material) {
+    return `<span class="material-symbols-outlined msi${className ? ` ${className}` : ''}" aria-hidden="true">${ref.material}</span>`;
+  }
+  return icon((ref && ref.sprite) || 'home', className);
+}
+
 async function fetchJson(path) {
   const response = await fetch(`${GUIDE_CONFIG.apiBase}${path}`);
   if (!response.ok) throw new Error(`Request failed: ${response.status}`);
@@ -161,6 +179,11 @@ function sectionIconName(section) {
   if (/rule|instruction|before you go/.test(text)) return 'clipboard';
   if (/local|recommend|explore|restaurant|activity/.test(text)) return 'map';
   return 'home';
+}
+
+function sectionIconRef(section) {
+  const material = parseSectionIcon(section);
+  return material ? { material } : { sprite: sectionIconName(section) };
 }
 
 function sectionSummary(section) {
@@ -331,7 +354,7 @@ function renderSection(section, index, requestedSectionId) {
   const panelId = `topic-panel-${section.sectionId}`;
   article.innerHTML = `
     <button type="button" class="topic-toggle" aria-expanded="${expanded}" aria-controls="${escapeHtml(panelId)}">
-      <span class="topic-icon">${icon(sectionIconName(section))}</span>
+      <span class="topic-icon">${iconMarkup(sectionIconRef(section))}</span>
       <span>${section.important ? `<em class="topic-important">${icon('alert-circle')}Important</em>` : ''}<strong>${escapeHtml(section.title)}</strong><small>${escapeHtml(sectionSummary(section))}</small></span>
       ${icon('down', 'topic-chevron')}
     </button>
@@ -588,35 +611,35 @@ function findSection(pattern) {
 
 function renderEssentials() {
   const preferred = [
-    { pattern: /wifi|wi fi|tech|internet/, icon: 'wifi', note: 'Network and devices' },
-    { pattern: /hot tub|sauna|pool/, icon: 'waves', note: 'Controls and care' },
-    { pattern: /checkin|check in|entry|access/, icon: 'key', note: 'Arrival and access' },
-    { pattern: /emergency|safety|contact/, icon: 'shield', note: 'Help when it matters' },
+    { pattern: /wifi|wi fi|tech|internet/, iconRef: { sprite: 'wifi' }, note: 'Network and devices' },
+    { pattern: /hot tub|sauna|pool/, iconRef: { sprite: 'waves' }, note: 'Controls and care' },
+    { pattern: /checkin|check in|entry|access/, iconRef: { sprite: 'key' }, note: 'Arrival and access' },
+    { pattern: /emergency|safety|contact/, iconRef: { sprite: 'shield' }, note: 'Help when it matters' },
   ];
   const used = new Set();
   const links = [];
   state.sections.filter(section => section.important).forEach(section => {
     if (links.length >= 4) return;
     used.add(section.sectionId);
-    links.push({ section, icon: 'alert-circle', note: 'Important for your stay' });
+    links.push({ section, iconRef: { sprite: 'alert-circle' }, note: 'Important for your stay' });
   });
   preferred.forEach(preference => {
     const section = state.sections.find(candidate => !used.has(candidate.sectionId)
       && preference.pattern.test(normalize(`${candidate.sectionId} ${candidate.title}`)));
     if (section) {
       used.add(section.sectionId);
-      links.push({ section, icon: preference.icon, note: preference.note });
+      links.push({ section, iconRef: preference.iconRef, note: preference.note });
     }
   });
   state.sections.forEach(section => {
     if (links.length >= 4 || used.has(section.sectionId)) return;
     used.add(section.sectionId);
-    links.push({ section, icon: sectionIconName(section), note: sectionSummary(section) });
+    links.push({ section, iconRef: sectionIconRef(section), note: sectionSummary(section) });
   });
 
-  $('#essential-links').innerHTML = links.map(({ section, icon: iconName, note }) => `
+  $('#essential-links').innerHTML = links.map(({ section, iconRef, note }) => `
     <button type="button" class="essential-link${section.important ? ' essential-link--important' : ''}" data-section-link="${escapeHtml(section.sectionId)}">
-      <span class="essential-link__icon">${icon(iconName)}</span>
+      <span class="essential-link__icon">${iconMarkup(iconRef)}</span>
       <span><strong>${escapeHtml(section.title)}</strong><small>${escapeHtml(note)}</small></span>
       ${icon('chevron')}
     </button>`).join('');
@@ -629,7 +652,7 @@ function buildSearchIndex() {
     state.searchIndex.push({
       sectionId: section.sectionId,
       journey,
-      iconName: sectionIconName(section),
+      iconRef: sectionIconRef(section),
       title: section.title,
       subtitle: sectionSummary(section),
       haystack: normalize(`${section.title} ${section.sectionId} ${(section.audiences || []).join(' ')}`),
@@ -643,9 +666,9 @@ function buildSearchIndex() {
       state.searchIndex.push({
         sectionId: section.sectionId,
         journey: itemJourney,
-        iconName: item.type === 'place'
-          ? (CATEGORY_ICON_NAMES[place.category] || 'pin')
-          : sectionIconName(section),
+        iconRef: item.type === 'place'
+          ? { sprite: CATEGORY_ICON_NAMES[place.category] || 'pin' }
+          : sectionIconRef(section),
         title,
         subtitle: section.title,
         haystack: normalize(searchable),
@@ -686,7 +709,7 @@ function renderSearchResults(query) {
   }
   results.innerHTML = matches.map(match => `
     <button type="button" class="search-result" data-search-section="${escapeHtml(match.sectionId)}" data-search-journey="${escapeHtml(match.journey)}">
-      <span class="search-result__icon">${icon(match.iconName)}</span>
+      <span class="search-result__icon">${iconMarkup(match.iconRef)}</span>
       <span><strong>${escapeHtml(match.title)}</strong><small>${escapeHtml(match.subtitle)}</small></span>
       ${icon('chevron')}
     </button>`).join('');

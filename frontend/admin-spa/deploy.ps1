@@ -23,6 +23,14 @@ Get-ChildItem dist\assets\*.js | ForEach-Object {
     --profile $Profile
 }
 
+Write-Host "Fixing Content-Type on font assets..."
+Get-ChildItem dist\assets\*.woff2 -ErrorAction SilentlyContinue | ForEach-Object {
+  aws s3 cp $_.FullName "s3://$Bucket/assets/$($_.Name)" `
+    --content-type "font/woff2" `
+    --metadata-directive REPLACE `
+    --profile $Profile
+}
+
 Write-Host "Invalidating CloudFront ($DistributionId)..."
 aws cloudfront create-invalidation --distribution-id $DistributionId --paths "/*" --profile $Profile
 
