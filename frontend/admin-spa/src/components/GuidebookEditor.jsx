@@ -443,36 +443,48 @@ const GENERIC_ITEM_TYPES = [
 
 function SectionModal({ section, saving, propertyId, onSave, onClose }) {
   const [data, setData] = useState({ ...section });
-  const [view, setView] = useState('section'); // 'section' | 'add-item'
+  const [view, setView] = useState('section'); // 'section' | 'add-item' | 'edit-item'
   const [newItem, setNewItem] = useState(DEFAULT_NEW_ITEM);
   const [addItemError, setAddItemError] = useState('');
+  const [editingItemId, setEditingItemId] = useState(null);
+  const [editDraft, setEditDraft] = useState(null);
+  const [editItemError, setEditItemError] = useState('');
   const [showAiFields, setShowAiFields] = useState(false);
   const [itemNotice, setItemNotice] = useState('');
-  const [lastAddedItemId, setLastAddedItemId] = useState(null);
+  const [lastTouchedItemId, setLastTouchedItemId] = useState(null);
   const addItemBtnRef = useRef(null);
   const addItemHeadingRef = useRef(null);
+  const editItemHeadingRef = useRef(null);
 
   const isRecs = data.sectionType === 'recommendations';
   const isWelcome = data.sectionType === 'welcome';
 
   const set   = (k, v) => setData(d => ({ ...d, [k]: v }));
   const setNI = (k, v) => setNewItem(i => ({ ...i, [k]: v }));
+  const setEd = (k, v) => setEditDraft(d => ({ ...d, [k]: v }));
+  const setEdPlace = (k, v) => setEditDraft(d => ({ ...d, place: { ...d.place, [k]: v } }));
 
   const prevViewRef = useRef(view);
 
   useEffect(() => {
     if (view === 'add-item') addItemHeadingRef.current?.focus();
-    // Returning from the subview: restore focus to the trigger button.
+    if (view === 'edit-item') editItemHeadingRef.current?.focus();
+    // Returning from a subview: restore focus to whatever opened it.
     // (Not requestAnimationFrame — it isn't reliably scheduled in every host
     // environment this admin renders in, whereas a plain effect after commit is.)
-    if (prevViewRef.current === 'add-item' && view === 'section') addItemBtnRef.current?.focus();
+    if (view === 'section') {
+      if (prevViewRef.current === 'add-item') addItemBtnRef.current?.focus();
+      else if (prevViewRef.current === 'edit-item' && lastTouchedItemId) {
+        document.querySelector(`#guidebook-item-${lastTouchedItemId} [data-edit-trigger]`)?.focus();
+      }
+    }
     prevViewRef.current = view;
-  }, [view]);
+  }, [view]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (view !== 'section' || !lastAddedItemId) return;
-    document.getElementById(`guidebook-item-${lastAddedItemId}`)?.scrollIntoView({ block: 'nearest' });
-  }, [view, lastAddedItemId]);
+    if (view !== 'section' || !lastTouchedItemId) return;
+    document.getElementById(`guidebook-item-${lastTouchedItemId}`)?.scrollIntoView({ block: 'nearest' });
+  }, [view, lastTouchedItemId]);
 
   function openAddItem() {
     setAddItemError('');
@@ -489,15 +501,52 @@ function SectionModal({ section, saving, propertyId, onSave, onClose }) {
     setNewItem(DEFAULT_NEW_ITEM);
     setAddItemError('');
     setView('section');
-    setLastAddedItemId(itemId);
+    setLastTouchedItemId(itemId);
     setItemNotice(`${name} was added to this draft. Save the section to keep this change.`);
   }
 
-  function handleModalKeyDown(e) {
-    if (e.key === 'Escape' && view === 'add-item') {
-      e.preventDefault();
-      closeAddItem();
+  function openEditItem(item) {
+    setEditingItemId(item.itemId);
+    setEditDraft({ ...item, place: item.place ? { ...item.place } : undefined });
+    setEditItemError('');
+    setLastTouchedItemId(item.itemId);
+    setView('edit-item');
+  }
+
+  function closeEditItem() {
+    setEditingItemId(null);
+    setEditDraft(null);
+    setEditItemError('');
+    setView('section');
+  }
+
+  function saveEditItem() {
+    if (!editDraft) return;
+    if (editDraft.type === 'place') {
+      updateItem(editingItemId, editDraft);
+      finishEdit(editDraft.place?.name || editDraft.label || 'Place');
+      return;
     }
+    const content = (editDraft.content || '').trim();
+    const label = (editDraft.label || '').trim();
+    if (!content) { setEditItemError('Add the content or URL before saving this item.'); return; }
+    if (!label) { setEditItemError('Add a label for this item.'); return; }
+    updateItem(editingItemId, { ...editDraft, label, content });
+    finishEdit(label);
+  }
+
+  function finishEdit(name) {
+    setEditingItemId(null);
+    setEditDraft(null);
+    setEditItemError('');
+    setView('section');
+    setItemNotice(`${name} was updated in this draft. Save the section to keep this change.`);
+  }
+
+  function handleModalKeyDown(e) {
+    if (e.key !== 'Escape') return;
+    if (view === 'add-item') { e.preventDefault(); closeAddItem(); }
+    else if (view === 'edit-item') { e.preventDefault(); closeEditItem(); }
   }
 
   function addGenericItem() {
@@ -552,7 +601,7 @@ function SectionModal({ section, saving, propertyId, onSave, onClose }) {
         </div>
 
         <div style={s.modalBody}>
-          {view === 'add-item' ? (
+          {view === 'add-item' && (
             <div key="add-item" className="section-editor-pane">
               <button type="button" style={s.addItemBack} onClick={closeAddItem}>
                 <span className="material-symbols-outlined msi" aria-hidden="true" style={{ fontSize: 18 }}>arrow_back</span>
@@ -611,7 +660,112 @@ function SectionModal({ section, saving, propertyId, onSave, onClose }) {
                 </>
               )}
             </div>
-          ) : (
+          )}
+
+          {view === 'edit-item' && editDraft && (
+            <div key="edit-item" className="section-editor-pane">
+              <button type="button" style={s.addItemBack} onClick={closeEditItem}>
+                <span className="material-symbols-outlined msi" aria-hidden="true" style={{ fontSize: 18 }}>arrow_back</span>
+                Back to section
+              </button>
+              <h3 ref={editItemHeadingRef} tabIndex={-1} style={s.addItemHeading}>
+                {editDraft.type === 'place' ? 'Edit place' : 'Edit item'}
+              </h3>
+              <p style={s.addItemHint}>
+                {editDraft.type === 'place'
+                  ? 'Update how this place appears to guests.'
+                  : 'Update what guests see.'}
+              </p>
+
+              {editDraft.type === 'place' ? (
+                <>
+                  <div style={{ ...s.formRow, flexWrap: 'wrap' }}>
+                    <div style={s.formGroup}>
+                      <label style={s.labelSm}>Display name</label>
+                      <input style={s.input} value={editDraft.place?.name || ''} onChange={e => setEdPlace('name', e.target.value)} />
+                    </div>
+                    <div style={s.formGroup}>
+                      <label style={s.labelSm}>Category</label>
+                      <select style={s.input} value={editDraft.place?.category || 'activity'} onChange={e => setEdPlace('category', e.target.value)}>
+                        {Object.entries(CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div style={s.formGroup}>
+                    <label style={s.labelSm}>Map marker</label>
+                    <MapIconPicker value={editDraft.place?.mapIcon || ''} onChange={mapIcon => setEdPlace('mapIcon', mapIcon)} />
+                  </div>
+                  <div style={s.formGroup}>
+                    <label style={s.labelSm}>Best for</label>
+                    <AudiencePicker value={editDraft.audiences || []} onChange={audiences => setEd('audiences', audiences)} />
+                  </div>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, margin: '12px 0', padding: '12px 14px', border: '1px solid #E2E8EC', borderRadius: 10, background: '#fff', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={Boolean(editDraft.featured)} onChange={e => setEd('featured', e.target.checked)} style={{ width: 17, height: 17, marginTop: 1, accentColor: '#D1614D' }} />
+                    <span><strong style={{ display: 'block', color: '#1D3557', fontSize: 13 }}>Our Pick</strong><small style={{ display: 'block', marginTop: 2, color: '#6B7280', fontSize: 11, lineHeight: 1.4 }}>Show this place first and give it a subtle recommendation badge on guest pages.</small></span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, margin: '12px 0', padding: '12px 14px', border: '1px solid #E2E8EC', borderRadius: 10, background: '#fff', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={editDraft.websiteVisible !== false} onChange={e => setEd('websiteVisible', e.target.checked)} style={{ width: 17, height: 17, marginTop: 1, accentColor: '#1D3557' }} />
+                    <span><strong style={{ display: 'block', color: '#1D3557', fontSize: 13 }}>Show on property website</strong><small style={{ display: 'block', marginTop: 2, color: '#6B7280', fontSize: 11, lineHeight: 1.4 }}>Turn this off to keep the recommendation in the complete Guidebook without showing it in the property-page preview.</small></span>
+                  </label>
+                  <div style={s.formGroup}>
+                    <label style={s.labelSm}>Guest-facing description</label>
+                    <textarea style={{ ...s.input, height: 64, resize: 'vertical', marginTop: 4 }}
+                      value={editDraft.description || ''}
+                      onChange={e => setEd('description', e.target.value)}
+                      placeholder="What guests see — a short pitch for this place…" />
+                  </div>
+                  <div style={s.formGroup}>
+                    <label style={s.labelSm}>🤖 AI context — tips, best dishes, best time to go, who it's for (hidden from guests)</label>
+                    <textarea style={{ ...s.input, height: 72, resize: 'vertical', marginTop: 4, fontSize: 13 }}
+                      value={editDraft.aiContext || ''}
+                      onChange={e => setEd('aiContext', e.target.value)}
+                      placeholder="e.g. 'Best dish: the Miguel's Special. Great for families. Gets busy Friday nights. Mention you're staying at The Overhang.'" />
+                  </div>
+                  <div style={s.formGroup}>
+                    <label style={s.labelSm}>Host notes (private — never shown to AI or guests)</label>
+                    <textarea style={{ ...s.input, height: 56, resize: 'vertical', marginTop: 4, fontSize: 13 }}
+                      value={editDraft.hostNotes || ''}
+                      onChange={e => setEd('hostNotes', e.target.value)}
+                      placeholder="e.g. 'Owner gives us a discount if we mention the property'" />
+                  </div>
+                  {(editDraft.place?.address || editDraft.place?.phone) && (
+                    <div style={{ fontSize: 12, color: '#6B7280' }}>
+                      {editDraft.place?.address && <span>📍 {editDraft.place.address}</span>}
+                      {editDraft.place?.phone && <span style={{ marginLeft: 12 }}>📞 {editDraft.place.phone}</span>}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div style={s.formGroup}>
+                    <label style={s.labelSm}>Label</label>
+                    <input style={s.input} value={editDraft.label || ''} onChange={e => setEd('label', e.target.value)} placeholder="e.g. Door code" />
+                  </div>
+                  <div style={s.formGroup}>
+                    <label style={s.labelSm}>Content / URL{editDraft.type === 'guide' && <MarkdownHelp />}</label>
+                    <textarea style={{ ...s.input, height: 72, resize: 'vertical' }}
+                      value={editDraft.content || ''} onChange={e => setEd('content', e.target.value)}
+                      placeholder="What guests should see…" />
+                  </div>
+                  <div style={s.formGroup}>
+                    <label style={s.labelSm}>🤖 AI context (hidden from guests)</label>
+                    <textarea style={{ ...s.input, height: 56, resize: 'vertical', fontSize: 13 }}
+                      value={editDraft.aiContext || ''} onChange={e => setEd('aiContext', e.target.value)}
+                      placeholder="Any additional context an AI should know about this item…" />
+                  </div>
+                  <div style={s.formGroup}>
+                    <label style={s.labelSm}>Host notes (private)</label>
+                    <textarea style={{ ...s.input, height: 56, resize: 'vertical', fontSize: 13 }}
+                      value={editDraft.hostNotes || ''} onChange={e => setEd('hostNotes', e.target.value)}
+                      placeholder="Private notes just for you…" />
+                  </div>
+                  {editItemError && <div role="alert" style={s.addItemError}>{editItemError}</div>}
+                </>
+              )}
+            </div>
+          )}
+
+          {view === 'section' && (
             <div key="section" className="section-editor-pane">
               {/* Section metadata */}
               <div style={s.formRow}>
@@ -717,8 +871,8 @@ function SectionModal({ section, saving, propertyId, onSave, onClose }) {
                 {(data.items || []).map(item => (
                   <div key={item.itemId} id={`guidebook-item-${item.itemId}`}>
                     {item.type === 'place'
-                      ? <PlaceItemRow item={item} onRemove={() => removeItem(item.itemId)} onUpdate={u => updateItem(item.itemId, u)} />
-                      : <GenericItemRow item={item} onRemove={() => removeItem(item.itemId)} onUpdate={u => updateItem(item.itemId, u)} />}
+                      ? <PlaceItemRow item={item} onRemove={() => removeItem(item.itemId)} onEdit={() => openEditItem(item)} />
+                      : <GenericItemRow item={item} onRemove={() => removeItem(item.itemId)} onEdit={() => openEditItem(item)} />}
                   </div>
                 ))}
 
@@ -733,12 +887,19 @@ function SectionModal({ section, saving, propertyId, onSave, onClose }) {
         </div>
 
         <div style={s.modalFooter}>
-          {view === 'add-item' ? (
+          {view === 'add-item' && (
             <>
               <button style={s.btnSecondary} onClick={closeAddItem}>Cancel</button>
               {!isRecs && <button style={s.btnPrimary} onClick={addGenericItem}>Add to Section</button>}
             </>
-          ) : (
+          )}
+          {view === 'edit-item' && (
+            <>
+              <button style={s.btnSecondary} onClick={closeEditItem}>Cancel</button>
+              <button style={s.btnPrimary} onClick={saveEditItem}>Save Changes</button>
+            </>
+          )}
+          {view === 'section' && (
             <>
               <button style={s.btnSecondary} onClick={onClose}>Cancel</button>
               <button style={{ ...s.btnPrimary, opacity: saving ? 0.6 : 1 }} onClick={() => onSave(data)} disabled={saving}>
@@ -812,8 +973,7 @@ function MarkdownHelp() {
 }
 
 // ── Generic item row (existing item types) ────────────────────────────────────
-function GenericItemRow({ item, onRemove, onUpdate }) {
-  const [expanded, setExpanded] = useState(false);
+function GenericItemRow({ item, onRemove, onEdit }) {
   return (
     <div style={s.itemRow}>
       <span style={{ fontSize: 12, background: '#E5E7EB', padding: '2px 8px', borderRadius: 4, color: '#374151', flexShrink: 0 }}>{item.type}</span>
@@ -821,41 +981,19 @@ function GenericItemRow({ item, onRemove, onUpdate }) {
         <div style={{ fontSize: 14 }}><strong>{item.label}</strong>{item.content ? ` — ${item.content.slice(0, 50)}` : ''}</div>
         {item.aiContext && <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>🤖 {item.aiContext.slice(0, 60)}</div>}
       </div>
-      <button style={s.expandBtn} onClick={() => setExpanded(!expanded)} title="Edit AI context">{expanded ? '▲' : '✏️'}</button>
-      <button style={s.btnDangerSm} onClick={onRemove}>✕</button>
-      {expanded && (
-        <div style={{ width: '100%', marginTop: 8, paddingTop: 8, borderTop: '1px solid #E5E7EB' }}>
-          <label style={s.labelSm}>Guest-facing label</label>
-          <input style={{ ...s.input, marginTop: 4, marginBottom: 8, fontSize: 13 }}
-            value={item.label || ''} onChange={e => onUpdate({ label: e.target.value })}
-            placeholder="Item label" />
-          <label style={s.labelSm}>Guest-facing content{item.type === 'guide' && <MarkdownHelp />}</label>
-          <textarea style={{ ...s.input, height: 82, resize: 'vertical', marginTop: 4, marginBottom: 8, fontSize: 13 }}
-            value={item.content || ''} onChange={e => onUpdate({ content: e.target.value })}
-            placeholder="What guests should see…" />
-          <label style={s.labelSm}>🤖 AI context (hidden from guests)</label>
-          <textarea style={{ ...s.input, height: 60, resize: 'vertical', marginTop: 4, fontSize: 13 }}
-            value={item.aiContext || ''} onChange={e => onUpdate({ aiContext: e.target.value })}
-            placeholder="Any additional context an AI should know about this item…" />
-          <label style={{ ...s.labelSm, marginTop: 8 }}>Host notes (private)</label>
-          <textarea style={{ ...s.input, height: 60, resize: 'vertical', marginTop: 4, fontSize: 13 }}
-            value={item.hostNotes || ''} onChange={e => onUpdate({ hostNotes: e.target.value })}
-            placeholder="Private notes just for you…" />
-        </div>
-      )}
+      <button style={s.expandBtn} onClick={onEdit} title="Edit item" aria-label="Edit item" data-edit-trigger>✏️</button>
+      <button style={s.btnDangerSm} onClick={onRemove} aria-label="Remove item">✕</button>
     </div>
   );
 }
 
 // ── Place item row (in the section item list) ─────────────────────────────────
-function PlaceItemRow({ item, onRemove, onUpdate }) {
-  const [expanded, setExpanded] = useState(false);
+function PlaceItemRow({ item, onRemove, onEdit }) {
   const p = item.place || {};
   const catColor = CATEGORY_COLORS[p.category] || '#F9FAFB';
 
   return (
     <div style={{ ...s.itemRow, flexWrap: 'wrap', background: catColor, border: `1px solid ${catColor === '#F9FAFB' ? '#E5E7EB' : 'transparent'}` }}>
-      {/* Top row */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%' }}>
         {p.photoUrl
           ? <img src={p.photoUrl} alt={p.name} style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
@@ -877,68 +1015,9 @@ function PlaceItemRow({ item, onRemove, onUpdate }) {
           {item.aiContext && <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>🤖 {item.aiContext.slice(0, 60)}</div>}
           {item.audiences?.length > 0 && <AudienceBadges values={item.audiences} />}
         </div>
-        <button style={s.expandBtn} onClick={() => setExpanded(!expanded)} title="Edit details">{expanded ? '▲' : '✏️'}</button>
-        <button style={s.btnDangerSm} onClick={onRemove}>✕</button>
+        <button style={s.expandBtn} onClick={onEdit} title="Edit place" aria-label="Edit place" data-edit-trigger>✏️</button>
+        <button style={s.btnDangerSm} onClick={onRemove} aria-label="Remove place">✕</button>
       </div>
-
-      {/* Expanded editor */}
-      {expanded && (
-        <div style={{ width: '100%', marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(0,0,0,0.08)' }}>
-          <div style={{ ...s.formRow, flexWrap: 'wrap' }}>
-            <div style={s.formGroup}>
-              <label style={s.labelSm}>Display name</label>
-              <input style={s.input} value={p.name || ''} onChange={e => onUpdate({ place: { ...p, name: e.target.value } })} />
-            </div>
-            <div style={s.formGroup}>
-              <label style={s.labelSm}>Category</label>
-              <select style={s.input} value={p.category || 'activity'} onChange={e => onUpdate({ place: { ...p, category: e.target.value } })}>
-                {Object.entries(CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </select>
-            </div>
-          </div>
-          <div style={s.formGroup}>
-            <label style={s.labelSm}>Map marker</label>
-            <MapIconPicker value={p.mapIcon || ''} onChange={mapIcon => onUpdate({ place: { ...p, mapIcon } })} />
-          </div>
-          <div style={s.formGroup}>
-            <label style={s.labelSm}>Best for</label>
-            <AudiencePicker value={item.audiences || []} onChange={audiences => onUpdate({ audiences })} />
-          </div>
-          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, margin: '12px 0', padding: '12px 14px', border: '1px solid #E2E8EC', borderRadius: 10, background: '#fff', cursor: 'pointer' }}>
-            <input type="checkbox" checked={Boolean(item.featured)} onChange={e => onUpdate({ featured: e.target.checked })} style={{ width: 17, height: 17, marginTop: 1, accentColor: '#D1614D' }} />
-            <span><strong style={{ display: 'block', color: '#1D3557', fontSize: 13 }}>Our Pick</strong><small style={{ display: 'block', marginTop: 2, color: '#6B7280', fontSize: 11, lineHeight: 1.4 }}>Show this place first and give it a subtle recommendation badge on guest pages.</small></span>
-          </label>
-          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, margin: '12px 0', padding: '12px 14px', border: '1px solid #E2E8EC', borderRadius: 10, background: '#fff', cursor: 'pointer' }}>
-            <input type="checkbox" checked={item.websiteVisible !== false} onChange={e => onUpdate({ websiteVisible: e.target.checked })} style={{ width: 17, height: 17, marginTop: 1, accentColor: '#1D3557' }} />
-            <span><strong style={{ display: 'block', color: '#1D3557', fontSize: 13 }}>Show on property website</strong><small style={{ display: 'block', marginTop: 2, color: '#6B7280', fontSize: 11, lineHeight: 1.4 }}>Turn this off to keep the recommendation in the complete Guidebook without showing it in the property-page preview.</small></span>
-          </label>
-          <div style={s.formGroup}>
-            <label style={s.labelSm}>Guest-facing description</label>
-            <textarea style={{ ...s.input, height: 64, resize: 'vertical', marginTop: 4 }}
-              value={item.description || ''}
-              onChange={e => onUpdate({ description: e.target.value })}
-              placeholder="What guests see — a short pitch for this place…" />
-          </div>
-          <div style={s.formGroup}>
-            <label style={s.labelSm}>🤖 AI context — tips, best dishes, best time to go, who it's for (hidden from guests)</label>
-            <textarea style={{ ...s.input, height: 72, resize: 'vertical', marginTop: 4, fontSize: 13 }}
-              value={item.aiContext || ''}
-              onChange={e => onUpdate({ aiContext: e.target.value })}
-              placeholder="e.g. 'Best dish: the Miguel's Special. Great for families. Gets busy Friday nights. Mention you're staying at The Overhang.'" />
-          </div>
-          <div style={s.formGroup}>
-            <label style={s.labelSm}>Host notes (private — never shown to AI or guests)</label>
-            <textarea style={{ ...s.input, height: 56, resize: 'vertical', marginTop: 4, fontSize: 13 }}
-              value={item.hostNotes || ''}
-              onChange={e => onUpdate({ hostNotes: e.target.value })}
-              placeholder="e.g. 'Owner gives us a discount if we mention the property'" />
-          </div>
-          <div style={{ fontSize: 12, color: '#6B7280' }}>
-            {p.address && <span>📍 {p.address}</span>}
-            {p.phone && <span style={{ marginLeft: 12 }}>📞 {p.phone}</span>}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
